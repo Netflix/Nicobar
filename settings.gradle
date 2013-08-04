@@ -1,2 +1,3 @@
-rootProject.name='gradle-template-master'
-include 'template-client','template-server'
+rootProject.name='scriptlib'
+include 'scriptlib-core'
+include 'scriptlib-groovy2'
