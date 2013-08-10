@@ -19,42 +19,76 @@ package com.netflix.scriptlib.groovy2.module;
 
 import groovy.lang.GroovyClassLoader;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
-import java.net.URLClassLoader;
 
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleClassLoaderFactory;
+
+import com.netflix.scriptlib.core.archive.ScriptArchive;
+import com.netflix.scriptlib.core.module.ScriptArchiveModuleClassLoader;
+import com.netflix.scriptlib.groovy2.compile.ScriptArchiveGroovyClassloader;
 
 /**
  * Adapts a {@link GroovyClassLoader} to a {@link ModuleClassLoader}
  *
  * @author James Kojo
  */
-public class Groovy2ModuleClassLoader extends ModuleClassLoader {
+public class Groovy2ModuleClassLoader extends ScriptArchiveModuleClassLoader {
 
     /**
      * instantiates a factory which provides the ModuleClassLoader. This is used to inject the custom
      * ModuleClassloader in the Module framework
      * @param rootSourcePath root path of the source files
      */
-    public static ModuleClassLoaderFactory createFactory(final URL rootSourcePath) {
+    public static ModuleClassLoaderFactory createFactory(final ScriptArchive scriptArchive) {
         return new ModuleClassLoaderFactory() {
             @Override
             public ModuleClassLoader create(Configuration configuration) {
-                return new Groovy2ModuleClassLoader(configuration, rootSourcePath);
+                return new Groovy2ModuleClassLoader(configuration, scriptArchive);
             }
         };
     }
 
-    private final GroovyClassLoader groovyClassLoader;
-    public Groovy2ModuleClassLoader(Configuration configuration, URL rootSourcePath) {
-        super(configuration);
-        URLClassLoader moduleClassLoader = new URLClassLoader(new URL[] {rootSourcePath});
-        groovyClassLoader = new GroovyClassLoader(moduleClassLoader);
+    private final ScriptArchiveGroovyClassloader groovyClassLoader;
+    public Groovy2ModuleClassLoader(Configuration configuration, ScriptArchive scriptArchive) {
+        super(configuration, scriptArchive);
+        groovyClassLoader = new ScriptArchiveGroovyClassloader(this, null, false);
+        groovyClassLoader.addURL(scriptArchive.getRootUrl());
+    }
+
+    @Override
+    public void initialize() throws Exception {
     }
 
     @Override
     public Class<?> loadClassLocal(String className, boolean resolve) throws ClassNotFoundException {
-       return groovyClassLoader.loadClass(className, true, true, resolve);
+        // see if we already loaded the class
+        Class classCacheEntry = groovyClassLoader.getClassCacheEntry(className);
+        if (classCacheEntry != null) {
+            return classCacheEntry;
+        }
+        // determine if we have the source file
+        String filePath = classNameToPath(className);
+        if (scriptArchive.getArchiveEntryNames().contains(filePath)) {
+            try {
+                URL source = scriptArchive.getEntry(filePath);
+                return groovyClassLoader.compileLocal(className, source);
+            } catch (IOException e) {
+                throw new ClassNotFoundException(null, e);
+            }
+        }
+        return null;
     }
+
+    private static String classNameToPath(String className) {
+        String fileName = className.replace(".", File.separator);
+        if (!fileName.endsWith(".groovy")) {
+            fileName = fileName + ".groovy";
+        }
+        return fileName;
+    }
+
+
 }

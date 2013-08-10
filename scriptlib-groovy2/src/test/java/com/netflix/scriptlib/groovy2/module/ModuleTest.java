@@ -1,4 +1,3 @@
-package scripts
 /*
  *
  *  Copyright 2013 Netflix, Inc.
@@ -16,9 +15,13 @@ package scripts
  *     limitations under the License.
  *
  */
+package com.netflix.scriptlib.groovy2.module;
 
-public class HelloWorld {
-    public String getMessage() {
-       return "Hello, World!";
-    }
+/**
+ *
+ *
+ * @author James Kojo
+ */
+public class ModuleTest {
+
 }

@@ -19,12 +19,12 @@ package com.netflix.scriptlib.groovy2.compile;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.fail;
 
 import java.lang.reflect.Method;
-import java.net.URI;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleFinder;
@@ -32,7 +32,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoader;
 import org.testng.annotations.Test;
 
-import com.netflix.scriptlib.core.compile.ScriptArchive;
+import com.netflix.scriptlib.core.archive.PathScriptArchive;
 import com.netflix.scriptlib.groovy2.module.Groovy2ScriptModuleFinder;
 
 /**
@@ -41,20 +41,25 @@ import com.netflix.scriptlib.groovy2.module.Groovy2ScriptModuleFinder;
  * @author James Kojo
  */
 public class Groovy2ScriptModuleFinderTest {
+    private static final Path SCRIPTS_RESOURCE_PATH = Paths.get("scripts/");
+    private static final Path HELLO_WORLD_RESOURCE_PATH = SCRIPTS_RESOURCE_PATH.resolve("helloworld/HelloWorld.groovy");
 
     @Test
     public void testLoadSimpleScript() throws Exception {
-        URI scriptUri = getClass().getClassLoader().getResource("scripts/HelloWorld.groovy").toURI();
-        Path scriptFullPath = Paths.get(scriptUri);
-        Path scriptRoot = scriptFullPath.getParent();
-        Path scriptPath = scriptFullPath.getFileName();
-        ScriptArchive scriptArchive = new ScriptArchive("HelloWorld", 1, scriptRoot, Collections.singletonList(scriptPath), null, null);
+        URL scriptUrl = getClass().getClassLoader().getResource(SCRIPTS_RESOURCE_PATH.toString());
+        if (scriptUrl == null) {
+            fail("couldn't load resource " + SCRIPTS_RESOURCE_PATH);
+        }
+        Path scriptFullPath = Paths.get(scriptUrl.toURI());
+
+        PathScriptArchive scriptArchive = new PathScriptArchive.Builder("HelloWorld", 1,
+            scriptFullPath.getParent().toAbsolutePath()).build();
 
         Groovy2ScriptModuleFinder moduleFinder = new Groovy2ScriptModuleFinder();
         moduleFinder.addToRepository(scriptArchive);
         TestModuleLoader loader = new TestModuleLoader(moduleFinder);
         Module module = loader.loadModule(ModuleIdentifier.create("HelloWorld"));
-        Class<?> loadedClass = module.getClassLoader().loadClass("HelloWorld");
+        Class<?> loadedClass = module.getClassLoader().loadClass(pathToClassName(HELLO_WORLD_RESOURCE_PATH.toString()));
         assertNotNull(loadedClass);
         Object instance = loadedClass.newInstance();
         Method method = loadedClass.getMethod("getMessage");
@@ -62,6 +67,27 @@ public class Groovy2ScriptModuleFinderTest {
         assertEquals(message, "Hello, World!");
     }
 
+    /**
+     *
+     * @param filePath  path to the script file relative to the source root
+     * @return
+     */
+    private static String pathToClassName(String filePath) {
+        Path path = Paths.get(filePath);
+        String fileName = path.getFileName().toString();
+        Path directoryPath = path.getParent();
+        StringBuilder sb = new StringBuilder();
+        if (directoryPath != null) {
+            for (Path subPath : directoryPath) {
+                sb.append(subPath).append(".");
+            }
+        }
+        int endIndex = fileName.lastIndexOf(".");
+        endIndex = endIndex < 0 ? fileName.length() : endIndex;
+        sb.append(fileName.substring(0, endIndex));
+        return sb.toString();
+
+    }
     protected static class TestModuleLoader extends ModuleLoader {
         protected TestModuleLoader(ModuleFinder finder) {
             super(new ModuleFinder[] {finder});

@@ -17,26 +17,18 @@
  */
 package com.netflix.scriptlib.groovy2.module;
 
-import java.net.MalformedURLException;
-import java.nio.file.Path;
-import java.util.List;
+import java.io.IOException;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.jboss.modules.DependencySpec;
 import org.jboss.modules.ModuleFinder;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
-import org.jboss.modules.ResourceLoader;
-import org.jboss.modules.ResourceLoaderSpec;
-import org.jboss.modules.ResourceLoaders;
-import org.jboss.modules.filter.MultiplePathFilterBuilder;
-import org.jboss.modules.filter.PathFilters;
 
-import com.netflix.scriptlib.core.compile.ScriptArchive;
+import com.netflix.scriptlib.core.archive.ScriptArchive;
+import com.netflix.scriptlib.core.module.ModuleUtils;
 
 /**
  * ModuleFinder which is backed by a {@link ConcurrentHashMap}.
@@ -58,44 +50,20 @@ public class Groovy2ScriptModuleFinder implements ModuleFinder {
         if (scriptArchive == null) {
             return null;
         }
-
-        // add the source and resource files to the module spec
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(moduleId);
-        String archiveName = scriptArchive.getName();
-        Path archiveRootPath = scriptArchive.getRootPath();
-        ResourceLoader rootResourceLoader = ResourceLoaders.createFileResourceLoader(archiveName, archiveRootPath.toFile());
-        MultiplePathFilterBuilder pathFilterBuilder = PathFilters.multiplePathFilterBuilder(false);
-        List<Path> archiveFiles = scriptArchive.getFiles();
-        for (Path archiveFile : archiveFiles) {
-            pathFilterBuilder.addFilter(PathFilters.is(archiveFile.toString()), true);
-        }
-        ResourceLoader filteredResourceLoader = ResourceLoaders.createFilteredResourceLoader(pathFilterBuilder.create(), rootResourceLoader);
-        moduleSpecBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(filteredResourceLoader));
-
-        // add dependencies to the module spec
-        List<String> dependencies = scriptArchive.getDependencies();
-        for (String moduleName : dependencies) {
-            moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(ModuleIdentifier.create(moduleName), true, false));
-        }
-
-        // add properties to the module spec
-        Map<String, String> archiveMetadata = scriptArchive.getArchiveMetadata();
-        for (Entry<String, String> entry : archiveMetadata.entrySet()) {
-            moduleSpecBuilder.addProperty(entry.getKey(), entry.getValue());
-        }
-
-        // inject a custom classloader that can compile and load groovy files
         try {
-            moduleSpecBuilder.setModuleClassLoaderFactory(Groovy2ModuleClassLoader.createFactory(archiveRootPath.toUri().toURL()));
-        } catch (MalformedURLException e) {
+            ModuleUtils.populateModuleSpec(moduleSpecBuilder, scriptArchive);
+        } catch (IOException e) {
             throw new ModuleLoadException(e);
         }
-        moduleSpecBuilder.addDependency(DependencySpec.createLocalDependencySpec());
+        // inject a custom classloader that can compile and load groovy files
+        moduleSpecBuilder.setModuleClassLoaderFactory(Groovy2ModuleClassLoader.createFactory(scriptArchive));
+
         return moduleSpecBuilder.create();
     }
 
     public ScriptArchive addToRepository(ScriptArchive archive) {
-        return scriptArchiveRepo.put(ModuleIdentifier.create(archive.getName()), archive);
+        return scriptArchiveRepo.put(ModuleIdentifier.create(archive.getArchiveName()), archive);
     }
 
     public ScriptArchive removeFromRepository(String moduleName) {
