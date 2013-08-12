@@ -15,13 +15,19 @@
  *     limitations under the License.
  *
  */
-package com.netflix.scriptlib.groovy2.module;
+package com.netflix.scriptlib.core.plugin;
+
+import java.util.Set;
+
+import com.netflix.scriptlib.core.compile.ScriptCompiler;
 
 /**
- *
+ * Language plugin bootstrapper. Factory/provider interfaces for exporting classes needed for
+ * loading a language plugin
  *
  * @author James Kojo
  */
-public class ModuleTest {
+public interface ScriptCompilerPlugin {
 
+    public Set<? extends ScriptCompiler> getCompilers();
 }

@@ -126,6 +126,9 @@ public class JarScriptArchive implements ScriptArchive {
         return archiveVersion;
     }
 
+    /**
+     * Gets the root path in the form of 'file://path/to/jarfile/jarfile.jar"
+     */
     @Override
     public URL getRootUrl() {
         return rootUrl;

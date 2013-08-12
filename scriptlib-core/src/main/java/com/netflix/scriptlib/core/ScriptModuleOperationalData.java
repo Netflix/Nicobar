@@ -21,8 +21,10 @@ import java.util.Map;
 
 import org.apache.commons.lang.Validate;
 
+import com.netflix.scriptlib.core.module.JBossScriptModule;
+
 /**
- * Operational metadata pertaining to a {@link ScriptModule}.
+ * Operational metadata pertaining to a {@link JBossScriptModule}.
  *
  * @author James Kojo
  */

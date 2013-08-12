@@ -15,38 +15,25 @@
  *     limitations under the License.
  *
  */
-package com.netflix.scriptlib.core.util;
+package com.netflix.scriptlib.groovy2.plugin;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
+import java.util.Collections;
+import java.util.Set;
+
+import com.netflix.scriptlib.core.compile.ScriptCompiler;
+import com.netflix.scriptlib.core.plugin.ScriptCompilerPlugin;
+import com.netflix.scriptlib.groovy2.compile.Groovy2Compiler;
 
 /**
- *
+ * Factory class for the Groovy 2 language plugin
  *
  * @author James Kojo
  */
-public class ByteArrayUrlConnection extends URLConnection {
-
-    private final byte[] content;
-
-    /**
-     * @param url
-     * @param content
-     */
-    protected ByteArrayUrlConnection(URL url, byte[] content) {
-        super(url);
-        this.content = content;
+public class Groovy2CompilerProvider implements ScriptCompilerPlugin {
+    public Groovy2CompilerProvider() {
     }
-
     @Override
-    public void connect() throws IOException {
-    }
-
-    @Override
-    public InputStream getInputStream() throws IOException {
-        return new ByteArrayInputStream(content);
+    public Set<? extends ScriptCompiler> getCompilers() {
+        return Collections.singleton(new Groovy2Compiler());
     }
 }

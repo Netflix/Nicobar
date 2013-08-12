@@ -15,11 +15,12 @@
  *     limitations under the License.
  *
  */
-package com.netflix.scriptlib.core;
+package com.netflix.scriptlib.core.module;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+
+import org.jboss.modules.Module;
 
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 
@@ -28,40 +29,43 @@ import com.netflix.scriptlib.core.archive.ScriptArchive;
  *
  * @author James Kojo
  */
-public class ScriptModule {
+public class JBossScriptModule implements ScriptModule {
     private final String moduleName;
     private final int moduleVersion;
-    private final List<Class<?>> loadedClasses;
-    private final List<String> resourceNames;
-    private final ClassLoader classLoader;
+    private final Module jbossModule;
 
-
-    public ScriptModule(String moduleName, int moduleVersion, List<Class<?>> loadedClasses, List<String> resources, ClassLoader classLoader) {
+    public JBossScriptModule(String moduleName, int moduleVersion, Module jbossModule) {
         this.moduleName = Objects.requireNonNull(moduleName, "moduleName");
         this.moduleVersion = moduleVersion;
-        Objects.requireNonNull(loadedClasses, "loadedClasses");
-        this.loadedClasses = Collections.unmodifiableList(loadedClasses);
-        this.resourceNames = Objects.requireNonNull(resources, "resources");
-        this.classLoader =  Objects.requireNonNull(classLoader, "classLoader");
+        this.jbossModule =  Objects.requireNonNull(jbossModule, "jbossModule");
     }
 
+    /**
+     * @return module identifier
+     */
+    @Override
     public String getModuleName() {
         return moduleName;
     }
 
+    /**
+     * @return module version identifier
+     */
+    @Override
     public int getModuleVersion() {
         return moduleVersion;
     }
 
-    public List<Class<?>> getLoadedClasses() {
-        return loadedClasses;
+    /**
+     * @return the classes that were compiled and loaded from the scripts
+     */
+    @Override
+    public Set<Class<?>> getLoadedClasses() {
+        return getModuleClassLoader().getLoadedClasses();
     }
 
-    public List<String> getResourceNames() {
-        return resourceNames;
-    }
-
-    public ClassLoader getClassLoader() {
-        return classLoader;
+    @Override
+    public ScriptModuleClassLoader getModuleClassLoader() {
+        return (ScriptModuleClassLoader)jbossModule.getClassLoader();
     }
 }

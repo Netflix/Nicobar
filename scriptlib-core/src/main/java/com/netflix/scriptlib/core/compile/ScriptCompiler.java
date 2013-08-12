@@ -18,28 +18,40 @@
 package com.netflix.scriptlib.core.compile;
 
 import java.io.IOException;
+import java.util.Set;
 
-import com.netflix.scriptlib.core.ScriptModule;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
+import com.netflix.scriptlib.core.module.ScriptModuleClassLoader;
 
 
 /**
- * Converts a Script Archive into a Module
+ * Converts a Script Archive into a Set of classes
  *
  * @author James Kojo
  */
-public interface ScriptArchiveCompiler {
+public interface ScriptCompiler {
+    /**
+     * Common names used to query the {@link ScriptArchive#getArchiveMetadata()} that are relavant
+     * to compilers
+     * @author James Kojo
+     */
+    public static enum MetadataName {
+        COMPILER_NAME;
+    }
     /**
      * Whether or not this compiler should be used to compile the archive
      */
-    public boolean shouldCompile(ScriptArchive archive) throws IOException;
+    public boolean shouldCompile(ScriptArchive archive);
 
     /**
      * Compile the archive into a ScriptModule
-     * @param archive
+     * @param archive archive to generate class files for
+     * @param moduleClassLoader class loader which can be used to find all classes and resources for modules.
+     *  The resultant classes of the compile operation should be injected into the classloader
+     * for which the given archive has a declared dependency on
      * @return
      * @throws ScriptCompilationException if there was a compilation issue in the archive.
      * @throws IOException if there was a problem reading/writing the archive
      */
-    public ScriptModule compile(ScriptArchive archive) throws ScriptCompilationException, IOException;
+    public Set<Class<?>> compile(ScriptArchive archive, ScriptModuleClassLoader moduleClassLoader) throws ScriptCompilationException, IOException;
 }

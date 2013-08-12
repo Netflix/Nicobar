@@ -1,4 +1,4 @@
-package scripts.helloworld
+
 /*
  *
  *  Copyright 2013 Netflix, Inc.

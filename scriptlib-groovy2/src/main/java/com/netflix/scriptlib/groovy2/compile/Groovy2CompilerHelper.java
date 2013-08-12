@@ -20,42 +20,39 @@ package com.netflix.scriptlib.groovy2.compile;
 import groovy.lang.GroovyClassLoader;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
+import java.util.Set;
 
 import org.codehaus.groovy.control.CompilationFailedException;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.CompilerConfiguration;
-import org.codehaus.groovy.control.customizers.CompilationCustomizer;
+import org.codehaus.groovy.tools.GroovyClass;
 
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 import com.netflix.scriptlib.core.compile.ScriptCompilationException;
 
 /**
  * Helper class for compiling Groovy files into classes. This class takes as it's input a collection
- * of groovy source files and related resources represented as {@link Path}s. It outputs compiled
- * classes as well as copies of the resource files into a given output directory.
+ * of {@link ScriptArchive}s and outputs a {@link GroovyClassLoader} with the classes pre-loaded into it.
+ *
+ * If a parent {@link ClassLoader} is not provided, the current thread context classloader is used.
  *
  * @author James Kojo
  */
 public class Groovy2CompilerHelper {
-    private final static String GROOVY_FILE_SUFFIX = ".groovy";
-
-    private final Path baseOutputDir;
     private final List<Path> sourceFiles = new LinkedList<Path>();
-    private final List<Path> resourceFiles = new LinkedList<Path>();
-    private ClassLoader compileClassLoader;
-    private final List<CompilationCustomizer> customizers = new LinkedList<CompilationCustomizer>();
+    private final List<ScriptArchive> scriptArchives = new LinkedList<ScriptArchive>();
+    private ClassLoader parentClassLoader;
+    private CompilerConfiguration compileConfig;
 
-    public Groovy2CompilerHelper(Path baseOutputDir) {
-        this.baseOutputDir = Objects.requireNonNull(baseOutputDir, "baseOutputDir");
+    public Groovy2CompilerHelper() {
     }
 
-    public Groovy2CompilerHelper withCompileClassloader(ClassLoader compileClassLoader) {
-        this.compileClassLoader = compileClassLoader;
+    public Groovy2CompilerHelper withParentClassloader(ClassLoader parentClassLoader) {
+        this.parentClassLoader = parentClassLoader;
         return this;
     }
 
@@ -66,63 +63,53 @@ public class Groovy2CompilerHelper {
         return this;
     }
 
-    /**
-     * Resource files are non-groovy files that are copied directly to the output path
-     */
-    public Groovy2CompilerHelper addResourceFile(Path resourceFile) {
-        if (resourceFile != null) {
-            resourceFiles.add(resourceFile);
-        }
-        return this;
-    }
-
     public Groovy2CompilerHelper addScriptArchive(ScriptArchive archive) {
         if (archive != null) {
-            for (Path file : archive.getFiles()) {
-                if (file.toFile().getName().endsWith(GROOVY_FILE_SUFFIX)) {
-                    addSourceFile(file);
-                } else {
-                    addResourceFile(file);
-                }
-            }
+            scriptArchives.add(archive);
         }
         return this;
     }
 
-    public Groovy2CompilerHelper addCustomizer(CompilationCustomizer customizer) {
-        if (customizer != null) {
-            customizers.add(customizer);
+    public Groovy2CompilerHelper withConfiguration(CompilerConfiguration compilerConfig) {
+        if (compilerConfig != null) {
+            this.compileConfig = compilerConfig;
         }
         return this;
     }
 
-    public void compile() throws IOException, ScriptCompilationException {
-        // Copy resource files into base directory
-        for (Path resourceFile : resourceFiles) {
-            // convert the entry path to a relative path if necessary in order to join to the base output path
-            if (resourceFile.isAbsolute()) {
-                resourceFile = resourceFile.subpath(0, resourceFile.getNameCount());
-            }
-            Path resourceFileCopy = baseOutputDir.resolve(resourceFile);
-            Files.copy(resourceFile, resourceFileCopy);
-        }
-
-        GroovyClassLoader loader;
-        if (compileClassLoader != null) {
-            loader = new GroovyClassLoader(compileClassLoader);
-        } else {
-            loader = new GroovyClassLoader();
-        }
-        CompilerConfiguration conf = new CompilerConfiguration();
-
-        if (!customizers.isEmpty()) {
-            conf.addCompilationCustomizers(customizers.toArray(new CompilationCustomizer[customizers.size()]));
-        }
-        conf.setTargetDirectory(baseOutputDir.toFile());
+    /**
+     * Compile the given source and load the resultant classes into a new {@link ClassNotFoundException}
+     * @return initialized and laoded classes
+     * @throws ScriptCompilationException
+     */
+    @SuppressWarnings("unchecked")
+    public Set<GroovyClass> compile() throws ScriptCompilationException {
+        CompilerConfiguration conf = compileConfig != null ? compileConfig: CompilerConfiguration.DEFAULT;
         conf.setTolerance(0);
         conf.setVerbose(true);
+        ClassLoader buildParentClassloader = parentClassLoader != null ?
+            parentClassLoader : Thread.currentThread().getContextClassLoader();
+        GroovyClassLoader groovyClassLoader = new GroovyClassLoader(buildParentClassloader, conf, false);
 
-        CompilationUnit unit = new CompilationUnit(conf, null, loader);
+        CompilationUnit unit = new CompilationUnit(conf, null, groovyClassLoader);
+        Set<String> scriptExtensions = conf.getScriptExtensions();
+        try {
+            for (ScriptArchive scriptArchive : scriptArchives) {
+                // gives the resultant classloader access to the resource files in the archive
+                groovyClassLoader.addURL(scriptArchive.getRootUrl());
+                Set<String> entryNames = scriptArchive.getArchiveEntryNames();
+                for (String entryName : entryNames) {
+                    for (String extension : scriptExtensions) {
+                        if (entryName.endsWith(extension)) {
+                            // identified groovy file
+                            unit.addSource(scriptArchive.getEntry(entryName));
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new ScriptCompilationException("Exception loading source files", e);
+        }
         for (Path sourceFile : sourceFiles) {
             unit.addSource(sourceFile.toFile());
         }
@@ -131,5 +118,6 @@ public class Groovy2CompilerHelper {
         } catch (CompilationFailedException e) {
            throw new ScriptCompilationException("Exception during script compilation", e);
         }
+        return new HashSet<GroovyClass>(unit.getClasses());
     }
 }

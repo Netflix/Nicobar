@@ -17,27 +17,38 @@
  */
 package com.netflix.scriptlib.core.module;
 
-import org.jboss.modules.ModuleClassLoader;
+import java.util.Set;
 
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 
 /**
- * base class script based {@link ModuleClassLoader}s
+ * Encapsulates a the compiled classes and the resources in a {@link ScriptArchive}
  *
  * @author James Kojo
  */
-public abstract class ScriptArchiveModuleClassLoader extends ModuleClassLoader {
-    protected final ScriptArchive scriptArchive;
-
-    public ScriptArchiveModuleClassLoader(Configuration configuration, ScriptArchive scriptArchive) {
-        super(configuration);
-        this.scriptArchive = scriptArchive;
-    }
+public interface ScriptModule {
 
     /**
-     * Will be called as post-loading the module. Implementations must assume
-     * this may be called multiple times;
-     * @throws Exception
+     * @return module identifier
      */
-    public abstract void initialize() throws Exception;
+    public String getModuleName();
+
+    /**
+     * @return module version identifier
+     */
+    public int getModuleVersion();
+
+    /**
+     * @return the classes that were compiled and loaded from the scripts
+     */
+    public Set<Class<?>> getLoadedClasses();
+
+    /**
+     * Get the module classloader that is currently plugged into the graph
+     * of classloaders per the module specificaiton. note that this classloader
+     * was not necessarily the one used to load the classes in getLoadedClasses(),
+     * since thos may have been injected.
+     */
+    public ScriptModuleClassLoader getModuleClassLoader();
+
 }
