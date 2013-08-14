@@ -67,3 +67,6 @@ eclipse
 
 # NetBeans specific files/directories
 .nbattrs
+
+# Generic explicit ignore directory
+ignoreme/
