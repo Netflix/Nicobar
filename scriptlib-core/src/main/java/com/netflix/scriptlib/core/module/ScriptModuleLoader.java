@@ -25,8 +25,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.annotation.Nullable;
-
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
@@ -42,13 +40,11 @@ import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
 /**
  * Builds and maintains interdependent script modules.
  * Support pluggable compilers via the {@link ScriptCompilerPluginSpec}.
+ *
  * @author James Kojo
  */
 public class ScriptModuleLoader extends ModuleLoader {
-
     private final Map<ModuleIdentifier, ModuleSpec> moduleSpecRepo = new ConcurrentHashMap<ModuleIdentifier, ModuleSpec>();
-    private final Map<ModuleIdentifier, ScriptArchive> scriptArchiveRepo = new ConcurrentHashMap<ModuleIdentifier, ScriptArchive>();
-    private final Map<ModuleIdentifier, ScriptModule> scriptModuleRepo = new ConcurrentHashMap<ModuleIdentifier, ScriptModule>();
     private final List<ScriptCompiler> compilers = new ArrayList<ScriptCompiler>();
     private final Set<ScriptCompilerPluginSpec> pluginSpecs;
 
@@ -67,39 +63,38 @@ public class ScriptModuleLoader extends ModuleLoader {
         }
     }
 
-    /**
-     * Fetch a script module by name
-     * @param moduleName
-     * @return
-     */
-    @Nullable
-    public ScriptModule getScriptModule(String moduleName) {
-        return scriptModuleRepo.get(ModuleIdentifier.create(moduleName));
-    }
-
     public synchronized Set<ScriptModule> addScriptArchives(Set<? extends ScriptArchive> archives)  {
         Objects.requireNonNull(archives);
-        LinkedHashSet<ScriptModule> scriptModules = new LinkedHashSet<ScriptModule>(archives.size());
+        List<ModuleIdentifier> moduleIds = new ArrayList<ModuleIdentifier>(archives.size());
+
+        // add all module specs before trying to load the modules because loading will
+        // cause the transitive dependencies to be compiled
         for (ScriptArchive scriptArchive : archives) {
-            Module module;
             ModuleIdentifier moduleId;
             try {
                 moduleId = addScriptArchive(scriptArchive);
-                module = loadModule(moduleId);
+                moduleIds.add(moduleId);
             } catch (ModuleLoadException e) {
                 // TODO: add real logging. perhaps adds this modules to a "try again later" queue?
                 Module.getModuleLogger().trace(e, "Exception loading archive " + scriptArchive.getArchiveName() +
                     "-" + scriptArchive.getArchiveVersion());
                 continue;
             }
-            JBossScriptModule scriptModule =
-                new JBossScriptModule(scriptArchive.getArchiveName(), scriptArchive.getArchiveVersion(), module);
-            scriptModuleRepo.put(moduleId, scriptModule);
+        }
+        LinkedHashSet<ScriptModule> scriptModules = new LinkedHashSet<ScriptModule>(archives.size());
+        for (ModuleIdentifier moduleId : moduleIds) {
+            Module module;
+            try {
+                module = loadModule(moduleId);
+            } catch (ModuleLoadException e) {
+                Module.getModuleLogger().trace(e, "Exception loading module " + moduleId);
+                continue;
+            }
+            JBossScriptModule scriptModule = new JBossScriptModule(moduleId.getName(), 1, module);
             scriptModules.add(scriptModule);
         }
         return scriptModules;
     }
-
 
     /**
      * Creates {@link ModuleSpec} for the archive, and add it to the module spec repo so that
@@ -107,7 +102,7 @@ public class ScriptModuleLoader extends ModuleLoader {
      */
     protected synchronized ModuleIdentifier addScriptArchive(ScriptArchive scriptArchive) throws ModuleLoadException {
         String archiveName = scriptArchive.getArchiveName();
-        ModuleIdentifier moduleId = ModuleIdentifier.create(archiveName);
+        ModuleIdentifier moduleId = ModuleUtils.getModuleId(scriptArchive);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(moduleId);
         ModuleUtils.populateModuleSpec(moduleSpecBuilder, scriptArchive);
         ModuleSpec moduleSpec = moduleSpecBuilder.create();
@@ -127,14 +122,14 @@ public class ScriptModuleLoader extends ModuleLoader {
      * @throws ModuleLoadException
      */
     protected void addCompilerPlugin(ScriptCompilerPluginSpec pluginSpec) throws ModuleLoadException  {
-        ModuleIdentifier moduleId = ModuleIdentifier.create(pluginSpec.getPluginName());
+        ModuleIdentifier moduleId = ModuleUtils.getModuleId(pluginSpec);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(moduleId);
         ModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec);
         ModuleSpec moduleSpec = moduleSpecBuilder.create();
         moduleSpecRepo.put(moduleId, moduleSpec);
 
-        // spin up the module, and get the compiler classes from it's classloader
-        String providerClassName = pluginSpec.getCompilerProviderClassName();
+        // spin up the module, and get the compiled classes from it's classloader
+        String providerClassName = pluginSpec.getPluginClassName();
         if (providerClassName != null) {
             Module pluginModule = loadModule(moduleId);
             ModuleClassLoader pluginClassLoader = pluginModule.getClassLoader();
@@ -152,9 +147,7 @@ public class ScriptModuleLoader extends ModuleLoader {
 
     public synchronized void removeScriptArchive(String archiveName) {
         ModuleIdentifier moduleIdentifier = ModuleIdentifier.create(archiveName);
-        scriptArchiveRepo.remove(moduleIdentifier);
         moduleSpecRepo.remove(moduleIdentifier);
-        scriptModuleRepo.remove(moduleIdentifier);
         Module module = findLoadedModuleLocal(moduleIdentifier);
         if (module != null) {
             unloadModuleLocal(module);
@@ -174,6 +167,9 @@ public class ScriptModuleLoader extends ModuleLoader {
             return module;
         }
         module = super.preloadModule(moduleId);
+        if (module == null) {
+            throw new ModuleLoadException("Failed to locate module " + moduleId);
+        }
         // compile the script archive for the module, and inject the resultant classes into
         // the ModuleClassLoader
         ModuleClassLoader moduleClassLoader = module.getClassLoader();
@@ -182,13 +178,11 @@ public class ScriptModuleLoader extends ModuleLoader {
             ScriptArchive scriptArchive = scriptModuleClassLoader.getScriptArchive();
             ScriptCompiler compiler = findCompiler(scriptArchive);
             if (compiler != null) {
-                Set<Class<?>> classes;
                 try {
-                    classes = compiler.compile(scriptArchive, scriptModuleClassLoader);
+                    compiler.compile(scriptArchive, scriptModuleClassLoader);
                 } catch (Exception e) {
                     throw new ModuleLoadException("Exception while compiling module " + moduleId, e);
                 }
-                scriptModuleClassLoader.addClasses(classes);
             }
         }
         return module;

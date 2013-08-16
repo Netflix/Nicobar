@@ -35,17 +35,29 @@ import java.util.Set;
  * @author James Kojo
  */
 public class ScriptCompilerPluginSpec {
+    /**
+     * Used to construct a {@link ScriptCompilerPluginSpec}
+     */
     public static class Builder {
         private final String pluginName;
+        private final int pluginVersion;
         private Set<Path> runtimeResources = new LinkedHashSet<Path>();
         private String providerClassName;
         private Map<String, String> pluginMetadata = new LinkedHashMap<String, String>();
 
-        public Builder(String pluginName) {
+        /**
+         * Start a builder with the required parameters
+         * @param pluginName name of this plugin. Will be used to construct the Module.
+         * @param pluginVersion version of this plugin.
+         */
+        public Builder(String pluginName, int pluginVersion) {
             this.pluginName = pluginName;
+            this.pluginVersion = pluginVersion;
         }
-
-        public Builder withCompilerProviderClassName(String className) {
+        /**
+         * @param className of the plugin class which implements {@link ScriptCompilerPlugin}
+         */
+        public Builder withPluginClassName(String className) {
             providerClassName = className;
             return this;
         }
@@ -59,40 +71,45 @@ public class ScriptCompilerPluginSpec {
             }
             return this;
         }
+        /** Append metadata */
         public Builder addMetatdata(String name, String value) {
             if (name != null && value != null) {
                 pluginMetadata.put(name, value);
             }
             return this;
         }
-        public Builder addMetatData(Map<String, String> metadata) {
+        /** Append all metadata */
+        public Builder addMetatdata(Map<String, String> metadata) {
             if (metadata != null) {
                 pluginMetadata.putAll(metadata);
             }
             return this;
         }
+        /** Build the instance. */
         public ScriptCompilerPluginSpec build() {
-            return new ScriptCompilerPluginSpec(pluginName,
+            return new ScriptCompilerPluginSpec(pluginName, pluginVersion,
                 new LinkedHashSet<Path>(runtimeResources),
                 providerClassName,
                 new LinkedHashMap<String, String>(pluginMetadata));
         }
     }
     private final String pluginName;
+    private final int pluginVersion;
     private final Set<Path> runtimeResources;
-    private final String providerClassName;
+    private final String pluginClassName;
     private final Map<String, String> pluginMetadata;
 
     /**
      * @param pluginName language name. will be used to create a module identifier.
      * @param runtimeResources Paths to jars and resources needed to create the language runtime module. This
      *  includes the language runtime as well as the jar/path to the provider class project.
-     * @param providerClassName fully qualified classname of the boostrap class
+     * @param pluginClassName fully qualified classname of the implementation of the {@link ScriptCompilerPlugin} class
      */
-    protected ScriptCompilerPluginSpec(String pluginName, Set<Path> runtimeResources, String providerClassName, Map<String, String> pluginMetadata) {
+    protected ScriptCompilerPluginSpec(String pluginName, int pluginVersion, Set<Path> runtimeResources, String pluginClassName, Map<String, String> pluginMetadata) {
         this.pluginName =  Objects.requireNonNull(pluginName, "pluginName");
+        this.pluginVersion = pluginVersion;
         this.runtimeResources =  Collections.unmodifiableSet(Objects.requireNonNull(runtimeResources, "runtimeResources"));
-        this.providerClassName =  Objects.requireNonNull(providerClassName, "providerClassName");
+        this.pluginClassName = pluginClassName;
         this.pluginMetadata = Collections.unmodifiableMap(Objects.requireNonNull(pluginMetadata, "pluginMetadata"));
     }
 
@@ -117,7 +134,14 @@ public class ScriptCompilerPluginSpec {
     /**
      * @return fully qualified classname for instance of {@link ScriptCompilerPlugin} implementation for this plugin
      */
-    public String getCompilerProviderClassName() {
-        return providerClassName;
+    public String getPluginClassName() {
+        return pluginClassName;
+    }
+
+    /**
+     * @return version of this plugin
+     */
+    public int getPluginVersion() {
+        return pluginVersion;
     }
 }

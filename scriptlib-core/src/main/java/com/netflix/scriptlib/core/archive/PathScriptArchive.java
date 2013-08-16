@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -37,47 +38,90 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
- * Script archive backed by a files in a {@link Path}. Includes all files under the given rootPath.
+ * Script archive backed by a files in a {@link Path}. (Optionally) Includes all files under the given rootPath.
  *
  * @author James Kojo
  */
 public class PathScriptArchive implements ScriptArchive {
 
     /**
-     * Used to Construct a {@link PathScriptArchive}
+     * Used to Construct a {@link PathScriptArchive}.
      */
     public static class Builder {
         private final String name;
         private final int version;
         private final Path rootDirPath;
-
         private final Map<String, String> archiveMetadata = new LinkedHashMap<String, String>();
         private final List<String> dependencies = new LinkedList<String>();
+        private final HashSet<Path> addedFiles = new LinkedHashSet<Path>();
+        boolean recurseRoot = true;
+
+        /**
+         * Start a builder with required parameters.
+         * @param name archive name, will be used as module name
+         * @param version  archive version. Will be used as module version.
+         * @param rootDirPath absolute path to the root directory to recursively add
+         */
         public Builder(String name, int version, Path rootDirPath) {
             this.name = name;
             this.version = version;
             this.rootDirPath = rootDirPath;
         }
+        /** If true, then add all of the files underneath the root path. default is true */
+        public Builder setResurseRoot(boolean recurseRoot) {
+            this.recurseRoot = recurseRoot;
+            return this;
+        }
+        /**
+         * Append a single file to the archive
+         * @param file relative path from the root
+         */
+        public Builder addFile(Path file) {
+            if (file != null) {
+                addedFiles.add(file);
+            }
+            return this;
+        }
+        /** Append all of the given metadata. */
         public Builder addMetadata(Map<String, String> metadata) {
             if (metadata != null) {
                 archiveMetadata.putAll(metadata);
             }
             return this;
         }
+        /** Append the given metadata. */
         public Builder addMetadata(String property, String value) {
             if (property != null && value != null) {
                 archiveMetadata.put(property, value);
             }
             return this;
         }
+        /** Add Module dependency. */
         public Builder addDependency(String dependencyName) {
             if (dependencyName != null) {
                 dependencies.add(dependencyName);
             }
             return this;
         }
+        /** Build the {@link PathScriptArchive}. */
         public PathScriptArchive build() throws IOException {
-           return new PathScriptArchive(name, version, rootDirPath,
+            final LinkedHashSet<String> buildEntries = new LinkedHashSet<String>();
+            if (recurseRoot) {
+                Files.walkFileTree(this.rootDirPath, new SimpleFileVisitor<Path>() {
+                    public FileVisitResult visitFile(Path file, java.nio.file.attribute.BasicFileAttributes attrs) throws IOException {
+                        Path relativePath = rootDirPath.relativize(file);
+                        buildEntries.add(relativePath.toString());
+                        return FileVisitResult.CONTINUE;
+                    };
+                });
+            }
+            for (Path file : addedFiles) {
+                if (file.isAbsolute()) {
+                    file = rootDirPath.relativize(file);
+                }
+                buildEntries.add(file.toString());
+            }
+            return new PathScriptArchive(name, version, rootDirPath, buildEntries,
                new HashMap<String, String>(archiveMetadata),
                new ArrayList<String>(dependencies));
         }
@@ -91,25 +135,16 @@ public class PathScriptArchive implements ScriptArchive {
     private final Map<String, String> archiveMetadata;
     private final List<String> dependencies;
 
-    PathScriptArchive(String archiveName, int archiveVersion, Path rootDirPath, Map<String, String> applicationMetaData, List<String> dependencies) throws IOException {
+    protected PathScriptArchive(String archiveName, int archiveVersion, Path rootDirPath, Set<String> entries,
+            Map<String, String> applicationMetaData, List<String> dependencies) throws IOException {
         this.archiveName = Objects.requireNonNull(archiveName, "archiveName");
         this.archiveVersion = archiveVersion;
         this.rootDirPath = Objects.requireNonNull(rootDirPath, "rootPath");
         if (!this.rootDirPath.isAbsolute()) throw new IllegalArgumentException("rootPath must be absolute.");
-
+        this.entryNames = Collections.unmodifiableSet(Objects.requireNonNull(entries, "rootPath"));
         this.archiveMetadata = Objects.requireNonNull(applicationMetaData, "applicationMetaData");
         this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
-
-        // initialize the index
-        final Set<String> indexBuilder = new HashSet<String>();
-        Files.walkFileTree(this.rootDirPath, new SimpleFileVisitor<Path>() {
-            public FileVisitResult visitFile(Path file, java.nio.file.attribute.BasicFileAttributes attrs) throws IOException {
-                indexBuilder.add(PathScriptArchive.this.rootDirPath.relativize(file).toString());
-                return FileVisitResult.CONTINUE;
-            };
-        });
-        entryNames = Collections.unmodifiableSet(indexBuilder);
-        rootUrl = this.rootDirPath.toUri().toURL();
+        this.rootUrl = this.rootDirPath.toUri().toURL();
     }
 
     @Override

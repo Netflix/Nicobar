@@ -37,14 +37,14 @@ import java.util.jar.JarFile;
 import javax.annotation.Nullable;
 
 /**
- * Script archive backed by a {@link JarFile}
+ * Script archive backed by a {@link JarFile}.
  *
  * @author James Kojo
  */
 public class JarScriptArchive implements ScriptArchive {
 
     /**
-     * Used to Construct a {@link JarScriptArchive}
+     * Used to Construct a {@link JarScriptArchive}.
      */
     public static class Builder {
         private final String name;
@@ -53,29 +53,39 @@ public class JarScriptArchive implements ScriptArchive {
 
         private final Map<String, String> archiveMetadata = new LinkedHashMap<String, String>();
         private final List<String> dependencies = new LinkedList<String>();
+        /**
+         * Start a builder with required parameters.
+         * @param name archive name, will be used as module name
+         * @param version  archive version. Will be used as module version.
+         * @param jarPath absolute path to the jarfile that this will represent
+         */
         public Builder(String name, int version, Path jarPath) {
             this.name = name;
             this.version = version;
             this.jarPath = jarPath;
         }
+        /** Append all of the given metadata. */
         public Builder addMetadata(Map<String, String> metadata) {
             if (metadata != null) {
                 archiveMetadata.putAll(metadata);
             }
             return this;
         }
+        /** Append the given metadata. */
         public Builder addMetadata(String property, String value) {
             if (property != null && value != null) {
                 archiveMetadata.put(property, value);
             }
             return this;
         }
+        /** Add Module dependency. */
         public Builder addDependency(String dependencyName) {
             if (dependencyName != null) {
                 dependencies.add(dependencyName);
             }
             return this;
         }
+        /** Build the {@link JarScriptArchive}. */
         public JarScriptArchive build() throws IOException {
            return new JarScriptArchive(name, version, jarPath,
                new HashMap<String, String>(archiveMetadata),
@@ -90,7 +100,7 @@ public class JarScriptArchive implements ScriptArchive {
     private final Map<String, String> archiveMetadata;
     private final List<String> dependencies;
 
-    JarScriptArchive(String archiveName, int archiveVersion, Path jarPath, Map<String, String> applicationMetaData, List<String> dependencies) throws IOException {
+    protected JarScriptArchive(String archiveName, int archiveVersion, Path jarPath, Map<String, String> applicationMetaData, List<String> dependencies) throws IOException {
         this.archiveName = Objects.requireNonNull(archiveName, "archiveName");
         this.archiveVersion = archiveVersion;
         Objects.requireNonNull(jarPath, "jarFile");
@@ -127,7 +137,7 @@ public class JarScriptArchive implements ScriptArchive {
     }
 
     /**
-     * Gets the root path in the form of 'file://path/to/jarfile/jarfile.jar"
+     * Gets the root path in the form of 'file://path/to/jarfile/jarfile.jar".
      */
     @Override
     public URL getRootUrl() {

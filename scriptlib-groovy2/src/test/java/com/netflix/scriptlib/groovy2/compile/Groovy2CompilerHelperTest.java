@@ -36,8 +36,7 @@ import com.netflix.scriptlib.groovy2.testutil.GroovyTestResourceUtil;
 import com.netflix.scriptlib.groovy2.testutil.GroovyTestResourceUtil.TestScript;
 
 /**
- * Unit Tests for
- *
+ * Unit Tests for {@link Groovy2CompilerHelper}
  *
  * @author James Kojo
  */
@@ -49,9 +48,11 @@ public class Groovy2CompilerHelperTest {
      */
     @Test
     public void testSimpleCompile() throws Exception {
-        Path scriptFullPath = GroovyTestResourceUtil.getScriptAsPath(TestScript.HELLO_WORLD);
-        PathScriptArchive scriptArchive = new PathScriptArchive.Builder("HelloWorld", 1,
-            scriptFullPath.getParent().toAbsolutePath()).build();
+        Path scriptRootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.HELLO_WORLD);
+        PathScriptArchive scriptArchive = new PathScriptArchive.Builder("HelloWorld", 1, scriptRootPath)
+            .setResurseRoot(false)
+            .addFile(TestScript.HELLO_WORLD.getResourcePath())
+            .build();
 
         Set<GroovyClass> compiledClasses = new Groovy2CompilerHelper()
             .addScriptArchive(scriptArchive)
@@ -66,16 +67,14 @@ public class Groovy2CompilerHelperTest {
         Method method = loadedClass.getMethod("getMessage");
         String message = (String)method.invoke(instance);
         assertEquals(message, "Hello, World!");
-        return;
-
     }
 
     /**
      * Test class loader that can load bytes provided by the groovy compiler
      */
     public static class TestByteLoadingClassLoader extends ClassLoader {
-
         private final Map<String, byte[]> classBytes;
+
         public TestByteLoadingClassLoader(ClassLoader parentClassLoader, Set<GroovyClass> groovyClasses) {
             super(parentClassLoader);
             this.classBytes = new HashMap<String, byte[]>();
@@ -92,6 +91,5 @@ public class Groovy2CompilerHelperTest {
             }
             return defineClass(name, bytes, 0, bytes.length);
         }
-
     }
 }

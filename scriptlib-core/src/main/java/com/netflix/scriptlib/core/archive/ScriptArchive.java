@@ -64,7 +64,6 @@ public interface ScriptArchive {
     public Set<String> getArchiveEntryNames();
 
     /**
-
      * @return a URL to the resource.
      * @throws IOException
      */
