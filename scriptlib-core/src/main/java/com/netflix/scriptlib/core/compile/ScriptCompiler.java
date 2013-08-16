@@ -31,12 +31,11 @@ import com.netflix.scriptlib.core.module.ScriptModuleClassLoader;
  */
 public interface ScriptCompiler {
     /**
-     * Common names used to query the {@link ScriptArchive#getArchiveMetadata()} that are relavant
-     * to compilers
-     * @author James Kojo
+     * Common names used to query the {@link ScriptArchive#getArchiveMetadata()} that are relevant
+     * to compilers.
      */
     public static enum MetadataName {
-        COMPILER_NAME;
+        SCRIPT_LANGUAGE;
     }
     /**
      * Whether or not this compiler should be used to compile the archive
@@ -49,7 +48,7 @@ public interface ScriptCompiler {
      * @param moduleClassLoader class loader which can be used to find all classes and resources for modules.
      *  The resultant classes of the compile operation should be injected into the classloader
      * for which the given archive has a declared dependency on
-     * @return
+     * @return The set of classes that were compiled
      * @throws ScriptCompilationException if there was a compilation issue in the archive.
      * @throws IOException if there was a problem reading/writing the archive
      */

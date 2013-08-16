@@ -17,6 +17,8 @@
  */
 package com.netflix.scriptlib.core.module;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -52,15 +54,21 @@ public class ScriptModuleClassLoader extends ModuleClassLoader {
      */
     protected static ModuleClassLoaderFactory createFactory(final ScriptArchive scriptArchive) {
         return new ModuleClassLoaderFactory() {
-            @Override
-            public ModuleClassLoader create(Configuration configuration) {
-                return new ScriptModuleClassLoader(configuration, scriptArchive);
+            public ModuleClassLoader create(final Configuration configuration) {
+                return AccessController.doPrivileged(
+                    new PrivilegedAction<ScriptModuleClassLoader>() {
+                        public ScriptModuleClassLoader run() {
+                            return new ScriptModuleClassLoader(configuration, scriptArchive);
+                        }
+                    });
             }
         };
     }
 
     /**
-     * Manually add the compiled classes to this classloader
+     * Manually add the compiled classes to this classloader.
+     * This method will not redefine the class, so that the class's
+     * classloader will continue to be compiler's classloader.
      */
     public void addClasses(Set<Class<?>> classes) {
         for (Class<?> classToAdd: classes) {
@@ -69,7 +77,8 @@ public class ScriptModuleClassLoader extends ModuleClassLoader {
     }
 
     /**
-     * Manually add the compiled classes to this classloader
+     * Manually add the compiled classes to this classloader. This method will
+     * define and resolve the class, binding this classlaoder to the class.
      * @return the loaded class
      */
     public Class<?> addClassBytes(String name, byte[] classBytes) {
@@ -79,7 +88,6 @@ public class ScriptModuleClassLoader extends ModuleClassLoader {
         return newClass;
     }
 
-    @Override
     public Class<?> loadClassLocal(String className, boolean resolve) throws ClassNotFoundException {
         Class<?> local = localClassCache.get(className);
         if (local != null) {

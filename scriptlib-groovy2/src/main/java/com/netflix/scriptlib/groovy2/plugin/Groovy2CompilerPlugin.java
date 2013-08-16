@@ -1,4 +1,3 @@
-
 /*
  *
  *  Copyright 2013 Netflix, Inc.
@@ -16,9 +15,27 @@
  *     limitations under the License.
  *
  */
+package com.netflix.scriptlib.groovy2.plugin;
 
-public class HelloWorld {
-    public String getMessage() {
-       return "Hello, World!";
+import java.util.Collections;
+import java.util.Set;
+
+import com.netflix.scriptlib.core.compile.ScriptCompiler;
+import com.netflix.scriptlib.core.plugin.ScriptCompilerPlugin;
+import com.netflix.scriptlib.groovy2.compile.Groovy2Compiler;
+
+/**
+ * Factory class for the Groovy 2 language plug-in
+ *
+ * @author James Kojo
+ */
+public class Groovy2CompilerPlugin implements ScriptCompilerPlugin {
+
+    public Groovy2CompilerPlugin() {
+    }
+
+    @Override
+    public Set<? extends ScriptCompiler> getCompilers() {
+        return Collections.singleton(new Groovy2Compiler());
     }
 }

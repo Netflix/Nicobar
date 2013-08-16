@@ -1,7 +1,6 @@
-package scripts.libA
 /*
- *
  *  Copyright 2013 Netflix, Inc.
+ *
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -16,6 +15,7 @@ package scripts.libA
  *     limitations under the License.
  *
  */
+package libA;
 
 public class LibraryA {
     public String getMessage() {

@@ -1,15 +1,8 @@
 subprojects {
-// Checkstyle
-apply plugin: 'checkstyle'
-checkstyle {
-    ignoreFailures = true 
-    configFile = rootProject.file('codequality/checkstyle.xml')
-}
-
 // FindBugs
 apply plugin: 'findbugs'
 findbugs {
-    ignoreFailures = true
+    ignoreFailures = false
 }
 
 // PMD
@@ -20,7 +13,7 @@ apply plugin: 'cobertura'
 cobertura {
     sourceDirs = sourceSets.main.java.srcDirs
     format = 'html'
-    includes = ['**/*.java', '**/*.groovy']
+    includes = ['**/*.java']
     excludes = []
 }
 }
