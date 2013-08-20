@@ -22,11 +22,11 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.jar.JarFile;
 
@@ -51,25 +51,32 @@ import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
  * @author James Kojo
  */
 public class ModuleUtils {
-
-    /** class paths of the core classes */
-    private static final Set<String> SYSTEM_PATH_FILTER;
+    /** Dependency specification which allows for importing the core library classes */
+    public static final DependencySpec SCRIPTLIB_CORE_DEPENDENCY_SPEC;
+    /** Dependency specification which allows for importing the core JRE classes */
+    public static final DependencySpec JRE_DEPENDENCY_SPEC;
     static {
-        // TODO: find a maintainable way to get these values
+        // TODO: find a maintainable way to get these values and a better place to store these constants
         Set<String> pathFilter = new HashSet<String>();
         pathFilter.add("com/netflix/scriptlib/core");
         pathFilter.add("com/netflix/scriptlib/core/archive");
         pathFilter.add("com/netflix/scriptlib/core/compile");
         pathFilter.add("com/netflix/scriptlib/core/module");
         pathFilter.add("com/netflix/scriptlib/core/plugin");
-        SYSTEM_PATH_FILTER = Collections.unmodifiableSet(pathFilter);
+        SCRIPTLIB_CORE_DEPENDENCY_SPEC = DependencySpec.createClassLoaderDependencySpec(ModuleUtils.class.getClassLoader(), pathFilter);
+        ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+        JRE_DEPENDENCY_SPEC = DependencySpec.createClassLoaderDependencySpec(systemClassLoader, __JDKPaths.JDK);
     }
 
     /**
-     * populates a builder with source files, resources, dependencies and properties from the
+     * Populates a builder with source files, resources, dependencies and properties from the
      * {@link ScriptArchive}
-     **/
+     * @param moduleSpecBuilder builder to populate
+     * @param scriptArchive {@link ScriptArchive} to copy from
+     */
     public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ScriptArchive scriptArchive) throws ModuleLoadException {
+        Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
+        Objects.requireNonNull(moduleSpecBuilder, "scriptArchive");
         MultiplePathFilterBuilder pathFilterBuilder = PathFilters.multiplePathFilterBuilder(true);
         Set<String> archiveEntryNames = scriptArchive.getArchiveEntryNames();
         pathFilterBuilder.addFilter(PathFilters.in(archiveEntryNames), true);
@@ -97,25 +104,30 @@ public class ModuleUtils {
         for (String moduleName : dependencies) {
             moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(ModuleIdentifier.create(moduleName), true, false));
         }
+        moduleSpecBuilder.addDependency(JRE_DEPENDENCY_SPEC);
+        moduleSpecBuilder.addDependency(SCRIPTLIB_CORE_DEPENDENCY_SPEC);
         moduleSpecBuilder.addDependency(DependencySpec.createLocalDependencySpec());
 
         // add properties to the module spec
         Map<String, String> archiveMetadata = scriptArchive.getArchiveMetadata();
-        for (Entry<String, String> entry : archiveMetadata.entrySet()) {
-            moduleSpecBuilder.addProperty(entry.getKey(), entry.getValue());
-        }
+        addPropertiesToSpec(moduleSpecBuilder, archiveMetadata);
 
         // override the default ModuleClassLoader to use our customer classloader
         moduleSpecBuilder.setModuleClassLoaderFactory(ScriptModuleClassLoader.createFactory(scriptArchive));
-        return;
     }
 
     /**
-     * Helping when creating a {@link ModuleSpec} from a ScriptLibPluginSpec
-     * populates a builder with source files, resources, dependencies and properties from the
+
+     * Populates a {@link ModuleSpec} with runtime resources, dependencies and properties from the
      * {@link ScriptCompilerPluginSpec}
+     * Helpful when creating a {@link ModuleSpec} from a ScriptLibPluginSpec
+     *
+     * @param moduleSpecBuilder builder to populate
+     * @param pluginSpec {@link ScriptCompilerPluginSpec} to copy from
      */
     public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ScriptCompilerPluginSpec pluginSpec) throws ModuleLoadException {
+        Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
+        Objects.requireNonNull(pluginSpec, "pluginSpec");
         Set<Path> pluginRuntime = pluginSpec.getRuntimeResources();
         for (Path resourcePath : pluginRuntime) {
             File file = resourcePath.toFile();
@@ -134,16 +146,38 @@ public class ModuleUtils {
                 moduleSpecBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(rootResourceLoader));
             }
         }
-
-        // allow a subset of the application classloader classes to leak through, such as
-        // the script-lib core classes
-        moduleSpecBuilder.addDependency(DependencySpec.createSystemDependencySpec(SYSTEM_PATH_FILTER));
+        moduleSpecBuilder.addDependency(JRE_DEPENDENCY_SPEC);
+        moduleSpecBuilder.addDependency(SCRIPTLIB_CORE_DEPENDENCY_SPEC);
         moduleSpecBuilder.addDependency(DependencySpec.createLocalDependencySpec());
-        // add properties to the module spec
-        Map<String, String> archiveMetadata = pluginSpec.getPluginMetadata();
-        for (Entry<String, String> entry : archiveMetadata.entrySet()) {
+
+        Map<String, String> pluginMetadata = pluginSpec.getPluginMetadata();
+        addPropertiesToSpec(moduleSpecBuilder, pluginMetadata);
+    }
+
+
+    /**
+     * Add properties to the {@link ModuleSpec}
+     *
+     * @param moduleSpecBuilder builder to populate
+     * @param properties properties to add
+     */
+    public static void addPropertiesToSpec(ModuleSpec.Builder moduleSpecBuilder, Map<String, String> properties) {
+        for (Entry<String, String> entry : properties.entrySet()) {
             moduleSpecBuilder.addProperty(entry.getKey(), entry.getValue());
         }
-        return;
+    }
+
+    /**
+     * Create the {@link ModuleIdentifier} for the given {@link ScriptArchive}
+     */
+    public static ModuleIdentifier getModuleId(ScriptArchive archive) {
+        return ModuleIdentifier.create(archive.getArchiveName());
+    }
+
+    /**
+     * Create the {@link ModuleIdentifier} for the given ScriptCompilerPluginSpec
+     */
+    public static ModuleIdentifier getModuleId(ScriptCompilerPluginSpec pluginSpec) {
+        return ModuleIdentifier.create(pluginSpec.getPluginName());
     }
 }

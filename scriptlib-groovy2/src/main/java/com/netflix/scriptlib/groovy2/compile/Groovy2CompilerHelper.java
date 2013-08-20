@@ -21,6 +21,8 @@ import groovy.lang.GroovyClassLoader;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,6 +31,7 @@ import java.util.Set;
 import org.codehaus.groovy.control.CompilationFailedException;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.CompilerConfiguration;
+import org.codehaus.groovy.control.Phases;
 import org.codehaus.groovy.tools.GroovyClass;
 
 import com.netflix.scriptlib.core.archive.ScriptArchive;
@@ -84,12 +87,16 @@ public class Groovy2CompilerHelper {
      */
     @SuppressWarnings("unchecked")
     public Set<GroovyClass> compile() throws ScriptCompilationException {
-        CompilerConfiguration conf = compileConfig != null ? compileConfig: CompilerConfiguration.DEFAULT;
+        final CompilerConfiguration conf = compileConfig != null ? compileConfig: CompilerConfiguration.DEFAULT;
         conf.setTolerance(0);
         conf.setVerbose(true);
-        ClassLoader buildParentClassloader = parentClassLoader != null ?
+        final ClassLoader buildParentClassloader = parentClassLoader != null ?
             parentClassLoader : Thread.currentThread().getContextClassLoader();
-        GroovyClassLoader groovyClassLoader = new GroovyClassLoader(buildParentClassloader, conf, false);
+        GroovyClassLoader groovyClassLoader = AccessController.doPrivileged(new PrivilegedAction<GroovyClassLoader>() {
+            public GroovyClassLoader run() {
+                return new GroovyClassLoader(buildParentClassloader, conf, false);
+            }
+        });
 
         CompilationUnit unit = new CompilationUnit(conf, null, groovyClassLoader);
         Set<String> scriptExtensions = conf.getScriptExtensions();
@@ -114,7 +121,7 @@ public class Groovy2CompilerHelper {
             unit.addSource(sourceFile.toFile());
         }
         try {
-            unit.compile();
+            unit.compile(Phases.CLASS_GENERATION);
         } catch (CompilationFailedException e) {
            throw new ScriptCompilationException("Exception during script compilation", e);
         }

@@ -1,3 +1,4 @@
+package dependsona;
 /*
  *
  *  Copyright 2013 Netflix, Inc.
@@ -15,25 +16,12 @@
  *     limitations under the License.
  *
  */
-package com.netflix.scriptlib.groovy2.plugin;
 
-import java.util.Collections;
-import java.util.Set;
+import libA.LibraryA
 
-import com.netflix.scriptlib.core.compile.ScriptCompiler;
-import com.netflix.scriptlib.core.plugin.ScriptCompilerPlugin;
-import com.netflix.scriptlib.groovy2.compile.Groovy2Compiler;
-
-/**
- * Factory class for the Groovy 2 language plugin
- *
- * @author James Kojo
- */
-public class Groovy2CompilerProvider implements ScriptCompilerPlugin {
-    public Groovy2CompilerProvider() {
-    }
-    @Override
-    public Set<? extends ScriptCompiler> getCompilers() {
-        return Collections.singleton(new Groovy2Compiler());
+public class DependsOnA {
+    public String getMessage() {
+        LibraryA libA = new LibraryA()
+        return "DepondOnA: Called LibraryA and got message:'" + libA.message +"'"
     }
 }

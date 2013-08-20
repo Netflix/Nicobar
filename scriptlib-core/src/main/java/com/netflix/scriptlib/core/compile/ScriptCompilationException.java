@@ -17,10 +17,10 @@
  */
 package com.netflix.scriptlib.core.compile;
 
-import com.netflix.scriptlib.core.archive.ScriptArchive;
+
 
 /**
- * Indicates that there was a problem compiling the {@link ScriptArchive}.
+ * Indicates that there was a problem in the compilation step.
  * The actual exception from the compiler should be chained to this exception.
  * The type of the chained exception is compiler specific.
  *

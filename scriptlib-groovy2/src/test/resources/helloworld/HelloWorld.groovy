@@ -1,7 +1,3 @@
-package scripts.dependsona
-
-import scripts.libA.LibraryA
-
 /*
  *
  *  Copyright 2013 Netflix, Inc.
@@ -19,11 +15,10 @@ import scripts.libA.LibraryA
  *     limitations under the License.
  *
  */
+package helloworld;
 
-public class DependsOnA {
+public class HelloWorld {
     public String getMessage() {
-        LibraryA libA = new LibraryA()
-        libA.message
-        return "DepondOnA: Called LibraryA and got message:'" + libA.message +"'"
+       return "Hello, World!";
     }
 }
