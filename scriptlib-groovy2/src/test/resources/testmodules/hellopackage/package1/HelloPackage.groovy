@@ -1,4 +1,3 @@
-package dependsona;
 /*
  *
  *  Copyright 2013 Netflix, Inc.
@@ -17,11 +16,9 @@ package dependsona;
  *
  */
 
-import libA.LibraryA
-
-public class DependsOnA {
+package package1
+public class HelloPackage {
     public String getMessage() {
-        LibraryA libA = new LibraryA()
-        return "DepondOnA: Called LibraryA and got message:'" + libA.message +"'"
+       return "Hello, Package!";
     }
 }

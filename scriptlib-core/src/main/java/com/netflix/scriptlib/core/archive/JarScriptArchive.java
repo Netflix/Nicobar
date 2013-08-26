@@ -42,24 +42,28 @@ import javax.annotation.Nullable;
  * @author James Kojo
  */
 public class JarScriptArchive implements ScriptArchive {
+    private final static String JAR_FILE_SUFFIX = ".jar";
 
     /**
      * Used to Construct a {@link JarScriptArchive}.
+     * By default, this will generate a archiveName using the name of the jarfile, minus the ".jar" suffix.
      */
     public static class Builder {
-        private final String name;
+        private String archiveName;
         private final Path jarPath;
-
         private final Map<String, String> archiveMetadata = new LinkedHashMap<String, String>();
         private final List<String> dependencies = new LinkedList<String>();
         /**
          * Start a builder with required parameters.
-         * @param name archive name, will be used as module name
          * @param jarPath absolute path to the jarfile that this will represent
          */
-        public Builder(String name, Path jarPath) {
-            this.name = name;
+        public Builder(Path jarPath) {
             this.jarPath = jarPath;
+        }
+        /** Override the default name */
+        public Builder setArchiveName(String archiveName) {
+            this.archiveName = archiveName;
+            return this;
         }
         /** Append all of the given metadata. */
         public Builder addMetadata(Map<String, String> metadata) {
@@ -84,7 +88,16 @@ public class JarScriptArchive implements ScriptArchive {
         }
         /** Build the {@link JarScriptArchive}. */
         public JarScriptArchive build() throws IOException {
-           return new JarScriptArchive(name, jarPath, new HashMap<String, String>(archiveMetadata),
+            String buildArchiveName;
+            if (archiveName != null){
+                buildArchiveName = archiveName;
+            } else {
+                buildArchiveName = this.jarPath.getFileName().toString();
+                if (buildArchiveName.endsWith(JAR_FILE_SUFFIX)) {
+                    buildArchiveName = buildArchiveName.substring(0, buildArchiveName.lastIndexOf(JAR_FILE_SUFFIX));
+                }
+            }
+           return new JarScriptArchive(buildArchiveName, jarPath, new HashMap<String, String>(archiveMetadata),
                new ArrayList<String>(dependencies));
         }
     }

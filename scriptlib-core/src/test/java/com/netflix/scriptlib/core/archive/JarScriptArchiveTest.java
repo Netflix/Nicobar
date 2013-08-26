@@ -28,7 +28,8 @@ public class JarScriptArchiveTest {
         URL testJarUrl = getClass().getClassLoader().getResource(TEXT_JAR_RESOURCE_NAME);
         Path jarPath = Paths.get(testJarUrl.toURI()).toAbsolutePath();
 
-        JarScriptArchive scriptArchive = new JarScriptArchive.Builder("test-txt", jarPath).build();
+        JarScriptArchive scriptArchive = new JarScriptArchive.Builder(jarPath).setArchiveName("testArchiveName").build();
+        assertEquals(scriptArchive.getArchiveName(), "testArchiveName");
         Set<String> archiveEntryNames = scriptArchive.getArchiveEntryNames();
         assertEquals(archiveEntryNames, new HashSet<String>(Arrays.asList("sub1/sub1.txt", "sub2/sub2.txt", "root.txt", "META-INF/MANIFEST.MF")));
         for (String entryName : archiveEntryNames) {
@@ -38,5 +39,13 @@ public class JarScriptArchiveTest {
             String content = IOUtils.toString(inputStream, Charsets.UTF_8);
             assertNotNull(content);
         }
+    }
+
+    @Test
+    public void testDefaultArchiveName() throws Exception {
+        URL rootPathUrl = getClass().getClassLoader().getResource(TEXT_JAR_RESOURCE_NAME);
+        Path rootPath = Paths.get(rootPathUrl.toURI()).toAbsolutePath();
+        JarScriptArchive scriptArchive = new JarScriptArchive.Builder(rootPath).build();
+        assertEquals(scriptArchive.getArchiveName(), "test-text");
     }
 }

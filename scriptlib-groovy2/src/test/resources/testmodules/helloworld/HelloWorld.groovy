@@ -15,8 +15,6 @@
  *     limitations under the License.
  *
  */
-package helloworld;
-
 public class HelloWorld {
     public String getMessage() {
        return "Hello, World!";

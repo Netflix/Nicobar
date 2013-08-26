@@ -62,9 +62,9 @@ public class Groovy2PluginTest {
         // create a new script archive consisting of HellowWorld.groovy and add it the loader.
         // Declares a dependency on the Groovy2RuntimeModule.
         Path scriptRootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.HELLO_WORLD);
-        ScriptArchive scriptArchive = new PathScriptArchive.Builder("HelloWorldModule", scriptRootPath)
+        ScriptArchive scriptArchive = new PathScriptArchive.Builder(scriptRootPath)
             .setResurseRoot(false)
-            .addFile(TestScript.HELLO_WORLD.getResourcePath())
+            .addFile(TestScript.HELLO_WORLD.getScriptPath())
             .addDependency("Groovy2RuntimeModule")
             .addMetadata(MetadataName.SCRIPT_LANGUAGE.name(), "groovy2")
             .build();
@@ -84,17 +84,17 @@ public class Groovy2PluginTest {
         ScriptModuleLoader moduleLoader = createGroovyModuleLoader();
         Path dependsOnARootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.DEPENDS_ON_A);
 
-        ScriptArchive dependsOnAArchive = new PathScriptArchive.Builder("DependsOnAModule", dependsOnARootPath)
+        ScriptArchive dependsOnAArchive = new PathScriptArchive.Builder(dependsOnARootPath)
             .setResurseRoot(false)
-            .addFile(TestScript.DEPENDS_ON_A.getResourcePath())
+            .addFile(TestScript.DEPENDS_ON_A.getScriptPath())
             .addDependency("Groovy2RuntimeModule")
-            .addDependency("LibraryAModule")
+            .addDependency(TestScript.LIBRARY_A.getArchiveName())
             .addMetadata(MetadataName.SCRIPT_LANGUAGE.name(), "groovy2")
             .build();
         Path libARootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.LIBRARY_A);
-        ScriptArchive libAArchive = new PathScriptArchive.Builder("LibraryAModule", libARootPath)
+        ScriptArchive libAArchive = new PathScriptArchive.Builder(libARootPath)
             .setResurseRoot(false)
-            .addFile(TestScript.LIBRARY_A.getResourcePath())
+            .addFile(TestScript.LIBRARY_A.getScriptPath())
             .addDependency("Groovy2RuntimeModule")
             .addMetadata(MetadataName.SCRIPT_LANGUAGE.name(), "groovy2")
             .build();

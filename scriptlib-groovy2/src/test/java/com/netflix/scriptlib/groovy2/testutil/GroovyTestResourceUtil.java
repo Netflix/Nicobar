@@ -17,13 +17,16 @@
  */
 package com.netflix.scriptlib.groovy2.testutil;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import javax.annotation.Nullable;
 
+import com.netflix.scriptlib.core.archive.PathScriptArchive;
 import com.netflix.scriptlib.core.utils.ClassPathUtils;
 import com.netflix.scriptlib.groovy2.plugin.Groovy2CompilerPlugin;
 
@@ -34,25 +37,31 @@ import com.netflix.scriptlib.groovy2.plugin.Groovy2CompilerPlugin;
  */
 public class GroovyTestResourceUtil {
 
+    /** name of the root directory where the test modules are located */
+    private static final String TEST_MODULES_BASE_DIR = "testmodules";
     /**
-     * Metadata for test script found in test/resource
+     * Metadata for test script found in test/resource.
+     * Use in conjunction with {@link GroovyTestResourceUtil#findRootPathForScript(TestScript)}.
      */
     public static enum TestScript {
-        HELLO_WORLD("helloworld/HelloWorld.groovy", "helloworld.HelloWorld"),
-        LIBRARY_A("libA/LibraryA.groovy", "libA.LibraryA"),
-        DEPENDS_ON_A("dependsona/DependsOnA.groovy", "dependsona.DependsOnA");
+        HELLO_WORLD("helloworld", "HelloWorld.groovy", "HelloWorld"),
+        HELLO_PACKAGE("hellopackage", "package1/HelloPackage.groovy", "package1.HelloPackage"),
+        LIBRARY_A("libA", "LibraryA.groovy", "LibraryA"),
+        DEPENDS_ON_A("dependsonA", "DependsOnA.groovy", "DependsOnA");
 
-        private final Path resourcePath;
+        private String archiveName;
+        private final Path scriptPath;
         private final String className;
-        private TestScript(String resourcePath, String className) {
-            this.resourcePath = Paths.get(resourcePath);
+        private TestScript(String archiveName, String resourcePath, String className) {
+            this.archiveName = archiveName;
+            this.scriptPath = Paths.get(resourcePath);
             this.className = className;
         }
         /**
-         * @return relative path name suitable for passing to {@link ClassLoader#getResource(String)}
+         * @return relative path suitable for passing to {@link PathScriptArchive.Builder#addFile(Path)}
          */
-        public Path getResourcePath() {
-            return resourcePath;
+        public Path getScriptPath() {
+            return scriptPath;
         }
 
         /**
@@ -61,16 +70,27 @@ public class GroovyTestResourceUtil {
         public String getClassName() {
             return className;
         }
+
+        /**
+         * @return the default archive name if this script is converted to an archive
+         */
+        public String getArchiveName() {
+            return archiveName;
+        }
     }
 
     /**
-     * Locate the root directory for the given script in the class path
+     * Locate the root directory for the given script in the class path. Used for
+     * generating the root path for the {@link PathScriptArchive}
+     *
      * @param script script identifier
      * @return absolute path to the root of the script
      */
     public static Path findRootPathForScript(TestScript script) throws Exception {
-        return ClassPathUtils.findRootPathForResource(script.getResourcePath().toString(),
-            GroovyTestResourceUtil.class.getClassLoader());
+        URL resourceUrl = GroovyTestResourceUtil.class.getClassLoader().getResource(TEST_MODULES_BASE_DIR + "/" + script.getArchiveName());
+        assertNotNull(resourceUrl, "couldn't locate directory for script  " + script.getArchiveName());
+        assertEquals(resourceUrl.getProtocol(), "file");
+        return Paths.get(resourceUrl.getFile());
     }
 
    /**

@@ -49,9 +49,9 @@ public class Groovy2CompilerHelperTest {
     @Test
     public void testSimpleCompile() throws Exception {
         Path scriptRootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.HELLO_WORLD);
-        PathScriptArchive scriptArchive = new PathScriptArchive.Builder("HelloWorld", scriptRootPath)
+        PathScriptArchive scriptArchive = new PathScriptArchive.Builder(scriptRootPath)
             .setResurseRoot(false)
-            .addFile(TestScript.HELLO_WORLD.getResourcePath())
+            .addFile(TestScript.HELLO_WORLD.getScriptPath())
             .build();
 
         Set<GroovyClass> compiledClasses = new Groovy2CompilerHelper()
@@ -67,6 +67,32 @@ public class Groovy2CompilerHelperTest {
         Method method = loadedClass.getMethod("getMessage");
         String message = (String)method.invoke(instance);
         assertEquals(message, "Hello, World!");
+    }
+
+    /**
+     * Compile a script with a package name using current classloader, and no dependencies
+     */
+    @Test
+    public void testCompileWithPackage() throws Exception {
+        Path scriptRootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.HELLO_PACKAGE);
+        PathScriptArchive scriptArchive = new PathScriptArchive.Builder(scriptRootPath)
+            .setResurseRoot(false)
+            .addFile(TestScript.HELLO_PACKAGE.getScriptPath())
+            .build();
+
+        Set<GroovyClass> compiledClasses = new Groovy2CompilerHelper()
+            .addScriptArchive(scriptArchive)
+            .compile();
+
+        assertFalse(CollectionUtils.isEmpty(compiledClasses));
+
+        TestByteLoadingClassLoader testClassLoader = new TestByteLoadingClassLoader(getClass().getClassLoader(), compiledClasses);
+        Class<?> loadedClass = testClassLoader.loadClass(TestScript.HELLO_PACKAGE.getClassName());
+        assertNotNull(loadedClass);
+        Object instance = loadedClass.newInstance();
+        Method method = loadedClass.getMethod("getMessage");
+        String message = (String)method.invoke(instance);
+        assertEquals(message, "Hello, Package!");
     }
 
     /**

@@ -78,7 +78,7 @@ public class ModuleUtilsTest {
     @Test
     public void testJarResources() throws Exception {
         Path jarPath = CoreTestResourceUtil.getResourceAsPath(TEST_TEXT_JAR);
-        ScriptArchive jarScriptArchive = new JarScriptArchive.Builder(TEST_TEXT_JAR.name(), jarPath)
+        ScriptArchive jarScriptArchive = new JarScriptArchive.Builder(jarPath)
             .addMetadata(METADATA_NAME, METADATA_VALUE)
             .build();
         ModuleIdentifier pluginId = ModuleUtils.getModuleId(jarScriptArchive);
@@ -103,7 +103,7 @@ public class ModuleUtilsTest {
     @Test
     public void testPathResources() throws Exception {
         Path jarPath = CoreTestResourceUtil.getResourceAsPath(TEST_TEXT_PATH);
-        ScriptArchive jarScriptArchive = new PathScriptArchive.Builder(TEST_TEXT_PATH.name(), jarPath)
+        ScriptArchive jarScriptArchive = new PathScriptArchive.Builder(jarPath)
             .addMetadata(METADATA_NAME, METADATA_VALUE)
             .build();
         ModuleIdentifier pluginId = ModuleUtils.getModuleId(jarScriptArchive);

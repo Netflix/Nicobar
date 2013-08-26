@@ -47,9 +47,10 @@ public class PathScriptArchive implements ScriptArchive {
 
     /**
      * Used to Construct a {@link PathScriptArchive}.
+     * By default, this will generate a archiveName using the last element of the {@link Path}
      */
     public static class Builder {
-        private final String name;
+        private String archiveName;
         private final Path rootDirPath;
         private final Map<String, String> archiveMetadata = new LinkedHashMap<String, String>();
         private final List<String> dependencies = new LinkedList<String>();
@@ -58,12 +59,15 @@ public class PathScriptArchive implements ScriptArchive {
 
         /**
          * Start a builder with required parameters.
-         * @param name archive name, will be used as module name
          * @param rootDirPath absolute path to the root directory to recursively add
          */
-        public Builder(String name, Path rootDirPath) {
-            this.name = name;
+        public Builder(Path rootDirPath) {
             this.rootDirPath = rootDirPath;
+        }
+        /** Override the default name */
+        public Builder setArchiveName(String archiveName) {
+            this.archiveName = archiveName;
+            return this;
         }
         /** If true, then add all of the files underneath the root path. default is true */
         public Builder setResurseRoot(boolean recurseRoot) {
@@ -103,6 +107,7 @@ public class PathScriptArchive implements ScriptArchive {
         }
         /** Build the {@link PathScriptArchive}. */
         public PathScriptArchive build() throws IOException {
+            String buildArchiveName = archiveName != null ? archiveName : this.rootDirPath.getFileName().toString();
             final LinkedHashSet<String> buildEntries = new LinkedHashSet<String>();
             if (recurseRoot) {
                 Files.walkFileTree(this.rootDirPath, new SimpleFileVisitor<Path>() {
@@ -119,7 +124,7 @@ public class PathScriptArchive implements ScriptArchive {
                 }
                 buildEntries.add(file.toString());
             }
-            return new PathScriptArchive(name, rootDirPath, buildEntries,
+            return new PathScriptArchive(buildArchiveName, rootDirPath, buildEntries,
                new HashMap<String, String>(archiveMetadata),
                new ArrayList<String>(dependencies));
         }
