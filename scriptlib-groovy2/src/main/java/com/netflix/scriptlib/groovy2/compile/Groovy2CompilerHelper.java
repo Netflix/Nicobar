@@ -102,8 +102,6 @@ public class Groovy2CompilerHelper {
         Set<String> scriptExtensions = conf.getScriptExtensions();
         try {
             for (ScriptArchive scriptArchive : scriptArchives) {
-                // gives the resultant classloader access to the resource files in the archive
-                groovyClassLoader.addURL(scriptArchive.getRootUrl());
                 Set<String> entryNames = scriptArchive.getArchiveEntryNames();
                 for (String entryName : entryNames) {
                     for (String extension : scriptExtensions) {
