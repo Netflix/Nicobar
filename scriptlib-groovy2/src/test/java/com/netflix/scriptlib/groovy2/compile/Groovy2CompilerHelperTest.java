@@ -50,7 +50,7 @@ public class Groovy2CompilerHelperTest {
     public void testSimpleCompile() throws Exception {
         Path scriptRootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.HELLO_WORLD);
         PathScriptArchive scriptArchive = new PathScriptArchive.Builder(scriptRootPath)
-            .setResurseRoot(false)
+            .setRecurseRoot(false)
             .addFile(TestScript.HELLO_WORLD.getScriptPath())
             .build();
 
@@ -76,7 +76,7 @@ public class Groovy2CompilerHelperTest {
     public void testCompileWithPackage() throws Exception {
         Path scriptRootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.HELLO_PACKAGE);
         PathScriptArchive scriptArchive = new PathScriptArchive.Builder(scriptRootPath)
-            .setResurseRoot(false)
+            .setRecurseRoot(false)
             .addFile(TestScript.HELLO_PACKAGE.getScriptPath())
             .build();
 

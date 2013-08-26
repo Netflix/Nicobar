@@ -25,10 +25,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.jar.JarEntry;
@@ -48,11 +44,9 @@ public class JarScriptArchive implements ScriptArchive {
      * Used to Construct a {@link JarScriptArchive}.
      * By default, this will generate a archiveName using the name of the jarfile, minus the ".jar" suffix.
      */
-    public static class Builder {
-        private String archiveName;
+    public static class Builder extends BaseScriptArchiveBuilder<Builder> {
         private final Path jarPath;
-        private final Map<String, String> archiveMetadata = new LinkedHashMap<String, String>();
-        private final List<String> dependencies = new LinkedList<String>();
+
         /**
          * Start a builder with required parameters.
          * @param jarPath absolute path to the jarfile that this will represent
@@ -60,61 +54,34 @@ public class JarScriptArchive implements ScriptArchive {
         public Builder(Path jarPath) {
             this.jarPath = jarPath;
         }
-        /** Override the default name */
-        public Builder setArchiveName(String archiveName) {
-            this.archiveName = archiveName;
-            return this;
-        }
-        /** Append all of the given metadata. */
-        public Builder addMetadata(Map<String, String> metadata) {
-            if (metadata != null) {
-                archiveMetadata.putAll(metadata);
-            }
-            return this;
-        }
-        /** Append the given metadata. */
-        public Builder addMetadata(String property, String value) {
-            if (property != null && value != null) {
-                archiveMetadata.put(property, value);
-            }
-            return this;
-        }
-        /** Add Module dependency. */
-        public Builder addDependency(String dependencyName) {
-            if (dependencyName != null) {
-                dependencies.add(dependencyName);
-            }
-            return this;
-        }
         /** Build the {@link JarScriptArchive}. */
         public JarScriptArchive build() throws IOException {
             String buildArchiveName;
-            if (archiveName != null){
-                buildArchiveName = archiveName;
+            if (archiveId != null){
+                buildArchiveName = archiveId;
             } else {
                 buildArchiveName = this.jarPath.getFileName().toString();
                 if (buildArchiveName.endsWith(JAR_FILE_SUFFIX)) {
                     buildArchiveName = buildArchiveName.substring(0, buildArchiveName.lastIndexOf(JAR_FILE_SUFFIX));
                 }
             }
-           return new JarScriptArchive(buildArchiveName, jarPath, new HashMap<String, String>(archiveMetadata),
-               new ArrayList<String>(dependencies));
+
+            return new JarScriptArchive(
+                new ScriptArchiveDescriptor(buildArchiveName,
+                    Collections.unmodifiableMap(new HashMap<String, String>(archiveMetadata)),
+                    Collections.unmodifiableList(new ArrayList<String>(dependencies))),
+                jarPath);
         }
     }
 
-    private final String archiveName;
+    private final ScriptArchiveDescriptor descriptor;
     private final Set<String> entryNames;
     private final URL rootUrl;
-    private final Map<String, String> archiveMetadata;
-    private final List<String> dependencies;
 
-    protected JarScriptArchive(String archiveName, Path jarPath, Map<String, String> applicationMetaData, List<String> dependencies) throws IOException {
-        this.archiveName = Objects.requireNonNull(archiveName, "archiveName");
+    protected JarScriptArchive(ScriptArchiveDescriptor descriptor, Path jarPath) throws IOException {
+        this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
         Objects.requireNonNull(jarPath, "jarFile");
         if (!jarPath.isAbsolute()) throw new IllegalArgumentException("jarPath must be absolute.");
-
-        this.archiveMetadata = Objects.requireNonNull(applicationMetaData, "applicationMetaData");
-        this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
 
         // initialize the index
         JarFile jarFile = new JarFile(jarPath.toFile());
@@ -134,9 +101,10 @@ public class JarScriptArchive implements ScriptArchive {
         entryNames = Collections.unmodifiableSet(indexBuilder);
         rootUrl = jarPath.toUri().toURL();
     }
+
     @Override
-    public String getArchiveName() {
-        return archiveName;
+    public ScriptArchiveDescriptor getDescriptor() {
+        return descriptor;
     }
 
     /**
@@ -160,15 +128,5 @@ public class JarScriptArchive implements ScriptArchive {
         String spec = new StringBuilder()
             .append("jar:").append(rootUrl.toString()).append("!/").append(entryName).toString();
         return new URL(spec);
-    }
-
-    @Override
-    public Map<String, String> getArchiveMetadata() {
-        return archiveMetadata;
-    }
-
-    @Override
-    public List<String> getDependencies() {
-        return dependencies;
     }
 }

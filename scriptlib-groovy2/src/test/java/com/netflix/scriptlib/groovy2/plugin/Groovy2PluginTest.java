@@ -63,7 +63,7 @@ public class Groovy2PluginTest {
         // Declares a dependency on the Groovy2RuntimeModule.
         Path scriptRootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.HELLO_WORLD);
         ScriptArchive scriptArchive = new PathScriptArchive.Builder(scriptRootPath)
-            .setResurseRoot(false)
+            .setRecurseRoot(false)
             .addFile(TestScript.HELLO_WORLD.getScriptPath())
             .addDependency("Groovy2RuntimeModule")
             .addMetadata(MetadataName.SCRIPT_LANGUAGE.name(), "groovy2")
@@ -85,7 +85,7 @@ public class Groovy2PluginTest {
         Path dependsOnARootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.DEPENDS_ON_A);
 
         ScriptArchive dependsOnAArchive = new PathScriptArchive.Builder(dependsOnARootPath)
-            .setResurseRoot(false)
+            .setRecurseRoot(false)
             .addFile(TestScript.DEPENDS_ON_A.getScriptPath())
             .addDependency("Groovy2RuntimeModule")
             .addDependency(TestScript.LIBRARY_A.getArchiveName())
@@ -93,7 +93,7 @@ public class Groovy2PluginTest {
             .build();
         Path libARootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.LIBRARY_A);
         ScriptArchive libAArchive = new PathScriptArchive.Builder(libARootPath)
-            .setResurseRoot(false)
+            .setRecurseRoot(false)
             .addFile(TestScript.LIBRARY_A.getScriptPath())
             .addDependency("Groovy2RuntimeModule")
             .addMetadata(MetadataName.SCRIPT_LANGUAGE.name(), "groovy2")
