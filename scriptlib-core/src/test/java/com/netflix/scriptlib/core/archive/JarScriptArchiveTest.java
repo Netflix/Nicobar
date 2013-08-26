@@ -28,7 +28,7 @@ public class JarScriptArchiveTest {
         URL testJarUrl = getClass().getClassLoader().getResource(TEXT_JAR_RESOURCE_NAME);
         Path jarPath = Paths.get(testJarUrl.toURI()).toAbsolutePath();
 
-        JarScriptArchive scriptArchive = new JarScriptArchive.Builder("test-txt", 1, jarPath).build();
+        JarScriptArchive scriptArchive = new JarScriptArchive.Builder("test-txt", jarPath).build();
         Set<String> archiveEntryNames = scriptArchive.getArchiveEntryNames();
         assertEquals(archiveEntryNames, new HashSet<String>(Arrays.asList("sub1/sub1.txt", "sub2/sub2.txt", "root.txt", "META-INF/MANIFEST.MF")));
         for (String entryName : archiveEntryNames) {

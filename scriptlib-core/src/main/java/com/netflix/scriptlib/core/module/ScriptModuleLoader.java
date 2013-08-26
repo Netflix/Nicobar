@@ -76,8 +76,7 @@ public class ScriptModuleLoader extends ModuleLoader {
                 moduleIds.add(moduleId);
             } catch (ModuleLoadException e) {
                 // TODO: add real logging. perhaps adds this modules to a "try again later" queue?
-                Module.getModuleLogger().trace(e, "Exception loading archive " + scriptArchive.getArchiveName() +
-                    "-" + scriptArchive.getArchiveVersion());
+                Module.getModuleLogger().trace(e, "Exception loading archive " + scriptArchive.getArchiveName());
                 continue;
             }
         }

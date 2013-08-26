@@ -48,7 +48,6 @@ public class JarScriptArchive implements ScriptArchive {
      */
     public static class Builder {
         private final String name;
-        private final int version;
         private final Path jarPath;
 
         private final Map<String, String> archiveMetadata = new LinkedHashMap<String, String>();
@@ -56,12 +55,10 @@ public class JarScriptArchive implements ScriptArchive {
         /**
          * Start a builder with required parameters.
          * @param name archive name, will be used as module name
-         * @param version  archive version. Will be used as module version.
          * @param jarPath absolute path to the jarfile that this will represent
          */
-        public Builder(String name, int version, Path jarPath) {
+        public Builder(String name, Path jarPath) {
             this.name = name;
-            this.version = version;
             this.jarPath = jarPath;
         }
         /** Append all of the given metadata. */
@@ -87,22 +84,19 @@ public class JarScriptArchive implements ScriptArchive {
         }
         /** Build the {@link JarScriptArchive}. */
         public JarScriptArchive build() throws IOException {
-           return new JarScriptArchive(name, version, jarPath,
-               new HashMap<String, String>(archiveMetadata),
+           return new JarScriptArchive(name, jarPath, new HashMap<String, String>(archiveMetadata),
                new ArrayList<String>(dependencies));
         }
     }
 
     private final String archiveName;
-    private final int archiveVersion;
     private final Set<String> entryNames;
     private final URL rootUrl;
     private final Map<String, String> archiveMetadata;
     private final List<String> dependencies;
 
-    protected JarScriptArchive(String archiveName, int archiveVersion, Path jarPath, Map<String, String> applicationMetaData, List<String> dependencies) throws IOException {
+    protected JarScriptArchive(String archiveName, Path jarPath, Map<String, String> applicationMetaData, List<String> dependencies) throws IOException {
         this.archiveName = Objects.requireNonNull(archiveName, "archiveName");
-        this.archiveVersion = archiveVersion;
         Objects.requireNonNull(jarPath, "jarFile");
         if (!jarPath.isAbsolute()) throw new IllegalArgumentException("jarPath must be absolute.");
 
@@ -130,10 +124,6 @@ public class JarScriptArchive implements ScriptArchive {
     @Override
     public String getArchiveName() {
         return archiveName;
-    }
-    @Override
-    public int getArchiveVersion() {
-        return archiveVersion;
     }
 
     /**

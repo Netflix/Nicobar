@@ -38,11 +38,6 @@ public interface ScriptArchive {
     public String getArchiveName();
 
     /**
-     * @return version of this archive. Usually the same as module version.
-     */
-    public int getArchiveVersion();
-
-    /**
      * @return Application specific metadata about this archive
      */
     public Map<String, String> getArchiveMetadata();

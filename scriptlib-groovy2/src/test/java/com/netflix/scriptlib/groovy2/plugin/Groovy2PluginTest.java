@@ -62,7 +62,7 @@ public class Groovy2PluginTest {
         // create a new script archive consisting of HellowWorld.groovy and add it the loader.
         // Declares a dependency on the Groovy2RuntimeModule.
         Path scriptRootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.HELLO_WORLD);
-        ScriptArchive scriptArchive = new PathScriptArchive.Builder("HelloWorldModule", 1, scriptRootPath)
+        ScriptArchive scriptArchive = new PathScriptArchive.Builder("HelloWorldModule", scriptRootPath)
             .setResurseRoot(false)
             .addFile(TestScript.HELLO_WORLD.getResourcePath())
             .addDependency("Groovy2RuntimeModule")
@@ -84,7 +84,7 @@ public class Groovy2PluginTest {
         ScriptModuleLoader moduleLoader = createGroovyModuleLoader();
         Path dependsOnARootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.DEPENDS_ON_A);
 
-        ScriptArchive dependsOnAArchive = new PathScriptArchive.Builder("DependsOnAModule", 1, dependsOnARootPath)
+        ScriptArchive dependsOnAArchive = new PathScriptArchive.Builder("DependsOnAModule", dependsOnARootPath)
             .setResurseRoot(false)
             .addFile(TestScript.DEPENDS_ON_A.getResourcePath())
             .addDependency("Groovy2RuntimeModule")
@@ -92,7 +92,7 @@ public class Groovy2PluginTest {
             .addMetadata(MetadataName.SCRIPT_LANGUAGE.name(), "groovy2")
             .build();
         Path libARootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.LIBRARY_A);
-        ScriptArchive libAArchive = new PathScriptArchive.Builder("LibraryAModule", 1, libARootPath)
+        ScriptArchive libAArchive = new PathScriptArchive.Builder("LibraryAModule", libARootPath)
             .setResurseRoot(false)
             .addFile(TestScript.LIBRARY_A.getResourcePath())
             .addDependency("Groovy2RuntimeModule")

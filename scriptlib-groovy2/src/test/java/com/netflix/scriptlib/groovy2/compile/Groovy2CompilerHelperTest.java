@@ -49,7 +49,7 @@ public class Groovy2CompilerHelperTest {
     @Test
     public void testSimpleCompile() throws Exception {
         Path scriptRootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.HELLO_WORLD);
-        PathScriptArchive scriptArchive = new PathScriptArchive.Builder("HelloWorld", 1, scriptRootPath)
+        PathScriptArchive scriptArchive = new PathScriptArchive.Builder("HelloWorld", scriptRootPath)
             .setResurseRoot(false)
             .addFile(TestScript.HELLO_WORLD.getResourcePath())
             .build();
