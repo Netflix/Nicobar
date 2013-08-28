@@ -42,7 +42,7 @@ import org.jboss.modules.filter.MultiplePathFilterBuilder;
 import org.jboss.modules.filter.PathFilters;
 
 import com.netflix.scriptlib.core.archive.ScriptArchive;
-import com.netflix.scriptlib.core.archive.ScriptArchiveDescriptor;
+import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
 
 
@@ -101,8 +101,8 @@ public class ModuleUtils {
             moduleSpecBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(rootResourceLoader, pathFilterBuilder.create()));
         }
         // add dependencies to the module spec
-        ScriptArchiveDescriptor descriptor = scriptArchive.getDescriptor();
-        List<String> dependencies = descriptor.getDependencies();
+        ScriptModuleSpec scriptModuleSpec = scriptArchive.getModuleSpec();
+        List<String> dependencies = scriptModuleSpec.getDependencies();
         for (String moduleName : dependencies) {
             moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(ModuleIdentifier.create(moduleName), true, false));
         }
@@ -111,7 +111,7 @@ public class ModuleUtils {
         moduleSpecBuilder.addDependency(DependencySpec.createLocalDependencySpec());
 
         // add properties to the module spec
-        Map<String, String> archiveMetadata = descriptor.getArchiveMetadata();
+        Map<String, String> archiveMetadata = scriptModuleSpec.getMetadata();
         addPropertiesToSpec(moduleSpecBuilder, archiveMetadata);
 
         // override the default ModuleClassLoader to use our customer classloader
@@ -173,7 +173,7 @@ public class ModuleUtils {
      * Create the {@link ModuleIdentifier} for the given {@link ScriptArchive}
      */
     public static ModuleIdentifier getModuleId(ScriptArchive archive) {
-        return ModuleIdentifier.create(archive.getDescriptor().getArchiveId());
+        return ModuleIdentifier.create(archive.getModuleSpec().getModuleId());
     }
 
     /**

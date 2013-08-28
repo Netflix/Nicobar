@@ -17,8 +17,6 @@
  */
 package com.netflix.scriptlib.core.archive;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,21 +27,24 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Common configuration for {@link ScriptArchive} implementations.
- *
+ * Common configuration elements for converting a {@link ScriptArchive} to a module.
  * @author James Kojo
  */
-public class ScriptArchiveDescriptor {
+public class ScriptModuleSpec {
+    /** Default file name of the optional {@link ScriptModuleSpec} in the archive */
+    public static final String MODULE_SPEC_FILE_NAME = "moduleSpec.json";
 
     /**
-     * Used to Construct a {@link PathScriptArchive}.
-     * By default, this will generate a archiveName using the last element of the {@link Path}
+     * Used to Construct a {@link ScriptModuleSpec}.
      */
     public static class Builder {
-        private String archiveId;
+        private final String moduleId;
         private final Map<String, String> archiveMetadata = new LinkedHashMap<String, String>();
         private final List<String> dependencies = new LinkedList<String>();
 
+        public Builder(String moduleId) {
+            this.moduleId = moduleId;
+        }
         /** Append all of the given metadata. */
         public Builder addMetadata(Map<String, String> metadata) {
             if (metadata != null) {
@@ -65,36 +66,43 @@ public class ScriptArchiveDescriptor {
             }
             return this;
         }
+        /** Add Module dependencies. */
+        public Builder addDependencies(List<String> dependencies) {
+            if (dependencies != null) {
+                dependencies.addAll(dependencies);
+            }
+            return this;
+        }
         /** Build the {@link PathScriptArchive}. */
-        public ScriptArchiveDescriptor build() throws IOException {
-            return new ScriptArchiveDescriptor(archiveId,
+        public ScriptModuleSpec build() {
+            return new ScriptModuleSpec(moduleId,
                Collections.unmodifiableMap(new HashMap<String, String>(archiveMetadata)),
                Collections.unmodifiableList(new ArrayList<String>(dependencies)));
         }
     }
 
-
-    private final String archiveId;
+    private final String moduleId;
     private final Map<String, String> archiveMetadata;
     private final List<String> dependencies;
 
-    protected ScriptArchiveDescriptor(String archiveId, Map<String, String> archiveMetadata, List<String> dependencies) {
-        this.archiveId = Objects.requireNonNull(archiveId, "archiveName");
+    protected ScriptModuleSpec(String moduleId, Map<String, String> archiveMetadata, List<String> dependencies) {
+        this.moduleId = Objects.requireNonNull(moduleId, "moduleId");
         this.archiveMetadata = Objects.requireNonNull(archiveMetadata, "archiveMetadata");
         this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
     }
 
     /**
-     * @return id of this archive. Used to create the moduleId
+     * @return id of the archive and the subsequently created module
      */
-    public String getArchiveId() {
-        return archiveId;
+    public String getModuleId() {
+        return moduleId;
     }
 
     /**
-     * @return Application specific metadata about this archive
+     * @return Application specific metadata about this archive. This metadata will
+     * be transferred to the Module after it's been created
      */
-    public Map<String, String> getArchiveMetadata() {
+    public Map<String, String> getMetadata() {
         return archiveMetadata;
     }
 
@@ -103,6 +111,21 @@ public class ScriptArchiveDescriptor {
      */
     public List<String> getDependencies() {
         return dependencies;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) { return true; }
+        if (o == null || getClass() != o.getClass()) { return false; }
+        ScriptModuleSpec other = (ScriptModuleSpec) o;
+        return Objects.equals(this.moduleId, other.moduleId) &&
+            Objects.equals(this.archiveMetadata, other.archiveMetadata) &&
+            Objects.equals(this.dependencies, other.dependencies);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(moduleId, moduleId, dependencies);
     }
 }
 

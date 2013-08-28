@@ -77,7 +77,7 @@ public class ScriptModuleLoader extends ModuleLoader {
             } catch (ModuleLoadException e) {
                 // TODO: add real logging. perhaps adds this modules to a "try again later" queue?
                 Module.getModuleLogger().trace(e, "Exception loading archive " +
-                    scriptArchive.getDescriptor().getArchiveId());
+                    scriptArchive.getModuleSpec().getModuleId());
                 continue;
             }
         }
@@ -101,7 +101,7 @@ public class ScriptModuleLoader extends ModuleLoader {
      * the module is ready to load.
      */
     protected synchronized ModuleIdentifier addScriptArchive(ScriptArchive scriptArchive) throws ModuleLoadException {
-        String archiveId = scriptArchive.getDescriptor().getArchiveId();
+        String archiveId = scriptArchive.getModuleSpec().getModuleId();
         ModuleIdentifier moduleId = ModuleUtils.getModuleId(scriptArchive);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(moduleId);
         ModuleUtils.populateModuleSpec(moduleSpecBuilder, scriptArchive);
@@ -145,8 +145,8 @@ public class ScriptModuleLoader extends ModuleLoader {
         }
     }
 
-    public synchronized void removeScriptArchive(String archiveName) {
-        ModuleIdentifier moduleIdentifier = ModuleIdentifier.create(archiveName);
+    public synchronized void removeScriptArchive(String moduleId) {
+        ModuleIdentifier moduleIdentifier = ModuleIdentifier.create(moduleId);
         moduleSpecRepo.remove(moduleIdentifier);
         Module module = findLoadedModuleLocal(moduleIdentifier);
         if (module != null) {

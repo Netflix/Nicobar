@@ -49,11 +49,11 @@ public class GroovyTestResourceUtil {
         LIBRARY_A("libA", "LibraryA.groovy", "LibraryA"),
         DEPENDS_ON_A("dependsonA", "DependsOnA.groovy", "DependsOnA");
 
-        private String archiveName;
+        private String moduleId;
         private final Path scriptPath;
         private final String className;
-        private TestScript(String archiveName, String resourcePath, String className) {
-            this.archiveName = archiveName;
+        private TestScript(String moduleId, String resourcePath, String className) {
+            this.moduleId = moduleId;
             this.scriptPath = Paths.get(resourcePath);
             this.className = className;
         }
@@ -72,10 +72,10 @@ public class GroovyTestResourceUtil {
         }
 
         /**
-         * @return the default archive name if this script is converted to an archive
+         * @return the default moduleId if this script is converted to an archive
          */
-        public String getArchiveName() {
-            return archiveName;
+        public String getModuleId() {
+            return moduleId;
         }
     }
 
@@ -87,8 +87,8 @@ public class GroovyTestResourceUtil {
      * @return absolute path to the root of the script
      */
     public static Path findRootPathForScript(TestScript script) throws Exception {
-        URL resourceUrl = GroovyTestResourceUtil.class.getClassLoader().getResource(TEST_MODULES_BASE_DIR + "/" + script.getArchiveName());
-        assertNotNull(resourceUrl, "couldn't locate directory for script  " + script.getArchiveName());
+        URL resourceUrl = GroovyTestResourceUtil.class.getClassLoader().getResource(TEST_MODULES_BASE_DIR + "/" + script.getModuleId());
+        assertNotNull(resourceUrl, "couldn't locate directory for script  " + script.getModuleId());
         assertEquals(resourceUrl.getProtocol(), "file");
         return Paths.get(resourceUrl.getFile());
     }

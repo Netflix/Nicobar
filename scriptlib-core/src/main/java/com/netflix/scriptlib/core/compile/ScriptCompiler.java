@@ -31,7 +31,7 @@ import com.netflix.scriptlib.core.module.ScriptModuleClassLoader;
  */
 public interface ScriptCompiler {
     /**
-     * Common names used to query the {@link ScriptArchive#getArchiveMetadata()} that are relevant
+     * Common names used to query the {@link ScriptArchive#getMetadata()} that are relevant
      * to compilers.
      */
     public static enum MetadataName {

@@ -35,6 +35,7 @@ import org.testng.annotations.Test;
 
 import com.netflix.scriptlib.core.archive.PathScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
+import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
 import com.netflix.scriptlib.core.compile.ScriptCompiler.MetadataName;
 import com.netflix.scriptlib.core.module.ScriptModule;
 import com.netflix.scriptlib.core.module.ScriptModuleLoader;
@@ -65,8 +66,10 @@ public class Groovy2PluginTest {
         ScriptArchive scriptArchive = new PathScriptArchive.Builder(scriptRootPath)
             .setRecurseRoot(false)
             .addFile(TestScript.HELLO_WORLD.getScriptPath())
-            .addDependency("Groovy2RuntimeModule")
-            .addMetadata(MetadataName.SCRIPT_LANGUAGE.name(), "groovy2")
+            .setModuleSpec(new ScriptModuleSpec.Builder(TestScript.HELLO_WORLD.getModuleId())
+                .addDependency("Groovy2RuntimeModule")
+                .addMetadata(MetadataName.SCRIPT_LANGUAGE.name(), "groovy2")
+                .build())
             .build();
         Set<ScriptModule> scriptModules = moduleLoader.addScriptArchives(Collections.singleton(scriptArchive));
         assertNotNull(CollectionUtils.isNotEmpty(scriptModules));
@@ -87,16 +90,20 @@ public class Groovy2PluginTest {
         ScriptArchive dependsOnAArchive = new PathScriptArchive.Builder(dependsOnARootPath)
             .setRecurseRoot(false)
             .addFile(TestScript.DEPENDS_ON_A.getScriptPath())
-            .addDependency("Groovy2RuntimeModule")
-            .addDependency(TestScript.LIBRARY_A.getArchiveName())
-            .addMetadata(MetadataName.SCRIPT_LANGUAGE.name(), "groovy2")
+            .setModuleSpec(new ScriptModuleSpec.Builder(TestScript.DEPENDS_ON_A.getModuleId())
+                .addDependency("Groovy2RuntimeModule")
+                .addDependency(TestScript.LIBRARY_A.getModuleId())
+                .addMetadata(MetadataName.SCRIPT_LANGUAGE.name(), "groovy2")
+                .build())
             .build();
         Path libARootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.LIBRARY_A);
         ScriptArchive libAArchive = new PathScriptArchive.Builder(libARootPath)
             .setRecurseRoot(false)
             .addFile(TestScript.LIBRARY_A.getScriptPath())
-            .addDependency("Groovy2RuntimeModule")
-            .addMetadata(MetadataName.SCRIPT_LANGUAGE.name(), "groovy2")
+            .setModuleSpec(new ScriptModuleSpec.Builder(TestScript.LIBRARY_A.getModuleId())
+                .addDependency("Groovy2RuntimeModule")
+                .addMetadata(MetadataName.SCRIPT_LANGUAGE.name(), "groovy2")
+                .build())
             .build();
         // load them in dependency order to make sure that transitive dependency resolution is working
         Set<ScriptModule> scriptModules = moduleLoader.addScriptArchives(new LinkedHashSet<ScriptArchive>(Arrays.asList(dependsOnAArchive, libAArchive)));

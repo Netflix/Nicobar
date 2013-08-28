@@ -17,20 +17,26 @@
  */
 package com.netflix.scriptlib.core.archive;
 
+import static com.netflix.scriptlib.core.archive.ScriptModuleSpec.MODULE_SPEC_FILE_NAME;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
 
 import javax.annotation.Nullable;
+
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.IOUtils;
 
 /**
  * Script archive backed by a {@link JarFile}.
@@ -42,11 +48,11 @@ public class JarScriptArchive implements ScriptArchive {
 
     /**
      * Used to Construct a {@link JarScriptArchive}.
-     * By default, this will generate a archiveName using the name of the jarfile, minus the ".jar" suffix.
+     * By default, this will generate a moduleId using the name of the jarfile, minus the ".jar" suffix.
      */
-    public static class Builder extends BaseScriptArchiveBuilder<Builder> {
+    public static class Builder {
         private final Path jarPath;
-
+        private ScriptModuleSpec moduleSpec;
         /**
          * Start a builder with required parameters.
          * @param jarPath absolute path to the jarfile that this will represent
@@ -54,32 +60,51 @@ public class JarScriptArchive implements ScriptArchive {
         public Builder(Path jarPath) {
             this.jarPath = jarPath;
         }
+        /** Set the module spec for this archive */
+        public Builder setModuleSpec(ScriptModuleSpec moduleSpec) {
+            this.moduleSpec = moduleSpec;
+            return this;
+        }
         /** Build the {@link JarScriptArchive}. */
         public JarScriptArchive build() throws IOException {
-            String buildArchiveName;
-            if (archiveId != null){
-                buildArchiveName = archiveId;
-            } else {
-                buildArchiveName = this.jarPath.getFileName().toString();
-                if (buildArchiveName.endsWith(JAR_FILE_SUFFIX)) {
-                    buildArchiveName = buildArchiveName.substring(0, buildArchiveName.lastIndexOf(JAR_FILE_SUFFIX));
+            ScriptModuleSpec buildModuleSpec = moduleSpec;
+            if (buildModuleSpec == null){
+                // attempt to find a module spec in the jar file
+                JarFile jarFile = new JarFile(jarPath.toFile());
+                try {
+                    ZipEntry zipEntry = jarFile.getEntry(MODULE_SPEC_FILE_NAME);
+                    if (zipEntry != null) {
+                        InputStream inputStream = jarFile.getInputStream(zipEntry);
+                        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                        IOUtils.copy(inputStream, outputStream);
+                        byte[] bytes = outputStream.toByteArray();
+                        if (bytes != null && bytes.length > 0) {
+                            String json = new String(bytes, Charsets.UTF_8);
+                            buildModuleSpec = new ScriptModuleSpecSerializer().deserialize(json);
+                        }
+                    }
+                } finally {
+                    IOUtils.closeQuietly(jarFile);
+                }
+                // create a default module spec
+                if (buildModuleSpec == null) {
+                    String moduleId = this.jarPath.getFileName().toString();
+                    if (moduleId.endsWith(JAR_FILE_SUFFIX)) {
+                        moduleId = moduleId.substring(0, moduleId.lastIndexOf(JAR_FILE_SUFFIX));
+                    }
+                    buildModuleSpec = new ScriptModuleSpec.Builder(moduleId).build();
                 }
             }
-
-            return new JarScriptArchive(
-                new ScriptArchiveDescriptor(buildArchiveName,
-                    Collections.unmodifiableMap(new HashMap<String, String>(archiveMetadata)),
-                    Collections.unmodifiableList(new ArrayList<String>(dependencies))),
-                jarPath);
+            return new JarScriptArchive(buildModuleSpec,jarPath);
         }
     }
 
-    private final ScriptArchiveDescriptor descriptor;
+    private final ScriptModuleSpec moduleSpec;
     private final Set<String> entryNames;
     private final URL rootUrl;
 
-    protected JarScriptArchive(ScriptArchiveDescriptor descriptor, Path jarPath) throws IOException {
-        this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
+    protected JarScriptArchive(ScriptModuleSpec moduleSpec, Path jarPath) throws IOException {
+        this.moduleSpec = Objects.requireNonNull(moduleSpec, "moduleSpec");
         Objects.requireNonNull(jarPath, "jarFile");
         if (!jarPath.isAbsolute()) throw new IllegalArgumentException("jarPath must be absolute.");
 
@@ -103,8 +128,8 @@ public class JarScriptArchive implements ScriptArchive {
     }
 
     @Override
-    public ScriptArchiveDescriptor getDescriptor() {
-        return descriptor;
+    public ScriptModuleSpec getModuleSpec() {
+        return moduleSpec;
     }
 
     /**

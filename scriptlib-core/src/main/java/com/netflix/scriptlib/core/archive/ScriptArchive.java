@@ -31,9 +31,9 @@ import java.util.Set;
 public interface ScriptArchive {
 
     /**
-     * @return the descriptor for this archive
+     * @return the module spec for this archive
      */
-    ScriptArchiveDescriptor getDescriptor();
+    ScriptModuleSpec getModuleSpec();
 
     /**
      * @return {@link URL}s representing the contents of this archive. should be
@@ -51,5 +51,4 @@ public interface ScriptArchive {
      * @throws IOException
      */
     public URL getEntry(String entryName) throws IOException;
-
 }

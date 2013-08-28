@@ -1,3 +1,20 @@
+/*
+ *
+ *  Copyright 2013 Netflix, Inc.
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *
+ */
 package com.netflix.scriptlib.core.module;
 
 import static com.netflix.scriptlib.core.testutil.CoreTestResourceUtil.TestResource.TEST_TEXT_JAR;
@@ -23,6 +40,7 @@ import org.testng.annotations.Test;
 import com.netflix.scriptlib.core.archive.JarScriptArchive;
 import com.netflix.scriptlib.core.archive.PathScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
+import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPlugin;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
 import com.netflix.scriptlib.core.testutil.CoreTestResourceUtil;
@@ -79,7 +97,9 @@ public class ModuleUtilsTest {
     public void testJarResources() throws Exception {
         Path jarPath = CoreTestResourceUtil.getResourceAsPath(TEST_TEXT_JAR);
         ScriptArchive jarScriptArchive = new JarScriptArchive.Builder(jarPath)
-            .addMetadata(METADATA_NAME, METADATA_VALUE)
+                .setModuleSpec(new ScriptModuleSpec.Builder("testModuleId")
+                .addMetadata(METADATA_NAME, METADATA_VALUE)
+                .build())
             .build();
         ModuleIdentifier pluginId = ModuleUtils.getModuleId(jarScriptArchive);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginId);
@@ -104,7 +124,9 @@ public class ModuleUtilsTest {
     public void testPathResources() throws Exception {
         Path jarPath = CoreTestResourceUtil.getResourceAsPath(TEST_TEXT_PATH);
         ScriptArchive jarScriptArchive = new PathScriptArchive.Builder(jarPath)
-            .addMetadata(METADATA_NAME, METADATA_VALUE)
+            .setModuleSpec(new ScriptModuleSpec.Builder("testModuleId")
+                .addMetadata(METADATA_NAME, METADATA_VALUE)
+                .build())
             .build();
         ModuleIdentifier pluginId = ModuleUtils.getModuleId(jarScriptArchive);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginId);

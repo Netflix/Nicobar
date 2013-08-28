@@ -1,0 +1,11 @@
+{
+    "moduleId": "test-modulespec-moduleId",
+    "dependencies": [
+        "dependencyModuleId1", 
+        "dependencyModuleId2"
+    ], 
+    "archiveMetadata": {
+        "metadataName1": "metadataValue1", 
+        "metadataName2": "metadataValue2"
+    }
+}

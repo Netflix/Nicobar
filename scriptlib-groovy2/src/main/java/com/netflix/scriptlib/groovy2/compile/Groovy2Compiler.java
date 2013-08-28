@@ -38,7 +38,7 @@ public class Groovy2Compiler implements ScriptCompiler {
     public final static String COMPILER_NAME = "groovy2";
     @Override
     public boolean shouldCompile(ScriptArchive archive) {
-        String compilerName = archive.getDescriptor().getArchiveMetadata().get(MetadataName.SCRIPT_LANGUAGE.name());
+        String compilerName = archive.getModuleSpec().getMetadata().get(MetadataName.SCRIPT_LANGUAGE.name());
         return COMPILER_NAME.equals(compilerName);
     }
 

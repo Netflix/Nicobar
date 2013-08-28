@@ -17,6 +17,8 @@
  */
 package com.netflix.scriptlib.core.archive;
 
+import static com.netflix.scriptlib.core.archive.ScriptModuleSpec.MODULE_SPEC_FILE_NAME;
+
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.FileVisitResult;
@@ -24,14 +26,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
 import javax.annotation.Nullable;
+
+import org.apache.commons.io.Charsets;
 
 /**
  * Script archive backed by a files in a {@link Path}. (Optionally) Includes all files under the given rootPath.
@@ -42,11 +44,12 @@ public class PathScriptArchive implements ScriptArchive {
 
     /**
      * Used to Construct a {@link PathScriptArchive}.
-     * By default, this will generate a archiveName using the last element of the {@link Path}
+     * By default, this will generate a moduleId using the last element of the {@link Path}
      */
-    public static class Builder extends BaseScriptArchiveBuilder<Builder> {
+    public static class Builder {
         private final Path rootDirPath;
         private final Set<Path> addedFiles = new LinkedHashSet<Path>();
+        private ScriptModuleSpec moduleSpec;
         boolean recurseRoot = true;
 
         /**
@@ -61,6 +64,11 @@ public class PathScriptArchive implements ScriptArchive {
             this.recurseRoot = recurseRoot;
             return this;
         }
+        /** Set the module spec for this archive */
+        public Builder setModuleSpec(ScriptModuleSpec moduleSpec) {
+            this.moduleSpec = moduleSpec;
+            return this;
+        }
         /**
          * Append a single file to the archive
          * @param file relative path from the root
@@ -73,7 +81,23 @@ public class PathScriptArchive implements ScriptArchive {
         }
         /** Build the {@link PathScriptArchive}. */
         public PathScriptArchive build() throws IOException {
-            String buildArchiveName = archiveId != null ? archiveId : this.rootDirPath.getFileName().toString();
+            ScriptModuleSpec buildModuleSpec = moduleSpec;
+            if (buildModuleSpec == null) {
+                // attempt to find a module spec in the root directory
+                Path moduleSpecLocation = rootDirPath.resolve(MODULE_SPEC_FILE_NAME);
+                if (Files.exists(moduleSpecLocation)) {
+                    byte[] bytes = Files.readAllBytes(moduleSpecLocation);
+                    if (bytes != null && bytes.length > 0) {
+                        String json = new String(bytes, Charsets.UTF_8);
+                        buildModuleSpec = new ScriptModuleSpecSerializer().deserialize(json);
+                    }
+                }
+                // create a default spec
+                if (buildModuleSpec == null) {
+                    String moduleId = this.rootDirPath.getFileName().toString();
+                    buildModuleSpec = new ScriptModuleSpec.Builder(moduleId).build();
+                }
+            }
             final LinkedHashSet<String> buildEntries = new LinkedHashSet<String>();
             if (recurseRoot) {
                 Files.walkFileTree(this.rootDirPath, new SimpleFileVisitor<Path>() {
@@ -90,30 +114,26 @@ public class PathScriptArchive implements ScriptArchive {
                 }
                 buildEntries.add(file.toString());
             }
-            return new PathScriptArchive(new ScriptArchiveDescriptor(buildArchiveName,
-                    Collections.unmodifiableMap(new HashMap<String, String>(archiveMetadata)),
-                    Collections.unmodifiableList(new ArrayList<String>(dependencies))),
-                rootDirPath,
-                Collections.unmodifiableSet(buildEntries));
+            return new PathScriptArchive(buildModuleSpec, rootDirPath, buildEntries);
         }
     }
 
-    private final ScriptArchiveDescriptor descriptor;
+    private final ScriptModuleSpec moduleSpec;
     private final Set<String> entryNames;
     private final Path rootDirPath;
     private final URL rootUrl;
 
-    protected PathScriptArchive(ScriptArchiveDescriptor descriptor, Path rootDirPath, Set<String> entries) throws IOException {
-        this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
-        this.rootDirPath = Objects.requireNonNull(rootDirPath, "rootPath");
+    protected PathScriptArchive(ScriptModuleSpec moduleSpec, Path rootDirPath, Set<String> entries) throws IOException {
+        this.moduleSpec = Objects.requireNonNull(moduleSpec, "moduleSpec");
+        this.rootDirPath = Objects.requireNonNull(rootDirPath, "rootDirPath");
         if (!this.rootDirPath.isAbsolute()) throw new IllegalArgumentException("rootPath must be absolute.");
-        this.entryNames = Collections.unmodifiableSet(Objects.requireNonNull(entries, "rootPath"));
+        this.entryNames = Collections.unmodifiableSet(Objects.requireNonNull(entries, "entries"));
         this.rootUrl = this.rootDirPath.toUri().toURL();
     }
 
     @Override
-    public ScriptArchiveDescriptor getDescriptor() {
-        return descriptor;
+    public ScriptModuleSpec getModuleSpec() {
+        return moduleSpec;
     }
 
     @Override
