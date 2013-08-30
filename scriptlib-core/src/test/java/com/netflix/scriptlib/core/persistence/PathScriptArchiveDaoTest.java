@@ -34,9 +34,9 @@ import org.apache.commons.io.FileUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.netflix.scriptlib.core.archive.PathScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
-import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
-import com.netflix.scriptlib.core.persistence.ScriptArchiveDao.UpdateResult;
+import com.netflix.scriptlib.core.persistence.ScriptArchivePoller.PollResult;
 
 /**
  * Unit tests for {@link PathScriptArchiveDao}
@@ -63,9 +63,9 @@ public class PathScriptArchiveDaoTest {
     @Test
     public void testInitialLoad() throws Exception {
         PathScriptArchiveDao archiveDao = new PathScriptArchiveDao(rootArchiveDirectory);
-        UpdateResult updateResult = archiveDao.getUpdatesSince(0);
-        Set<String> deletedModuleIds = updateResult.getDeletedModuleIds();
-        Set<ScriptArchive> updatedArchives = updateResult.getUpdatedArchives();
+        PollResult pollResult = archiveDao.poll(0);
+        Set<String> deletedModuleIds = pollResult.getDeletedModuleIds();
+        Set<ScriptArchive> updatedArchives = pollResult.getUpdatedArchives();
         assertEquals(updatedArchives.size(), 2);
         assertTrue(deletedModuleIds.isEmpty(), deletedModuleIds.toString());
         Set<String> updatedModuleIds = new HashSet<String>();
@@ -80,38 +80,38 @@ public class PathScriptArchiveDaoTest {
      */
     @Test
     public void testPolling() throws Exception {
-        UpdateResult updateResult;
+        PollResult pollResult;
         Set<ScriptArchive> updatedArchives;
         Set<String> deletedModuleIds;
         PathScriptArchiveDao archiveDao = new PathScriptArchiveDao(rootArchiveDirectory);
 
         // initial startup phase
-        archiveDao.getUpdatesSince(0);
+        archiveDao.poll(0);
         long lastPollTime = System.currentTimeMillis();
 
         // poll for changes
-        updateResult = archiveDao.getUpdatesSince(lastPollTime);
-        updatedArchives = updateResult.getUpdatedArchives();
-        deletedModuleIds = updateResult.getDeletedModuleIds();
+        pollResult = archiveDao.poll(lastPollTime);
+        updatedArchives = pollResult.getUpdatedArchives();
+        deletedModuleIds = pollResult.getDeletedModuleIds();
         assertTrue(updatedArchives.isEmpty(), updatedArchives.toString());
         assertTrue(deletedModuleIds.isEmpty(), deletedModuleIds.toString());
         lastPollTime += 1000;
 
         // touch a file to force a reload then poll. some filesystems only have 1 second granularity, so advance by at least that much
-        Path moduleSpecPath = Paths.get(rootArchiveDirectory.toString(), "test-modulespec", ScriptModuleSpec.MODULE_SPEC_FILE_NAME);
+        Path moduleSpecPath = Paths.get(rootArchiveDirectory.toString(), "test-modulespec", PathScriptArchive.DEFAULT_MODULE_SPEC_FILE_NAME);
         Files.setLastModifiedTime(moduleSpecPath, FileTime.fromMillis(lastPollTime+1000));
-        updateResult = archiveDao.getUpdatesSince(lastPollTime);
-        updatedArchives = updateResult.getUpdatedArchives();
-        deletedModuleIds = updateResult.getDeletedModuleIds();
+        pollResult = archiveDao.poll(lastPollTime);
+        updatedArchives = pollResult.getUpdatedArchives();
+        deletedModuleIds = pollResult.getDeletedModuleIds();
         assertEquals(updatedArchives.size(), 1);
         assertEquals(updatedArchives.iterator().next().getModuleSpec().getModuleId(), "test-modulespec-moduleId");
         assertTrue(deletedModuleIds.isEmpty(), deletedModuleIds.toString());
         lastPollTime += 1000;
 
         // poll one more time to make sure the state has been reset properly
-        updateResult = archiveDao.getUpdatesSince(lastPollTime);
-        updatedArchives = updateResult.getUpdatedArchives();
-        deletedModuleIds = updateResult.getDeletedModuleIds();
+        pollResult = archiveDao.poll(lastPollTime);
+        updatedArchives = pollResult.getUpdatedArchives();
+        deletedModuleIds = pollResult.getDeletedModuleIds();
         assertTrue(updatedArchives.isEmpty(), updatedArchives.toString());
         assertTrue(deletedModuleIds.isEmpty(), deletedModuleIds.toString());
     }
@@ -120,30 +120,30 @@ public class PathScriptArchiveDaoTest {
      */
     @Test(priority=Integer.MAX_VALUE) // run this last
     public void testDelete() throws Exception {
-        UpdateResult updateResult;
+        PollResult pollResult;
         Set<ScriptArchive> updatedArchives;
         Set<String> deletedModuleIds;
         PathScriptArchiveDao archiveDao = new PathScriptArchiveDao(rootArchiveDirectory);
 
         // initial startup phase
-        archiveDao.getUpdatesSince(0);
+        archiveDao.poll(0);
         long lastPollTime = System.currentTimeMillis() - 1000;
 
         // delete a module
         Path moduleSpecPath = Paths.get(rootArchiveDirectory.toString(), "test-modulespec");
         FileUtils.deleteDirectory(moduleSpecPath.toFile());
-        updateResult = archiveDao.getUpdatesSince(lastPollTime);
-        updatedArchives = updateResult.getUpdatedArchives();
-        deletedModuleIds = updateResult.getDeletedModuleIds();
+        pollResult = archiveDao.poll(lastPollTime);
+        updatedArchives = pollResult.getUpdatedArchives();
+        deletedModuleIds = pollResult.getDeletedModuleIds();
         assertTrue(updatedArchives.isEmpty(), updatedArchives.toString());
         assertEquals(deletedModuleIds.size(), 1);
         assertEquals(deletedModuleIds.iterator().next(), "test-modulespec-moduleId");
         lastPollTime += 2000;
 
         // poll one more time to make sure the state has been reset properly
-        updateResult = archiveDao.getUpdatesSince(lastPollTime);
-        updatedArchives = updateResult.getUpdatedArchives();
-        deletedModuleIds = updateResult.getDeletedModuleIds();
+        pollResult = archiveDao.poll(lastPollTime);
+        updatedArchives = pollResult.getUpdatedArchives();
+        deletedModuleIds = pollResult.getDeletedModuleIds();
         assertTrue(updatedArchives.isEmpty(), updatedArchives.toString());
         assertTrue(deletedModuleIds.isEmpty(), deletedModuleIds.toString());
         lastPollTime += 2000;
@@ -151,9 +151,9 @@ public class PathScriptArchiveDaoTest {
         // restore the module and reload
         copyArchive(MODULE_SPEC_PATH_RESOURCE_NAME);
         Files.setLastModifiedTime(moduleSpecPath, FileTime.fromMillis(lastPollTime+1000));
-        updateResult = archiveDao.getUpdatesSince(lastPollTime);
-        updatedArchives = updateResult.getUpdatedArchives();
-        deletedModuleIds = updateResult.getDeletedModuleIds();
+        pollResult = archiveDao.poll(lastPollTime);
+        updatedArchives = pollResult.getUpdatedArchives();
+        deletedModuleIds = pollResult.getDeletedModuleIds();
         assertEquals(updatedArchives.size(), 1);
         assertTrue(deletedModuleIds.isEmpty(), deletedModuleIds.toString());
     }

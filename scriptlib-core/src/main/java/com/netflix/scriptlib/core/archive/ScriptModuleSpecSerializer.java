@@ -17,40 +17,21 @@
  */
 package com.netflix.scriptlib.core.archive;
 
-import java.util.Objects;
-
-import com.google.gson.Gson;
-
 /**
  * Serializer for the {@link ScriptModuleSpec}
  *
  * @author James Kojo
  */
-public class ScriptModuleSpecSerializer {
-
-    private static Gson SERIALIZER = new Gson();
+public interface ScriptModuleSpecSerializer {
 
     /**
      * Convert the {@link ScriptModuleSpec} to a JSON String
      */
-    public String serialize(ScriptModuleSpec moduleSpec) {
-        Objects.requireNonNull(moduleSpec, "moduleSpec");
-        String json = SERIALIZER.toJson(moduleSpec);
-        return json;
-    }
+    public String serialize(ScriptModuleSpec moduleSpec);
+
     /**
      * Convert the input JSON String to a {@link ScriptModuleSpec}
      */
-    public ScriptModuleSpec deserialize(String json) {
-        Objects.requireNonNull(json, "json");
-        ScriptModuleSpec moduleSpec = SERIALIZER.fromJson(json, ScriptModuleSpec.class);
-        return moduleSpec;
-    }
-    /**
-     * Construct the serializer. Override this to customize the serialization logic
-     * @return
-     */
-    protected Gson getSerializer() {
-        return SERIALIZER;
-    }
+    public ScriptModuleSpec deserialize(String json);
+
 }

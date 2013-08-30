@@ -17,8 +17,6 @@
  */
 package com.netflix.scriptlib.core.archive;
 
-import static com.netflix.scriptlib.core.archive.ScriptModuleSpec.MODULE_SPEC_FILE_NAME;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,10 +39,17 @@ import org.apache.commons.io.IOUtils;
 /**
  * Script archive backed by a {@link JarFile}.
  *
+ * The jar file may optionally contain a module specification. If it does, then the module specification
+ * is deserialized and used to construct the archive. Otherwise, a module specification with default values
+ * is created.
+ *
  * @author James Kojo
  */
 public class JarScriptArchive implements ScriptArchive {
+    /** Default file name of the optional {@link ScriptModuleSpec} in the archive */
+    public final static String DEFAULT_MODULE_SPEC_FILE_NAME = "moduleSpec.json";
     private final static String JAR_FILE_SUFFIX = ".jar";
+    private final static ScriptModuleSpecSerializer DEFAULT_SPEC_SERIALIZER = new GsonScriptModuleSpecSerializer();
 
     /**
      * Used to Construct a {@link JarScriptArchive}.
@@ -53,6 +58,8 @@ public class JarScriptArchive implements ScriptArchive {
     public static class Builder {
         private final Path jarPath;
         private ScriptModuleSpec moduleSpec;
+        private String specFileName;
+        private ScriptModuleSpecSerializer specSerializer;
         /**
          * Start a builder with required parameters.
          * @param jarPath absolute path to the jarfile that this will represent
@@ -65,14 +72,25 @@ public class JarScriptArchive implements ScriptArchive {
             this.moduleSpec = moduleSpec;
             return this;
         }
+        /** override the default module spec file name */
+        public Builder setModuleSpecFileName(String specFileName) {
+            this.specFileName = specFileName;
+            return this;
+        }
+        /** override the default module spec file name */
+        public Builder setModuleSpecSerializer(ScriptModuleSpecSerializer specSerializer) {
+            this.specSerializer = specSerializer;
+            return this;
+        }
         /** Build the {@link JarScriptArchive}. */
         public JarScriptArchive build() throws IOException {
             ScriptModuleSpec buildModuleSpec = moduleSpec;
             if (buildModuleSpec == null){
+                String buildSpecFileName = specFileName != null ? specFileName : DEFAULT_MODULE_SPEC_FILE_NAME;
                 // attempt to find a module spec in the jar file
                 JarFile jarFile = new JarFile(jarPath.toFile());
                 try {
-                    ZipEntry zipEntry = jarFile.getEntry(MODULE_SPEC_FILE_NAME);
+                    ZipEntry zipEntry = jarFile.getEntry(buildSpecFileName);
                     if (zipEntry != null) {
                         InputStream inputStream = jarFile.getInputStream(zipEntry);
                         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -80,7 +98,9 @@ public class JarScriptArchive implements ScriptArchive {
                         byte[] bytes = outputStream.toByteArray();
                         if (bytes != null && bytes.length > 0) {
                             String json = new String(bytes, Charsets.UTF_8);
-                            buildModuleSpec = new ScriptModuleSpecSerializer().deserialize(json);
+                            ScriptModuleSpecSerializer buildSpecSerializer = specSerializer != null  ? specSerializer :
+                                DEFAULT_SPEC_SERIALIZER;
+                            buildModuleSpec = buildSpecSerializer.deserialize(json);
                         }
                     }
                 } finally {

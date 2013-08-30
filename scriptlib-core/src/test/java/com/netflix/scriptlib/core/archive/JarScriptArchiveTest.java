@@ -63,7 +63,7 @@ public class JarScriptArchiveTest {
     }
 
     @Test
-    public void testDefaultAoduleId() throws Exception {
+    public void testDefaultModuleId() throws Exception {
         URL rootPathUrl = getClass().getClassLoader().getResource(TEXT_JAR_RESOURCE_NAME);
         Path rootPath = Paths.get(rootPathUrl.toURI()).toAbsolutePath();
         JarScriptArchive scriptArchive = new JarScriptArchive.Builder(rootPath).build();

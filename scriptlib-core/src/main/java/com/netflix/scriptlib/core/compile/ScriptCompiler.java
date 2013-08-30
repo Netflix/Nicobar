@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import com.netflix.scriptlib.core.archive.ScriptArchive;
+import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
 import com.netflix.scriptlib.core.module.ScriptModuleClassLoader;
 
 
@@ -31,7 +32,7 @@ import com.netflix.scriptlib.core.module.ScriptModuleClassLoader;
  */
 public interface ScriptCompiler {
     /**
-     * Common names used to query the {@link ScriptArchive#getMetadata()} that are relevant
+     * Common names used to query the {@link ScriptModuleSpec#getMetadata()} that are relevant
      * to compilers.
      */
     public static enum MetadataName {

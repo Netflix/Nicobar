@@ -17,8 +17,6 @@
  */
 package com.netflix.scriptlib.core.archive;
 
-import static com.netflix.scriptlib.core.archive.ScriptModuleSpec.MODULE_SPEC_FILE_NAME;
-
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.FileVisitResult;
@@ -36,21 +34,32 @@ import javax.annotation.Nullable;
 import org.apache.commons.io.Charsets;
 
 /**
- * Script archive backed by a files in a {@link Path}. (Optionally) Includes all files under the given rootPath.
+ * Script archive backed by a files in a {@link Path}.
+ *
  *
  * @author James Kojo
  */
 public class PathScriptArchive implements ScriptArchive {
-
+    /** Default file name of the optional {@link ScriptModuleSpec} in the archive */
+    public final static String DEFAULT_MODULE_SPEC_FILE_NAME = "moduleSpec.json";
+    private final static ScriptModuleSpecSerializer DEFAULT_SPEC_SERIALIZER = new GsonScriptModuleSpecSerializer();
     /**
      * Used to Construct a {@link PathScriptArchive}.
-     * By default, this will generate a moduleId using the last element of the {@link Path}
+     * <pre>
+     * Default settings:
+     * * generate a moduleId using the last element of the {@link Path}
+     * * all files under the root path will be included in the archive.
+     * * searches for a module spec file under the root directory called "moduleSpec.json" and
+     *   uses the {@link GsonScriptModuleSpecSerializer} to deserializer it.
+     * </pre>
      */
     public static class Builder {
         private final Path rootDirPath;
         private final Set<Path> addedFiles = new LinkedHashSet<Path>();
         private ScriptModuleSpec moduleSpec;
         boolean recurseRoot = true;
+        private String specFileName;
+        private ScriptModuleSpecSerializer specSerializer;
 
         /**
          * Start a builder with required parameters.
@@ -69,6 +78,16 @@ public class PathScriptArchive implements ScriptArchive {
             this.moduleSpec = moduleSpec;
             return this;
         }
+        /** override the default module spec file name */
+        public Builder setModuleSpecFileName(String specFileName) {
+            this.specFileName = specFileName;
+            return this;
+        }
+        /** override the default module spec file name */
+        public Builder setModuleSpecSerializer(ScriptModuleSpecSerializer specSerializer) {
+            this.specSerializer = specSerializer;
+            return this;
+        }
         /**
          * Append a single file to the archive
          * @param file relative path from the root
@@ -83,13 +102,16 @@ public class PathScriptArchive implements ScriptArchive {
         public PathScriptArchive build() throws IOException {
             ScriptModuleSpec buildModuleSpec = moduleSpec;
             if (buildModuleSpec == null) {
+                String buildSpecFileName = specFileName != null ? specFileName : DEFAULT_MODULE_SPEC_FILE_NAME;
                 // attempt to find a module spec in the root directory
-                Path moduleSpecLocation = rootDirPath.resolve(MODULE_SPEC_FILE_NAME);
+                Path moduleSpecLocation = rootDirPath.resolve(buildSpecFileName);
                 if (Files.exists(moduleSpecLocation)) {
                     byte[] bytes = Files.readAllBytes(moduleSpecLocation);
                     if (bytes != null && bytes.length > 0) {
                         String json = new String(bytes, Charsets.UTF_8);
-                        buildModuleSpec = new ScriptModuleSpecSerializer().deserialize(json);
+                        ScriptModuleSpecSerializer buildSpecSerializer = specSerializer != null  ? specSerializer :
+                            DEFAULT_SPEC_SERIALIZER;
+                        buildModuleSpec = buildSpecSerializer.deserialize(json);
                     }
                 }
                 // create a default spec

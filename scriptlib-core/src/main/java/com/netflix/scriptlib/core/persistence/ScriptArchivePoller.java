@@ -24,20 +24,19 @@ import java.util.Set;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 
 /**
- * DAO interface for {@link ScriptArchive} persistence stores.
+ * Poller interface for {@link ScriptArchive} persistence stores.
  *
  * @author James Kojo
  */
-public interface ScriptArchiveDao {
+public interface ScriptArchivePoller {
 
     /**
-     * Result of a DAO poll operation
+     * Result of a poll operation
      */
-    public static class UpdateResult {
+    public static class PollResult {
         private final Set<ScriptArchive> updatedArchives;
         private final Set<String> deletedModuleIds;
-        public UpdateResult(Set<ScriptArchive> updatedArchives,
-            Set<String> deletedModuleIds) {
+        public PollResult(Set<ScriptArchive> updatedArchives,Set<String> deletedModuleIds) {
             this.updatedArchives = Objects.requireNonNull(updatedArchives, "updatedArchives");
             this.deletedModuleIds = Objects.requireNonNull(deletedModuleIds, "deleteModuleIds");
         }
@@ -58,8 +57,8 @@ public interface ScriptArchiveDao {
     /**
      * Get a set of updates since the last poll interval.
      * @param lastPollTime last poll interval timestamp or 0 to get all archives.
-     * @return
+     * @return result of the poll operation
      * @throws IOException
      */
-    public UpdateResult getUpdatesSince(long lastPollTime) throws IOException;
+    public PollResult poll(long lastPollTime) throws IOException;
 }

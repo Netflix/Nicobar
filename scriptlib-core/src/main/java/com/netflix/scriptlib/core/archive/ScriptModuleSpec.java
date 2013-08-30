@@ -31,9 +31,6 @@ import java.util.Objects;
  * @author James Kojo
  */
 public class ScriptModuleSpec {
-    /** Default file name of the optional {@link ScriptModuleSpec} in the archive */
-    public static final String MODULE_SPEC_FILE_NAME = "moduleSpec.json";
-
     /**
      * Used to Construct a {@link ScriptModuleSpec}.
      */

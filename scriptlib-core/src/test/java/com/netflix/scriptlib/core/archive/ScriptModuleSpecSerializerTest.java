@@ -35,7 +35,7 @@ public class ScriptModuleSpecSerializerTest {
             .addMetadata("metadataName1", "metadataValue1")
             .addMetadata("metadataName2", "metadataValue2")
             .build();
-        ScriptModuleSpecSerializer serializer = new ScriptModuleSpecSerializer();
+        ScriptModuleSpecSerializer serializer = new GsonScriptModuleSpecSerializer();
         String json = serializer.serialize(expected);
         System.out.println("json: " + json);
         ScriptModuleSpec deserialized = serializer.deserialize(json);

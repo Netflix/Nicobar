@@ -34,7 +34,7 @@ import com.netflix.scriptlib.core.archive.ScriptArchive;
  *
  * @author James Kojo
  */
-public abstract class FileSystemScriptArchiveDao implements ScriptArchiveDao {
+public abstract class FileSystemScriptArchiveDao implements ScriptArchivePoller {
 
     protected final Path rootDir;
     /** Map of archive root path to the last known time it was deleted  */
@@ -50,7 +50,7 @@ public abstract class FileSystemScriptArchiveDao implements ScriptArchiveDao {
     }
 
     @Override
-    public synchronized UpdateResult getUpdatesSince(final long lastPollTime) throws IOException {
+    public synchronized PollResult poll(final long lastPollTime) throws IOException {
         Set<Path> visitedArchivePaths = new HashSet<Path>(moduleIdIndex.size()*2);
         final Set<Path> updatedArchivePaths = new HashSet<Path>(moduleIdIndex.size());
         findUpdatedArchives(lastPollTime, visitedArchivePaths, updatedArchivePaths);
@@ -68,7 +68,7 @@ public abstract class FileSystemScriptArchiveDao implements ScriptArchiveDao {
         updateDeleteTimes(visitedArchivePaths);
         Set<String> deleted = new HashSet<String>(moduleIdIndex.size());
         findDeleteArchives(lastPollTime, deleted);
-        return new UpdateResult(updatedArchives, deleted);
+        return new PollResult(updatedArchives, deleted);
     }
 
     /**
@@ -83,7 +83,7 @@ public abstract class FileSystemScriptArchiveDao implements ScriptArchiveDao {
     /**
      * Create a {@link ScriptArchive} from the given archivePath.
      * @param archivePath
-     * @return
+     * @return the created {@link ScriptArchive}
      * @throws IOException
      */
     protected abstract ScriptArchive createScriptArchive(Path archivePath) throws IOException;
