@@ -1,4 +1,3 @@
-package dependsona;
 /*
  *
  *  Copyright 2013 Netflix, Inc.
@@ -16,12 +15,23 @@ package dependsona;
  *     limitations under the License.
  *
  */
+package com.netflix.scriptlib.core.archive;
 
-import libA.LibraryA
+/**
+ * Serializer for the {@link ScriptModuleSpec}
+ *
+ * @author James Kojo
+ */
+public interface ScriptModuleSpecSerializer {
 
-public class DependsOnA {
-    public String getMessage() {
-        LibraryA libA = new LibraryA()
-        return "DepondOnA: Called LibraryA and got message:'" + libA.message +"'"
-    }
+    /**
+     * Convert the {@link ScriptModuleSpec} to a JSON String
+     */
+    public String serialize(ScriptModuleSpec moduleSpec);
+
+    /**
+     * Convert the input JSON String to a {@link ScriptModuleSpec}
+     */
+    public ScriptModuleSpec deserialize(String json);
+
 }

@@ -44,6 +44,9 @@ public class ClassPathUtils {
      * result will be an absolute path to the jar file. If the resource is found in a directory,
      * then the result will be the parent path of the given resource.
      *
+     * For example, if the resourceName is given as "scripts/myscript.groovy", and the path to the file is
+     * "/root/sub1/script/myscript.groovy", then this method will return "/root/sub1"
+     *
      * @param resourceName relative path of the resource to search for. E.G. "scripts/myscript.groovy"
      * @param classLoader the {@link ClassLoader} to search
      * @return absolute path of the root of the resource.

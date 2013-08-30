@@ -15,10 +15,10 @@
  *     limitations under the License.
  *
  */
-package helloworld;
 
-public class HelloWorld {
+package package1
+public class HelloPackage {
     public String getMessage() {
-       return "Hello, World!";
+       return "Hello, Package!";
     }
 }

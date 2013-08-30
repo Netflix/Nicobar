@@ -76,8 +76,8 @@ public class ScriptModuleLoader extends ModuleLoader {
                 moduleIds.add(moduleId);
             } catch (ModuleLoadException e) {
                 // TODO: add real logging. perhaps adds this modules to a "try again later" queue?
-                Module.getModuleLogger().trace(e, "Exception loading archive " + scriptArchive.getArchiveName() +
-                    "-" + scriptArchive.getArchiveVersion());
+                Module.getModuleLogger().trace(e, "Exception loading archive " +
+                    scriptArchive.getModuleSpec().getModuleId());
                 continue;
             }
         }
@@ -101,7 +101,7 @@ public class ScriptModuleLoader extends ModuleLoader {
      * the module is ready to load.
      */
     protected synchronized ModuleIdentifier addScriptArchive(ScriptArchive scriptArchive) throws ModuleLoadException {
-        String archiveName = scriptArchive.getArchiveName();
+        String archiveId = scriptArchive.getModuleSpec().getModuleId();
         ModuleIdentifier moduleId = ModuleUtils.getModuleId(scriptArchive);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(moduleId);
         ModuleUtils.populateModuleSpec(moduleSpecBuilder, scriptArchive);
@@ -110,7 +110,7 @@ public class ScriptModuleLoader extends ModuleLoader {
         // if it already exists, unload the old version
         ModuleSpec replaced = moduleSpecRepo.get(moduleId);
         if (replaced != null) {
-            removeScriptArchive(archiveName);
+            removeScriptArchive(archiveId);
         }
         moduleSpecRepo.put(moduleId, moduleSpec);
         return moduleId;
@@ -145,8 +145,8 @@ public class ScriptModuleLoader extends ModuleLoader {
         }
     }
 
-    public synchronized void removeScriptArchive(String archiveName) {
-        ModuleIdentifier moduleIdentifier = ModuleIdentifier.create(archiveName);
+    public synchronized void removeScriptArchive(String moduleId) {
+        ModuleIdentifier moduleIdentifier = ModuleIdentifier.create(moduleId);
         moduleSpecRepo.remove(moduleIdentifier);
         Module module = findLoadedModuleLocal(moduleIdentifier);
         if (module != null) {
