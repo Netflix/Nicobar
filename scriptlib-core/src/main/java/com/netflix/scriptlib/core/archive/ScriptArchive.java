@@ -20,8 +20,6 @@ package com.netflix.scriptlib.core.archive;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -33,24 +31,9 @@ import java.util.Set;
 public interface ScriptArchive {
 
     /**
-     * @return Name of this archive. Usually the same as module name.
+     * @return the module spec for this archive
      */
-    public String getArchiveName();
-
-    /**
-     * @return version of this archive. Usually the same as module version.
-     */
-    public int getArchiveVersion();
-
-    /**
-     * @return Application specific metadata about this archive
-     */
-    public Map<String, String> getArchiveMetadata();
-
-    /**
-     * @return the names of the modules that this archive depends on
-     */
-    public List<String> getDependencies();
+    ScriptModuleSpec getModuleSpec();
 
     /**
      * @return {@link URL}s representing the contents of this archive. should be
@@ -68,5 +51,4 @@ public interface ScriptArchive {
      * @throws IOException
      */
     public URL getEntry(String entryName) throws IOException;
-
 }

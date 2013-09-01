@@ -88,6 +88,7 @@ public class ScriptModuleClassLoader extends ModuleClassLoader {
         return newClass;
     }
 
+    @Override
     public Class<?> loadClassLocal(String className, boolean resolve) throws ClassNotFoundException {
         Class<?> local = localClassCache.get(className);
         if (local != null) {

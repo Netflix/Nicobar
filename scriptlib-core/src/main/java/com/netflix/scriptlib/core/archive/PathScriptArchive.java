@@ -23,53 +23,69 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
-import java.util.ArrayList;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.io.Charsets;
+
 /**
- * Script archive backed by a files in a {@link Path}. (Optionally) Includes all files under the given rootPath.
+ * Script archive backed by a files in a {@link Path}.
+ *
  *
  * @author James Kojo
  */
 public class PathScriptArchive implements ScriptArchive {
-
+    /** Default file name of the optional {@link ScriptModuleSpec} in the archive */
+    public final static String DEFAULT_MODULE_SPEC_FILE_NAME = "moduleSpec.json";
+    private final static ScriptModuleSpecSerializer DEFAULT_SPEC_SERIALIZER = new GsonScriptModuleSpecSerializer();
     /**
      * Used to Construct a {@link PathScriptArchive}.
+     * <pre>
+     * Default settings:
+     * * generate a moduleId using the last element of the {@link Path}
+     * * all files under the root path will be included in the archive.
+     * * searches for a module spec file under the root directory called "moduleSpec.json" and
+     *   uses the {@link GsonScriptModuleSpecSerializer} to deserializer it.
+     * </pre>
      */
     public static class Builder {
-        private final String name;
-        private final int version;
         private final Path rootDirPath;
-        private final Map<String, String> archiveMetadata = new LinkedHashMap<String, String>();
-        private final List<String> dependencies = new LinkedList<String>();
-        private final HashSet<Path> addedFiles = new LinkedHashSet<Path>();
+        private final Set<Path> addedFiles = new LinkedHashSet<Path>();
+        private ScriptModuleSpec moduleSpec;
         boolean recurseRoot = true;
+        private String specFileName;
+        private ScriptModuleSpecSerializer specSerializer;
 
         /**
          * Start a builder with required parameters.
-         * @param name archive name, will be used as module name
-         * @param version  archive version. Will be used as module version.
          * @param rootDirPath absolute path to the root directory to recursively add
          */
-        public Builder(String name, int version, Path rootDirPath) {
-            this.name = name;
-            this.version = version;
+        public Builder(Path rootDirPath) {
             this.rootDirPath = rootDirPath;
         }
         /** If true, then add all of the files underneath the root path. default is true */
-        public Builder setResurseRoot(boolean recurseRoot) {
+        public Builder setRecurseRoot(boolean recurseRoot) {
             this.recurseRoot = recurseRoot;
+            return this;
+        }
+        /** Set the module spec for this archive */
+        public Builder setModuleSpec(ScriptModuleSpec moduleSpec) {
+            this.moduleSpec = moduleSpec;
+            return this;
+        }
+        /** override the default module spec file name */
+        public Builder setModuleSpecFileName(String specFileName) {
+            this.specFileName = specFileName;
+            return this;
+        }
+        /** override the default module spec file name */
+        public Builder setModuleSpecSerializer(ScriptModuleSpecSerializer specSerializer) {
+            this.specSerializer = specSerializer;
             return this;
         }
         /**
@@ -82,33 +98,32 @@ public class PathScriptArchive implements ScriptArchive {
             }
             return this;
         }
-        /** Append all of the given metadata. */
-        public Builder addMetadata(Map<String, String> metadata) {
-            if (metadata != null) {
-                archiveMetadata.putAll(metadata);
-            }
-            return this;
-        }
-        /** Append the given metadata. */
-        public Builder addMetadata(String property, String value) {
-            if (property != null && value != null) {
-                archiveMetadata.put(property, value);
-            }
-            return this;
-        }
-        /** Add Module dependency. */
-        public Builder addDependency(String dependencyName) {
-            if (dependencyName != null) {
-                dependencies.add(dependencyName);
-            }
-            return this;
-        }
         /** Build the {@link PathScriptArchive}. */
         public PathScriptArchive build() throws IOException {
+            ScriptModuleSpec buildModuleSpec = moduleSpec;
+            if (buildModuleSpec == null) {
+                String buildSpecFileName = specFileName != null ? specFileName : DEFAULT_MODULE_SPEC_FILE_NAME;
+                // attempt to find a module spec in the root directory
+                Path moduleSpecLocation = rootDirPath.resolve(buildSpecFileName);
+                if (Files.exists(moduleSpecLocation)) {
+                    byte[] bytes = Files.readAllBytes(moduleSpecLocation);
+                    if (bytes != null && bytes.length > 0) {
+                        String json = new String(bytes, Charsets.UTF_8);
+                        ScriptModuleSpecSerializer buildSpecSerializer = specSerializer != null  ? specSerializer :
+                            DEFAULT_SPEC_SERIALIZER;
+                        buildModuleSpec = buildSpecSerializer.deserialize(json);
+                    }
+                }
+                // create a default spec
+                if (buildModuleSpec == null) {
+                    String moduleId = this.rootDirPath.getFileName().toString();
+                    buildModuleSpec = new ScriptModuleSpec.Builder(moduleId).build();
+                }
+            }
             final LinkedHashSet<String> buildEntries = new LinkedHashSet<String>();
             if (recurseRoot) {
                 Files.walkFileTree(this.rootDirPath, new SimpleFileVisitor<Path>() {
-                    public FileVisitResult visitFile(Path file, java.nio.file.attribute.BasicFileAttributes attrs) throws IOException {
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                         Path relativePath = rootDirPath.relativize(file);
                         buildEntries.add(relativePath.toString());
                         return FileVisitResult.CONTINUE;
@@ -121,39 +136,26 @@ public class PathScriptArchive implements ScriptArchive {
                 }
                 buildEntries.add(file.toString());
             }
-            return new PathScriptArchive(name, version, rootDirPath, buildEntries,
-               new HashMap<String, String>(archiveMetadata),
-               new ArrayList<String>(dependencies));
+            return new PathScriptArchive(buildModuleSpec, rootDirPath, buildEntries);
         }
     }
 
-    private final String archiveName;
-    private final int archiveVersion;
+    private final ScriptModuleSpec moduleSpec;
     private final Set<String> entryNames;
     private final Path rootDirPath;
     private final URL rootUrl;
-    private final Map<String, String> archiveMetadata;
-    private final List<String> dependencies;
 
-    protected PathScriptArchive(String archiveName, int archiveVersion, Path rootDirPath, Set<String> entries,
-            Map<String, String> applicationMetaData, List<String> dependencies) throws IOException {
-        this.archiveName = Objects.requireNonNull(archiveName, "archiveName");
-        this.archiveVersion = archiveVersion;
-        this.rootDirPath = Objects.requireNonNull(rootDirPath, "rootPath");
+    protected PathScriptArchive(ScriptModuleSpec moduleSpec, Path rootDirPath, Set<String> entries) throws IOException {
+        this.moduleSpec = Objects.requireNonNull(moduleSpec, "moduleSpec");
+        this.rootDirPath = Objects.requireNonNull(rootDirPath, "rootDirPath");
         if (!this.rootDirPath.isAbsolute()) throw new IllegalArgumentException("rootPath must be absolute.");
-        this.entryNames = Collections.unmodifiableSet(Objects.requireNonNull(entries, "rootPath"));
-        this.archiveMetadata = Objects.requireNonNull(applicationMetaData, "applicationMetaData");
-        this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
+        this.entryNames = Collections.unmodifiableSet(Objects.requireNonNull(entries, "entries"));
         this.rootUrl = this.rootDirPath.toUri().toURL();
     }
 
     @Override
-    public String getArchiveName() {
-        return archiveName;
-    }
-    @Override
-    public int getArchiveVersion() {
-        return archiveVersion;
+    public ScriptModuleSpec getModuleSpec() {
+        return moduleSpec;
     }
 
     @Override
@@ -173,15 +175,5 @@ public class PathScriptArchive implements ScriptArchive {
             return null;
         }
         return rootDirPath.resolve(entryName).toUri().toURL();
-    }
-
-    @Override
-    public Map<String, String> getArchiveMetadata() {
-        return archiveMetadata;
-    }
-
-    @Override
-    public List<String> getDependencies() {
-        return dependencies;
     }
 }

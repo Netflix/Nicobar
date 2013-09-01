@@ -17,97 +17,116 @@
  */
 package com.netflix.scriptlib.core.archive;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
 
 import javax.annotation.Nullable;
+
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.IOUtils;
 
 /**
  * Script archive backed by a {@link JarFile}.
  *
+ * The jar file may optionally contain a module specification. If it does, then the module specification
+ * is deserialized and used to construct the archive. Otherwise, a module specification with default values
+ * is created.
+ *
  * @author James Kojo
  */
 public class JarScriptArchive implements ScriptArchive {
+    /** Default file name of the optional {@link ScriptModuleSpec} in the archive */
+    public final static String DEFAULT_MODULE_SPEC_FILE_NAME = "moduleSpec.json";
+    private final static String JAR_FILE_SUFFIX = ".jar";
+    private final static ScriptModuleSpecSerializer DEFAULT_SPEC_SERIALIZER = new GsonScriptModuleSpecSerializer();
 
     /**
      * Used to Construct a {@link JarScriptArchive}.
+     * By default, this will generate a moduleId using the name of the jarfile, minus the ".jar" suffix.
      */
     public static class Builder {
-        private final String name;
-        private final int version;
         private final Path jarPath;
-
-        private final Map<String, String> archiveMetadata = new LinkedHashMap<String, String>();
-        private final List<String> dependencies = new LinkedList<String>();
+        private ScriptModuleSpec moduleSpec;
+        private String specFileName;
+        private ScriptModuleSpecSerializer specSerializer;
         /**
          * Start a builder with required parameters.
-         * @param name archive name, will be used as module name
-         * @param version  archive version. Will be used as module version.
          * @param jarPath absolute path to the jarfile that this will represent
          */
-        public Builder(String name, int version, Path jarPath) {
-            this.name = name;
-            this.version = version;
+        public Builder(Path jarPath) {
             this.jarPath = jarPath;
         }
-        /** Append all of the given metadata. */
-        public Builder addMetadata(Map<String, String> metadata) {
-            if (metadata != null) {
-                archiveMetadata.putAll(metadata);
-            }
+        /** Set the module spec for this archive */
+        public Builder setModuleSpec(ScriptModuleSpec moduleSpec) {
+            this.moduleSpec = moduleSpec;
             return this;
         }
-        /** Append the given metadata. */
-        public Builder addMetadata(String property, String value) {
-            if (property != null && value != null) {
-                archiveMetadata.put(property, value);
-            }
+        /** override the default module spec file name */
+        public Builder setModuleSpecFileName(String specFileName) {
+            this.specFileName = specFileName;
             return this;
         }
-        /** Add Module dependency. */
-        public Builder addDependency(String dependencyName) {
-            if (dependencyName != null) {
-                dependencies.add(dependencyName);
-            }
+        /** override the default module spec file name */
+        public Builder setModuleSpecSerializer(ScriptModuleSpecSerializer specSerializer) {
+            this.specSerializer = specSerializer;
             return this;
         }
         /** Build the {@link JarScriptArchive}. */
         public JarScriptArchive build() throws IOException {
-           return new JarScriptArchive(name, version, jarPath,
-               new HashMap<String, String>(archiveMetadata),
-               new ArrayList<String>(dependencies));
+            ScriptModuleSpec buildModuleSpec = moduleSpec;
+            if (buildModuleSpec == null){
+                String buildSpecFileName = specFileName != null ? specFileName : DEFAULT_MODULE_SPEC_FILE_NAME;
+                // attempt to find a module spec in the jar file
+                JarFile jarFile = new JarFile(jarPath.toFile());
+                try {
+                    ZipEntry zipEntry = jarFile.getEntry(buildSpecFileName);
+                    if (zipEntry != null) {
+                        InputStream inputStream = jarFile.getInputStream(zipEntry);
+                        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                        IOUtils.copy(inputStream, outputStream);
+                        byte[] bytes = outputStream.toByteArray();
+                        if (bytes != null && bytes.length > 0) {
+                            String json = new String(bytes, Charsets.UTF_8);
+                            ScriptModuleSpecSerializer buildSpecSerializer = specSerializer != null  ? specSerializer :
+                                DEFAULT_SPEC_SERIALIZER;
+                            buildModuleSpec = buildSpecSerializer.deserialize(json);
+                        }
+                    }
+                } finally {
+                    IOUtils.closeQuietly(jarFile);
+                }
+                // create a default module spec
+                if (buildModuleSpec == null) {
+                    String moduleId = this.jarPath.getFileName().toString();
+                    if (moduleId.endsWith(JAR_FILE_SUFFIX)) {
+                        moduleId = moduleId.substring(0, moduleId.lastIndexOf(JAR_FILE_SUFFIX));
+                    }
+                    buildModuleSpec = new ScriptModuleSpec.Builder(moduleId).build();
+                }
+            }
+            return new JarScriptArchive(buildModuleSpec,jarPath);
         }
     }
 
-    private final String archiveName;
-    private final int archiveVersion;
+    private final ScriptModuleSpec moduleSpec;
     private final Set<String> entryNames;
     private final URL rootUrl;
-    private final Map<String, String> archiveMetadata;
-    private final List<String> dependencies;
 
-    protected JarScriptArchive(String archiveName, int archiveVersion, Path jarPath, Map<String, String> applicationMetaData, List<String> dependencies) throws IOException {
-        this.archiveName = Objects.requireNonNull(archiveName, "archiveName");
-        this.archiveVersion = archiveVersion;
+    protected JarScriptArchive(ScriptModuleSpec moduleSpec, Path jarPath) throws IOException {
+        this.moduleSpec = Objects.requireNonNull(moduleSpec, "moduleSpec");
         Objects.requireNonNull(jarPath, "jarFile");
         if (!jarPath.isAbsolute()) throw new IllegalArgumentException("jarPath must be absolute.");
-
-        this.archiveMetadata = Objects.requireNonNull(applicationMetaData, "applicationMetaData");
-        this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
 
         // initialize the index
         JarFile jarFile = new JarFile(jarPath.toFile());
@@ -127,13 +146,10 @@ public class JarScriptArchive implements ScriptArchive {
         entryNames = Collections.unmodifiableSet(indexBuilder);
         rootUrl = jarPath.toUri().toURL();
     }
+
     @Override
-    public String getArchiveName() {
-        return archiveName;
-    }
-    @Override
-    public int getArchiveVersion() {
-        return archiveVersion;
+    public ScriptModuleSpec getModuleSpec() {
+        return moduleSpec;
     }
 
     /**
@@ -157,15 +173,5 @@ public class JarScriptArchive implements ScriptArchive {
         String spec = new StringBuilder()
             .append("jar:").append(rootUrl.toString()).append("!/").append(entryName).toString();
         return new URL(spec);
-    }
-
-    @Override
-    public Map<String, String> getArchiveMetadata() {
-        return archiveMetadata;
-    }
-
-    @Override
-    public List<String> getDependencies() {
-        return dependencies;
     }
 }
