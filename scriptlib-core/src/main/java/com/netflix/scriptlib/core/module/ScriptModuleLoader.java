@@ -17,6 +17,7 @@
  */
 package com.netflix.scriptlib.core.module;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -30,12 +31,14 @@ import javax.annotation.Nullable;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
+import org.jboss.modules.ModuleFinder;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
 
 import com.netflix.scriptlib.core.archive.ScriptArchive;
+import com.netflix.scriptlib.core.compile.ScriptCompilationException;
 import com.netflix.scriptlib.core.compile.ScriptCompiler;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPlugin;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
@@ -46,7 +49,7 @@ import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
  *
  * @author James Kojo
  */
-public class ScriptModuleLoader extends ModuleLoader {
+public class ScriptModuleLoader {
     /** Map of the ModuleId to the Module specifications for {@link ScriptModule}s. This is used for the jboss-modules integration */
     protected final Map<ModuleIdentifier, ModuleSpec> scriptModuleSpecRepo = new ConcurrentHashMap<ModuleIdentifier, ModuleSpec>();
 
@@ -59,8 +62,22 @@ public class ScriptModuleLoader extends ModuleLoader {
     protected final Set<ScriptModuleListener> listeners =
         Collections.newSetFromMap(new ConcurrentHashMap<ScriptModuleListener, Boolean>());
 
+    protected final ModuleLoader jbossModuleLoader;
+
     public ScriptModuleLoader(Set<ScriptCompilerPluginSpec> pluginSpecs) throws ModuleLoadException {
         this.pluginSpecs = Objects.requireNonNull(pluginSpecs);
+        ModuleFinder moduleFinder = new ModuleFinder() {
+            @Override
+            public ModuleSpec findModule(ModuleIdentifier moduleIdentifier, ModuleLoader delegateLoader) throws ModuleLoadException {
+            ModuleSpec moduleSpec = scriptModuleSpecRepo.get(moduleIdentifier);
+            if (moduleSpec == null) {
+                // check to see if the module is a plugin instead of a script both code paths travers this method.
+                moduleSpec = pluginModuleSpecRepo.get(moduleIdentifier);
+            }
+            return moduleSpec;
+            }
+        };
+        this.jbossModuleLoader = new ModuleLoader(new ModuleFinder[] {moduleFinder});
         for (ScriptCompilerPluginSpec pluginSpec : pluginSpecs) {
             addCompilerPlugin(pluginSpec);
         }
@@ -88,8 +105,9 @@ public class ScriptModuleLoader extends ModuleLoader {
         for (ModuleIdentifier moduleId : moduleIds) {
             Module module;
             try {
-                module = loadModule(moduleId);
-            } catch (ModuleLoadException e) {
+                module = jbossModuleLoader.loadModule(moduleId);
+                compileModule(module);
+            } catch (Exception e) {
                 Module.getModuleLogger().trace(e, "Exception loading module " + moduleId);
                 continue;
             }
@@ -121,11 +139,34 @@ public class ScriptModuleLoader extends ModuleLoader {
     }
 
     /**
+     * Compiles and links the scripts within the module by locating the correct compiler
+     * and delegating the compilation. the classes will be loaded into the module's classloader
+     * upon completion.
+     * @param module
+     * @throws IOException
+     * @throws ScriptCompilationException
+     */
+    protected void compileModule(Module module) throws ScriptCompilationException, IOException {
+        // compile the script archive for the module, and inject the resultant classes into
+        // the ModuleClassLoader
+        ModuleClassLoader moduleClassLoader = module.getClassLoader();
+        if (moduleClassLoader instanceof ScriptModuleClassLoader) {
+            ScriptModuleClassLoader scriptModuleClassLoader = (ScriptModuleClassLoader)moduleClassLoader;
+            ScriptArchive scriptArchive = scriptModuleClassLoader.getScriptArchive();
+            ScriptCompiler compiler = findCompiler(scriptArchive);
+            if (compiler != null) {
+                compiler.compile(scriptArchive, scriptModuleClassLoader);
+            }
+        }
+    }
+
+    /**
      * Add a language plugin to this module
      * @param pluginSpec
      * @throws ModuleLoadException
      */
     public void addCompilerPlugin(ScriptCompilerPluginSpec pluginSpec) throws ModuleLoadException  {
+        Objects.requireNonNull(pluginSpec, "pluginSpec");
         ModuleIdentifier moduleId = ModuleUtils.getModuleId(pluginSpec);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(moduleId);
         ModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec);
@@ -135,7 +176,7 @@ public class ScriptModuleLoader extends ModuleLoader {
         // spin up the module, and get the compiled classes from it's classloader
         String providerClassName = pluginSpec.getPluginClassName();
         if (providerClassName != null) {
-            Module pluginModule = loadModule(moduleId);
+            Module pluginModule = jbossModuleLoader.loadModule(moduleId);
             ModuleClassLoader pluginClassLoader = pluginModule.getClassLoader();
             Class<?> compilerProviderClass;
             try {
@@ -162,50 +203,7 @@ public class ScriptModuleLoader extends ModuleLoader {
     public synchronized void removeScriptModule(String moduleId) {
         ModuleIdentifier moduleIdentifier = ModuleIdentifier.create(moduleId);
         scriptModuleSpecRepo.remove(moduleIdentifier);
-        Module module = findLoadedModuleLocal(moduleIdentifier);
-        if (module != null) {
-            unloadModuleLocal(module);
-        }
-    }
-
-    @Override
-    protected ModuleSpec findModule(ModuleIdentifier moduleIdentifier) throws ModuleLoadException {
-         ModuleSpec moduleSpec = scriptModuleSpecRepo.get(moduleIdentifier);
-         if (moduleSpec == null) {
-             // check to see if the module is a plugin instead of a script both code paths travers this method.
-             moduleSpec = pluginModuleSpecRepo.get(moduleIdentifier);
-         }
-         return moduleSpec;
-    }
-
-    @Override
-    protected Module preloadModule(ModuleIdentifier moduleId) throws ModuleLoadException {
-        // for some reason, the modules framework is calling preloadModule() directly from the path-linking logic
-        // so that a given module may be "preloaded" several times. This guards against double initialization
-        Module module = findLoadedModuleLocal(moduleId);
-        if (module != null) {
-            return module;
-        }
-        module = super.preloadModule(moduleId);
-        if (module == null) {
-            throw new ModuleLoadException("Failed to locate module " + moduleId);
-        }
-        // compile the script archive for the module, and inject the resultant classes into
-        // the ModuleClassLoader
-        ModuleClassLoader moduleClassLoader = module.getClassLoader();
-        if (moduleClassLoader instanceof ScriptModuleClassLoader) {
-            ScriptModuleClassLoader scriptModuleClassLoader = (ScriptModuleClassLoader)moduleClassLoader;
-            ScriptArchive scriptArchive = scriptModuleClassLoader.getScriptArchive();
-            ScriptCompiler compiler = findCompiler(scriptArchive);
-            if (compiler != null) {
-                try {
-                    compiler.compile(scriptArchive, scriptModuleClassLoader);
-                } catch (Exception e) {
-                    throw new ModuleLoadException("Exception while compiling module " + moduleId, e);
-                }
-            }
-        }
-        return module;
+        // TODO: unload module from module loader
     }
 
     /**
