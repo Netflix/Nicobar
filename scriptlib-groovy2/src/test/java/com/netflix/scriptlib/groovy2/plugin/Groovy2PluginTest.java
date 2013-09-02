@@ -46,6 +46,9 @@ import com.netflix.scriptlib.groovy2.testutil.GroovyTestResourceUtil.TestScript;
 /**
  * Integration tests for the Groovy2 language plugin
  *
+ * Future tests:
+ *  * test can't delete plugin spec
+ *
  * @author James Kojo
  */
 public class Groovy2PluginTest {
@@ -131,7 +134,6 @@ public class Groovy2PluginTest {
 
         // create and start the loader with the plugin
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader(Collections.singleton(pluginSpec));
-        moduleLoader.start();
         return moduleLoader;
 
     }

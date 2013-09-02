@@ -30,13 +30,11 @@ import com.netflix.scriptlib.core.archive.ScriptArchive;
  * @author James Kojo
  */
 public class JBossScriptModule implements ScriptModule {
-    private final String moduleName;
-    private final int moduleVersion;
+    private final String moduleId;
     private final Module jbossModule;
 
-    public JBossScriptModule(String moduleName, int moduleVersion, Module jbossModule) {
-        this.moduleName = Objects.requireNonNull(moduleName, "moduleName");
-        this.moduleVersion = moduleVersion;
+    public JBossScriptModule(String moduleName, Module jbossModule) {
+        this.moduleId = Objects.requireNonNull(moduleName, "moduleName");
         this.jbossModule =  Objects.requireNonNull(jbossModule, "jbossModule");
     }
 
@@ -44,16 +42,8 @@ public class JBossScriptModule implements ScriptModule {
      * @return module identifier
      */
     @Override
-    public String getModuleName() {
-        return moduleName;
-    }
-
-    /**
-     * @return module version identifier
-     */
-    @Override
-    public int getModuleVersion() {
-        return moduleVersion;
+    public String getModuleId() {
+        return moduleId;
     }
 
     /**

@@ -30,11 +30,11 @@ import java.util.Set;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 
 /**
- * Templated base class for file system scanning daos.
+ * Templated base class for file system scanning {@link ScriptArchivePoller}s.
  *
  * @author James Kojo
  */
-public abstract class FileSystemScriptArchiveDao implements ScriptArchivePoller {
+public abstract class FileSystemScriptArchivePoller implements ScriptArchivePoller {
 
     protected final Path rootDir;
     /** Map of archive root path to the last known time it was deleted  */
@@ -42,7 +42,7 @@ public abstract class FileSystemScriptArchiveDao implements ScriptArchivePoller 
     /** Map of archive root path to the archive name. Used for remembering deleted archives  */
     private final Map<Path, String> moduleIdIndex = new HashMap<Path, String>();
 
-    protected FileSystemScriptArchiveDao(final Path rootDir) throws IOException {
+    protected FileSystemScriptArchivePoller(final Path rootDir) throws IOException {
         this.rootDir = Objects.requireNonNull(rootDir, "rootDir");
         if (!Files.isDirectory(rootDir) || !Files.isReadable(rootDir)) {
             throw new IllegalArgumentException("rootDir must be a readable directory: " + rootDir);

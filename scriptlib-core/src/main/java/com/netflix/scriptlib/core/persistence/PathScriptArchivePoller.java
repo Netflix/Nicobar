@@ -32,12 +32,12 @@ import com.netflix.scriptlib.core.archive.PathScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 
 /**
- * ScriptArchiveDao which scans the local filesystem for directories which
+ * {@link ScriptArchivePoller} which scans the local filesystem for directories which
  * are turned into {@link ScriptArchive}s.
  *
  * @author James Kojo
  */
-public class PathScriptArchiveDao extends FileSystemScriptArchiveDao {
+public class PathScriptArchivePoller extends FileSystemScriptArchivePoller {
 
     /**
      * Directory filter which finds readable directories
@@ -48,7 +48,7 @@ public class PathScriptArchiveDao extends FileSystemScriptArchiveDao {
         }
     };
 
-    public PathScriptArchiveDao(final Path rootDir) throws IOException {
+    public PathScriptArchivePoller(final Path rootDir) throws IOException {
         super(rootDir);
     }
 

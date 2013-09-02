@@ -27,12 +27,12 @@ import com.netflix.scriptlib.core.archive.JarScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 
 /**
- * ScriptArchiveDao which scans the local filesystem for jar files
+ * {@link ScriptArchivePoller} which scans the local filesystem for jar files
  * and converting them to {@link ScriptArchive}s
  *
  * @author James Kojo
  */
-public class JarScriptArchiveDao extends FileSystemScriptArchiveDao {
+public class JarScriptArchivePoller extends FileSystemScriptArchivePoller {
     /**
      * Directory filter which finds readable jar files
      */
@@ -44,7 +44,7 @@ public class JarScriptArchiveDao extends FileSystemScriptArchiveDao {
         }
     };
 
-    public JarScriptArchiveDao(final Path rootDir) throws IOException {
+    public JarScriptArchivePoller(final Path rootDir) throws IOException {
         super(rootDir);
     }
 

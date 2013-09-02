@@ -31,12 +31,7 @@ public interface ScriptModule {
     /**
      * @return module identifier
      */
-    public String getModuleName();
-
-    /**
-     * @return module version identifier
-     */
-    public int getModuleVersion();
+    public String getModuleId();
 
     /**
      * @return the classes that were compiled and loaded from the scripts
