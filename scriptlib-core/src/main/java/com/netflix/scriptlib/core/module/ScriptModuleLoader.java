@@ -50,11 +50,14 @@ import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
  * @author James Kojo
  */
 public class ScriptModuleLoader {
+    /** Map of script ModuleId to the loaded ScriptModules */
+    protected final Map<String, ScriptModule> loadedScriptModules = new ConcurrentHashMap<String, ScriptModule>();
+
     /** Map of the ModuleId to the Module specifications for {@link ScriptModule}s. This is used for the jboss-modules integration */
-    protected final Map<ModuleIdentifier, ModuleSpec> scriptModuleSpecRepo = new ConcurrentHashMap<ModuleIdentifier, ModuleSpec>();
+    protected final Map<ModuleIdentifier, ModuleSpec> scriptModuleSpecs = new ConcurrentHashMap<ModuleIdentifier, ModuleSpec>();
 
     /** Map of the ModuleId to the Module specifications for {@link ScriptCompilerPlugin}. This is used for the jboss-modules integration */
-    protected final Map<ModuleIdentifier, ModuleSpec> pluginModuleSpecRepo = new ConcurrentHashMap<ModuleIdentifier, ModuleSpec>();
+    protected final Map<ModuleIdentifier, ModuleSpec> pluginModuleSpecs = new ConcurrentHashMap<ModuleIdentifier, ModuleSpec>();
 
     protected final Set<ScriptCompilerPluginSpec> pluginSpecs;
     protected final List<ScriptCompiler> compilers = new ArrayList<ScriptCompiler>();
@@ -62,22 +65,22 @@ public class ScriptModuleLoader {
     protected final Set<ScriptModuleListener> listeners =
         Collections.newSetFromMap(new ConcurrentHashMap<ScriptModuleListener, Boolean>());
 
-    protected final ModuleLoader jbossModuleLoader;
+    protected final JBossModuleLoader jbossModuleLoader;
 
     public ScriptModuleLoader(Set<ScriptCompilerPluginSpec> pluginSpecs) throws ModuleLoadException {
         this.pluginSpecs = Objects.requireNonNull(pluginSpecs);
         ModuleFinder moduleFinder = new ModuleFinder() {
             @Override
             public ModuleSpec findModule(ModuleIdentifier moduleIdentifier, ModuleLoader delegateLoader) throws ModuleLoadException {
-            ModuleSpec moduleSpec = scriptModuleSpecRepo.get(moduleIdentifier);
-            if (moduleSpec == null) {
-                // check to see if the module is a plugin instead of a script both code paths travers this method.
-                moduleSpec = pluginModuleSpecRepo.get(moduleIdentifier);
-            }
-            return moduleSpec;
+                // check all of the different maps that we store precurser module artifacts in
+                ModuleSpec moduleSpec = scriptModuleSpecs.get(moduleIdentifier);
+                if (moduleSpec == null) {
+                    moduleSpec = pluginModuleSpecs.get(moduleIdentifier);
+                }
+                return moduleSpec;
             }
         };
-        this.jbossModuleLoader = new ModuleLoader(new ModuleFinder[] {moduleFinder});
+        this.jbossModuleLoader = new JBossModuleLoader(new ModuleFinder[] {moduleFinder});
         for (ScriptCompilerPluginSpec pluginSpec : pluginSpecs) {
             addCompilerPlugin(pluginSpec);
         }
@@ -86,56 +89,63 @@ public class ScriptModuleLoader {
     public synchronized Set<ScriptModule> addScriptArchives(Set<? extends ScriptArchive> archives)  {
         Objects.requireNonNull(archives);
         List<ModuleIdentifier> moduleIds = new ArrayList<ModuleIdentifier>(archives.size());
-
-        // add all module specs before trying to load the modules because loading will
-        // cause the transitive dependencies to be compiled
+        // setup the precursor artifacts so jboss-modules can find them.
         for (ScriptArchive scriptArchive : archives) {
-            ModuleIdentifier moduleId;
             try {
-                moduleId = prepareModuleSpec(scriptArchive);
-                moduleIds.add(moduleId);
+                ModuleSpec moduleSpec = createModuleSpec(scriptArchive);
+                ModuleIdentifier moduleIdentifier = moduleSpec.getModuleIdentifier();
+                moduleIds.add(moduleIdentifier);
+                ModuleSpec replacedSpec = scriptModuleSpecs.put(moduleIdentifier, moduleSpec);
+                if (replacedSpec != null) {
+                    // unload the module or jboss won't reload it
+                    Module replacedModule = jbossModuleLoader.findLoadedModule(moduleIdentifier);
+                    jbossModuleLoader.unloadModule(replacedModule);
+                }
             } catch (ModuleLoadException e) {
-                // TODO: add real logging. perhaps adds this modules to a "try again later" queue?
+                // TODO: add real logging.
                 Module.getModuleLogger().trace(e, "Exception loading archive " +
                     scriptArchive.getModuleSpec().getModuleId());
                 continue;
             }
         }
+        // the graphs is now wired up. compile the new modules.
         LinkedHashSet<ScriptModule> scriptModules = new LinkedHashSet<ScriptModule>(archives.size());
         for (ModuleIdentifier moduleId : moduleIds) {
+            String scriptModuleId = moduleId.getName();
             Module module;
             try {
                 module = jbossModuleLoader.loadModule(moduleId);
                 compileModule(module);
+                JBossScriptModule scriptModule = new JBossScriptModule(scriptModuleId, module);
+                scriptModules.add(scriptModule);
+                ScriptModule oldModule = loadedScriptModules.put(scriptModuleId, scriptModule);
+                notifyModuleUpdate(scriptModule, oldModule);
             } catch (Exception e) {
+                // TODO: unfortunately, jboss-modules doesn't provide the ability to roll-back the change.
+                // this leaves us in a state in which any subsequent attempts to link to this module will
+                // fail even though the previous version worked. put rollback logic here once we have a solution
+                loadedScriptModules.remove(scriptModuleId);
                 Module.getModuleLogger().trace(e, "Exception loading module " + moduleId);
                 continue;
             }
-            JBossScriptModule scriptModule = new JBossScriptModule(moduleId.getName(), module);
-            scriptModules.add(scriptModule);
         }
+        // TODO: re-link the dependents of the newly loaded modules. as it stands, even the recently added
+        // modules may be linked to old versions of their dependencies depending on the order in which they were
+        // compiled.
         return scriptModules;
     }
 
     /**
-     * Prepares a {@link ScriptArchive} for loading by the underlying {@link ModuleLoader}.
+     * Create a ModuleSpec artfact which is used to prepares a {@link ScriptArchive} for loading by the underlying {@link ModuleLoader}.
      * Creates {@link ModuleSpec} for the archive, and add it to the module spec repo so that
      * the module is ready to load.
      */
-    protected synchronized ModuleIdentifier prepareModuleSpec(ScriptArchive scriptArchive) throws ModuleLoadException {
-        String archiveId = scriptArchive.getModuleSpec().getModuleId();
+    protected synchronized ModuleSpec createModuleSpec(ScriptArchive scriptArchive) throws ModuleLoadException {
         ModuleIdentifier moduleId = ModuleUtils.getModuleId(scriptArchive);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(moduleId);
         ModuleUtils.populateModuleSpec(moduleSpecBuilder, scriptArchive);
         ModuleSpec moduleSpec = moduleSpecBuilder.create();
-
-        // if it already exists, unload the old version
-        ModuleSpec replaced = scriptModuleSpecRepo.get(moduleId);
-        if (replaced != null) {
-            removeScriptModule(archiveId);
-        }
-        scriptModuleSpecRepo.put(moduleId, moduleSpec);
-        return moduleId;
+        return moduleSpec;
     }
 
     /**
@@ -171,7 +181,7 @@ public class ScriptModuleLoader {
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(moduleId);
         ModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec);
         ModuleSpec moduleSpec = moduleSpecBuilder.create();
-        pluginModuleSpecRepo.put(moduleId, moduleSpec);
+        pluginModuleSpecs.put(moduleId, moduleSpec);
 
         // spin up the module, and get the compiled classes from it's classloader
         String providerClassName = pluginSpec.getPluginClassName();
@@ -202,8 +212,17 @@ public class ScriptModuleLoader {
 
     public synchronized void removeScriptModule(String moduleId) {
         ModuleIdentifier moduleIdentifier = ModuleIdentifier.create(moduleId);
-        scriptModuleSpecRepo.remove(moduleIdentifier);
-        // TODO: unload module from module loader
+        scriptModuleSpecs.remove(moduleIdentifier);
+        Module loadedModule = jbossModuleLoader.findLoadedModule(moduleIdentifier);
+        if (loadedModule != null) {
+            jbossModuleLoader.unloadModule(loadedModule);
+        }
+        loadedScriptModules.remove(moduleId);
+    }
+
+    @Nullable
+    public ScriptModule getScriptModule(String scriptModuleId) {
+        return loadedScriptModules.get(scriptModuleId);
     }
 
     /**
