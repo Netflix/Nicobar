@@ -43,7 +43,7 @@ import com.netflix.scriptlib.core.persistence.ScriptArchivePoller.PollResult;
  *
  * @author James Kojo
  */
-public class PathScriptArchiveDaoTest {
+public class PathScriptArchivePollerTest {
     private final static String TEXT_PATH_RESOURCE_NAME = "paths/test-text";
     private final static String MODULE_SPEC_PATH_RESOURCE_NAME = "paths/test-modulespec";
     private Path rootArchiveDirectory;
@@ -51,7 +51,7 @@ public class PathScriptArchiveDaoTest {
 
     @BeforeClass
     public void setup() throws IOException {
-        rootArchiveDirectory = Files.createTempDirectory(PathScriptArchiveDaoTest.class.getSimpleName()+"_");
+        rootArchiveDirectory = Files.createTempDirectory(PathScriptArchivePollerTest.class.getSimpleName()+"_");
         FileUtils.forceDeleteOnExit(rootArchiveDirectory.toFile());
         copyArchive(TEXT_PATH_RESOURCE_NAME);
         copyArchive(MODULE_SPEC_PATH_RESOURCE_NAME);
