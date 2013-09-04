@@ -37,7 +37,9 @@ public class CoreTestResourceUtil {
      */
     public static enum TestResource {
         TEST_TEXT_PATH("paths/test-text", "sub1/sub1.txt", "sub2/sub2.txt", "root.txt", "META-INF/MANIFEST.MF"),
-        TEST_TEXT_JAR("jars/test-text.jar", "sub1/sub1.txt", "sub2/sub2.txt", "root.txt", "META-INF/MANIFEST.MF");
+        TEST_TEXT_JAR("jars/test-text.jar", "sub1/sub1.txt", "sub2/sub2.txt", "root.txt", "META-INF/MANIFEST.MF"),
+        TEST_MODULE_SPEC_PATH("paths/test-modulespec", "root.txt", "META-INF/MANIFEST.MF"),
+        TEST_MODULE_SPEC_JAR("jars/test-modulespec.jar", "root.txt", "META-INF/MANIFEST.MF");
 
         private final String resourcePath;
         private final Set<String> contentPaths;

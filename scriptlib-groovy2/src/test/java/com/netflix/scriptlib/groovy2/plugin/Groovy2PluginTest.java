@@ -52,10 +52,9 @@ import com.netflix.scriptlib.groovy2.testutil.GroovyTestResourceUtil.TestScript;
  * Integration tests for the Groovy2 language plugin
  *
  * Future tests:
- *  * test can't delete plugin spec
- *  * deploy uncompilable archive doesn't unload the previous version
- *  * re-link newly deployed depdencies
- *
+ *  . test can't delete plugin spec
+ *  . deploy uncompilable archive doesn't unload the previous version
+ *  . re-link newly deployed depdencies
  *
  * @author James Kojo
  */
@@ -88,7 +87,7 @@ public class Groovy2PluginTest {
             .addFile(TestScript.HELLO_WORLD.getScriptPath())
             .setModuleSpec(createGroovyModuleSpec(TestScript.HELLO_WORLD.getModuleId()).build())
             .build();
-        Set<ScriptModule> scriptModules = moduleLoader.addScriptArchives(Collections.singleton(scriptArchive));
+        Set<ScriptModule> scriptModules = moduleLoader.updateScriptArchives(Collections.singleton(scriptArchive));
         assertNotNull(CollectionUtils.isNotEmpty(scriptModules));
 
         // locate the class file in the module and execute it
@@ -118,7 +117,7 @@ public class Groovy2PluginTest {
             .setModuleSpec(createGroovyModuleSpec(TestScript.LIBRARY_A.getModuleId()).build())
             .build();
         // load them in dependency order to make sure that transitive dependency resolution is working
-        Set<ScriptModule> scriptModules = moduleLoader.addScriptArchives(new LinkedHashSet<ScriptArchive>(Arrays.asList(dependsOnAArchive, libAArchive)));
+        Set<ScriptModule> scriptModules = moduleLoader.updateScriptArchives(new LinkedHashSet<ScriptArchive>(Arrays.asList(dependsOnAArchive, libAArchive)));
         assertTrue(CollectionUtils.isNotEmpty(scriptModules));
 
         // locate the class file in the module and execute it
@@ -148,7 +147,7 @@ public class Groovy2PluginTest {
             .setModuleSpec(createGroovyModuleSpec(TestScript.LIBRARY_A.getModuleId()).build())
             .build();
 
-        moduleLoader.addScriptArchives(new LinkedHashSet<ScriptArchive>(Arrays.asList(dependsOnAArchive, libAArchive)));
+        moduleLoader.updateScriptArchives(new LinkedHashSet<ScriptArchive>(Arrays.asList(dependsOnAArchive, libAArchive)));
 
         // reload the library with version 2
         Path libAV2RootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.LIBRARY_AV2);
@@ -157,11 +156,11 @@ public class Groovy2PluginTest {
             .addFile(TestScript.LIBRARY_AV2.getScriptPath())
             .setModuleSpec(createGroovyModuleSpec(TestScript.LIBRARY_A.getModuleId()).build())
             .build();
-        Set<ScriptModule> scriptModules = moduleLoader.addScriptArchives(Collections.singleton(libAV2Archive));
+        Set<ScriptModule> scriptModules = moduleLoader.updateScriptArchives(Collections.singleton(libAV2Archive));
         assertEquals(scriptModules.size(), 1);
 
         // reload dependent to force a re-link. Once we add an auto re-link feature or ordered loading, this shouldn't be necessary.
-        moduleLoader.addScriptArchives(Collections.singleton(dependsOnAArchive));
+        moduleLoader.updateScriptArchives(Collections.singleton(dependsOnAArchive));
 
         // find the dependent and execute it
         ScriptModule scriptModuleDependOnA = moduleLoader.getScriptModule(TestScript.DEPENDS_ON_A.getModuleId());
@@ -191,7 +190,7 @@ public class Groovy2PluginTest {
             .setModuleSpec(createGroovyModuleSpec(TestScript.LIBRARY_A.getModuleId()).build())
             .build();
 
-        Set<ScriptModule> scriptModules = moduleLoader.addScriptArchives(new LinkedHashSet<ScriptArchive>(Arrays.asList(dependsOnAArchive, libAArchive)));
+        Set<ScriptModule> scriptModules = moduleLoader.updateScriptArchives(new LinkedHashSet<ScriptArchive>(Arrays.asList(dependsOnAArchive, libAArchive)));
         assertTrue(CollectionUtils.isNotEmpty(scriptModules));
 
         // attempt reload library-A with invalid groovy
@@ -200,7 +199,7 @@ public class Groovy2PluginTest {
             .addFile(uncompilableScriptRelativePath)
             .setModuleSpec(createGroovyModuleSpec(TestScript.LIBRARY_A.getModuleId()).build())
             .build();
-        scriptModules = moduleLoader.addScriptArchives(new LinkedHashSet<ScriptArchive>(Arrays.asList(libAArchive)));
+        scriptModules = moduleLoader.updateScriptArchives(new LinkedHashSet<ScriptArchive>(Arrays.asList(libAArchive)));
         assertTrue(scriptModules.isEmpty(), scriptModules.toString());
 
         // find the dependent and execute it
@@ -225,9 +224,10 @@ public class Groovy2PluginTest {
             .build();
 
         // create and start the loader with the plugin
-        ScriptModuleLoader moduleLoader = new ScriptModuleLoader(Collections.singleton(pluginSpec));
+        ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
+            .addPluginSpec(pluginSpec)
+            .build();
         return moduleLoader;
-
     }
 
     /**

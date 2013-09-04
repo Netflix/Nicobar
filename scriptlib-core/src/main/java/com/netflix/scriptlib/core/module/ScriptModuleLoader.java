@@ -20,12 +20,19 @@ package com.netflix.scriptlib.core.module;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -40,16 +47,97 @@ import org.jboss.modules.ModuleSpec;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 import com.netflix.scriptlib.core.compile.ScriptCompilationException;
 import com.netflix.scriptlib.core.compile.ScriptCompiler;
+import com.netflix.scriptlib.core.persistence.ScriptArchivePoller;
+import com.netflix.scriptlib.core.persistence.ScriptArchivePoller.PollResult;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPlugin;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
 
 /**
+ * Top level API for loading and accessing scripts.
  * Builds and maintains interdependent script modules.
+ * Performs coordination between components neccessary for
+ * finding, compiling and loading scripts and notifying event listeners.
+ *
+ * Listeners can be added at any time during the repositories lifecycle, but if they are
+ * added at construction time, they are guaranteed to receive the events associate with the loading
+ * of archives, while those that are added later will only get events generated after the listener was added.
+ *
  * Support pluggable compilers via the {@link ScriptCompilerPluginSpec}.
  *
  * @author James Kojo
  */
 public class ScriptModuleLoader {
+    /** Thread factory used for the default poller thread pool */
+    private final static ThreadFactory DEFAULT_POLLER_THREAD_FACTORY = new ThreadFactory() {
+        @Override
+        public Thread newThread(Runnable r) {
+            return new Thread(r, ScriptModuleLoader.class.getSimpleName() + "-" + "PollerThread");
+        }
+    };
+
+    /**
+     * Builder used to constract a {@link ScriptModuleLoader}
+     */
+    public static class Builder {
+        private final Set<ScriptCompilerPluginSpec> pluginSpecs=  new LinkedHashSet<ScriptCompilerPluginSpec>();
+        private final Map<ScriptArchivePoller, Integer> pollers = new LinkedHashMap<ScriptArchivePoller, Integer>();
+        private final Set<ScriptModuleListener> listeners = new LinkedHashSet<ScriptModuleListener>();
+        private ScheduledExecutorService pollerThreadPool;
+        public Builder() {
+        }
+
+        /** Add a language compiler plugin specification to the loader */
+        public Builder addPluginSpec(ScriptCompilerPluginSpec pluginSpec) {
+            if (pluginSpec != null) {
+                pluginSpecs.add(pluginSpec);
+            }
+            return this;
+        }
+        /** Add a archive poller which will be polled at the given rate */
+        public Builder addPoller(ScriptArchivePoller poller, int pollIntervalSeconds) {
+            if (poller != null) {
+                pollers.put(poller, pollIntervalSeconds);
+            }
+            return this;
+        }
+        /** Add a archive poller which will be polled at the given interval */
+        public Builder addListener(ScriptModuleListener listener) {
+            if (listener != null) {
+                listeners.add(listener);
+            }
+            return this;
+        }
+        /** Add a archive poller which will be polled at the given interval */
+        public Builder setPollerThreadPool(ScheduledExecutorService pollerThreadPool) {
+            this.pollerThreadPool = pollerThreadPool;
+            return this;
+        }
+        public ScriptModuleLoader build() throws ModuleLoadException {
+           ScheduledExecutorService buildPollerThreadPool = pollerThreadPool;
+           if (buildPollerThreadPool == null ) {
+               buildPollerThreadPool = Executors.newSingleThreadScheduledExecutor(DEFAULT_POLLER_THREAD_FACTORY);
+           }
+           return new ScriptModuleLoader(pluginSpecs, pollers, listeners, buildPollerThreadPool);
+        }
+    }
+
+    /** used for book-keeping  of pollers */
+    protected static class ArchivePollerContext {
+        protected final int pollInterval;
+        protected volatile long lastPollTime;
+        protected volatile ScheduledFuture<?> future;
+        protected ArchivePollerContext(int pollInterval) {
+            this.pollInterval = pollInterval;
+        }
+    }
+
+    /** Contains transient state required for pollers */
+    protected final ConcurrentHashMap<ScriptArchivePoller, ArchivePollerContext> pollerContexts =
+        new ConcurrentHashMap<ScriptArchivePoller, ArchivePollerContext>();
+
+    /** Thread pool used by the pollers */
+    protected final ScheduledExecutorService pollerThreadPool;
+
     /** Map of script ModuleId to the loaded ScriptModules */
     protected final Map<String, ScriptModule> loadedScriptModules = new ConcurrentHashMap<String, ScriptModule>();
 
@@ -67,7 +155,10 @@ public class ScriptModuleLoader {
 
     protected final JBossModuleLoader jbossModuleLoader;
 
-    public ScriptModuleLoader(Set<ScriptCompilerPluginSpec> pluginSpecs) throws ModuleLoadException {
+    protected ScriptModuleLoader(final Set<ScriptCompilerPluginSpec> pluginSpecs,
+            final Map<ScriptArchivePoller, Integer> pollers,
+            final Set<ScriptModuleListener> listeners,
+            final ScheduledExecutorService pollerThreadPool) throws ModuleLoadException {
         this.pluginSpecs = Objects.requireNonNull(pluginSpecs);
         ModuleFinder moduleFinder = new ModuleFinder() {
             @Override
@@ -84,9 +175,17 @@ public class ScriptModuleLoader {
         for (ScriptCompilerPluginSpec pluginSpec : pluginSpecs) {
             addCompilerPlugin(pluginSpec);
         }
+
+        // setup pollers
+        Objects.requireNonNull(pollers);
+        this.pollerThreadPool = Objects.requireNonNull(pollerThreadPool);
+        addListeners(Objects.requireNonNull(listeners));
+        for (Entry<ScriptArchivePoller, Integer> entry : pollers.entrySet()) {
+            addPoller(entry.getKey(), entry.getValue());
+        }
     }
 
-    public synchronized Set<ScriptModule> addScriptArchives(Set<? extends ScriptArchive> archives)  {
+    public synchronized Set<ScriptModule> updateScriptArchives(Set<? extends ScriptArchive> archives)  {
         Objects.requireNonNull(archives);
         List<ModuleIdentifier> moduleIds = new ArrayList<ModuleIdentifier>(archives.size());
         // setup the precursor artifacts so jboss-modules can find them.
@@ -139,9 +238,7 @@ public class ScriptModuleLoader {
     }
 
     /**
-     * Create a ModuleSpec artfact which is used to prepares a {@link ScriptArchive} for loading by the underlying {@link ModuleLoader}.
-     * Creates {@link ModuleSpec} for the archive, and add it to the module spec repo so that
-     * the module is ready to load.
+     * Create a ModuleSpec artifact which is used to prepare a {@link ScriptArchive} for loading.
      */
     protected synchronized ModuleSpec createModuleSpec(ScriptArchive scriptArchive) throws ModuleLoadException {
         ModuleIdentifier moduleId = ModuleUtils.getModuleId(scriptArchive);
@@ -155,9 +252,7 @@ public class ScriptModuleLoader {
      * Compiles and links the scripts within the module by locating the correct compiler
      * and delegating the compilation. the classes will be loaded into the module's classloader
      * upon completion.
-     * @param module
-     * @throws IOException
-     * @throws ScriptCompilationException
+     * @param module module to be compiled
      */
     protected void compileModule(Module module) throws ScriptCompilationException, IOException {
         // compile the script archive for the module, and inject the resultant classes into
@@ -203,16 +298,6 @@ public class ScriptModuleLoader {
         }
     }
 
-    /**
-     * Add listeners to this module loader. Listeners will only be notified of events that occurred after they
-     * were added.
-     * @param listeners listeners to add
-     */
-    public void addListeners(Set<ScriptModuleListener> listeners) {
-        Objects.requireNonNull(listeners);
-        this.listeners.addAll(listeners);
-    }
-
     public synchronized void removeScriptModule(String moduleId) {
         ModuleIdentifier moduleIdentifier = ModuleIdentifier.create(moduleId);
         scriptModuleSpecs.remove(moduleIdentifier);
@@ -229,6 +314,63 @@ public class ScriptModuleLoader {
     @Nullable
     public ScriptModule getScriptModule(String scriptModuleId) {
         return loadedScriptModules.get(scriptModuleId);
+    }
+
+    /**
+     * Add listeners to this module loader. Listeners will only be notified of events that occurred after they
+     * were added.
+     * @param listeners listeners to add
+     */
+    public void addListeners(Set<ScriptModuleListener> listeners) {
+        Objects.requireNonNull(listeners);
+        this.listeners.addAll(listeners);
+    }
+
+    public boolean addPoller(final ScriptArchivePoller poller, final int pollInterval) {
+        if (pollInterval <= 0) {
+            throw new IllegalArgumentException("invalid pollInterval " + pollInterval);
+        }
+        ArchivePollerContext pollerContext = new ArchivePollerContext(pollInterval);
+        ArchivePollerContext oldContext = pollerContexts.putIfAbsent(poller, pollerContext);
+        if (oldContext != null) {
+            return false;
+        }
+        ScheduledFuture<?> future = pollerThreadPool.scheduleWithFixedDelay(new Runnable() {
+            public void run() {
+                pollForUpdates(poller);
+            }
+        },
+        0, pollInterval, TimeUnit.SECONDS);
+        pollerContext.future = future;
+        return true;
+    }
+
+    protected void pollForUpdates(ScriptArchivePoller poller) {
+        ArchivePollerContext context = pollerContexts.get(poller);
+        if (context == null) {
+            return;
+        }
+        synchronized (context) {
+            long now = System.currentTimeMillis();
+            PollResult pollResult;
+            try {
+                pollResult = poller.poll(context.lastPollTime);
+                context.lastPollTime = now;
+            } catch (IOException e) {
+                Module.getModuleLogger().trace(e, "Error attempting to poll");
+                return;
+            }
+            Set<ScriptArchive> updatedArchives = pollResult.getUpdatedArchives();
+            if (!updatedArchives.isEmpty()) {
+                updateScriptArchives(updatedArchives);
+            }
+            Set<String> deletedModuleIds = pollResult.getDeletedModuleIds();
+            if (!deletedModuleIds.isEmpty()) {
+                for (String moduleId : deletedModuleIds) {
+                    removeScriptModule(moduleId);
+                }
+            }
+        }
     }
 
     /**

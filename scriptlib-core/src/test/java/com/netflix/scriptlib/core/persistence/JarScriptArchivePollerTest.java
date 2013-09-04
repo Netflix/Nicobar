@@ -17,6 +17,8 @@
  */
 package com.netflix.scriptlib.core.persistence;
 
+import static com.netflix.scriptlib.core.testutil.CoreTestResourceUtil.TestResource.TEST_MODULE_SPEC_JAR;
+import static com.netflix.scriptlib.core.testutil.CoreTestResourceUtil.TestResource.TEST_TEXT_JAR;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -43,17 +45,14 @@ import com.netflix.scriptlib.core.persistence.ScriptArchivePoller.PollResult;
  * @author James Kojo
  */
 public class JarScriptArchivePollerTest {
-    private final static String TEXT_PATH_RESOURCE_NAME = "jars/test-text.jar";
-    private final static String MODULE_SPEC_PATH_RESOURCE_NAME = "jars/test-modulespec.jar";
     private Path rootArchiveDirectory;
-
 
     @BeforeClass
     public void setup() throws IOException {
         rootArchiveDirectory = Files.createTempDirectory(JarScriptArchivePollerTest.class.getSimpleName()+"_");
         FileUtils.forceDeleteOnExit(rootArchiveDirectory.toFile());
-        copyArchive(TEXT_PATH_RESOURCE_NAME);
-        copyArchive(MODULE_SPEC_PATH_RESOURCE_NAME);
+        copyArchive(TEST_TEXT_JAR.getResourcePath());
+        copyArchive(TEST_MODULE_SPEC_JAR.getResourcePath());
     }
 
     /**
@@ -148,7 +147,7 @@ public class JarScriptArchivePollerTest {
         lastPollTime += 2000;
 
         // restore the module and reload
-        copyArchive(MODULE_SPEC_PATH_RESOURCE_NAME);
+        copyArchive(TEST_MODULE_SPEC_JAR.getResourcePath());
         Files.setLastModifiedTime(moduleSpecPath, FileTime.fromMillis(lastPollTime+1000));
         pollResult = archivePoller.poll(lastPollTime);
         updatedArchives = pollResult.getUpdatedArchives();
