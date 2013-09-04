@@ -91,21 +91,22 @@ public class ScriptModuleLoader {
         List<ModuleIdentifier> moduleIds = new ArrayList<ModuleIdentifier>(archives.size());
         // setup the precursor artifacts so jboss-modules can find them.
         for (ScriptArchive scriptArchive : archives) {
+            ModuleSpec moduleSpec;
             try {
-                ModuleSpec moduleSpec = createModuleSpec(scriptArchive);
-                ModuleIdentifier moduleIdentifier = moduleSpec.getModuleIdentifier();
-                moduleIds.add(moduleIdentifier);
-                ModuleSpec replacedSpec = scriptModuleSpecs.put(moduleIdentifier, moduleSpec);
-                if (replacedSpec != null) {
-                    // unload the module or jboss won't reload it
-                    Module replacedModule = jbossModuleLoader.findLoadedModule(moduleIdentifier);
-                    jbossModuleLoader.unloadModule(replacedModule);
-                }
+                moduleSpec = createModuleSpec(scriptArchive);
             } catch (ModuleLoadException e) {
                 // TODO: add real logging.
                 Module.getModuleLogger().trace(e, "Exception loading archive " +
                     scriptArchive.getModuleSpec().getModuleId());
                 continue;
+            }
+            ModuleIdentifier moduleIdentifier = moduleSpec.getModuleIdentifier();
+            moduleIds.add(moduleIdentifier);
+            ModuleSpec replacedSpec = scriptModuleSpecs.put(moduleIdentifier, moduleSpec);
+            if (replacedSpec != null) {
+                // unload the module or jboss won't reload it
+                Module replacedModule = jbossModuleLoader.findLoadedModule(moduleIdentifier);
+                jbossModuleLoader.unloadModule(replacedModule);
             }
         }
         // the graphs is now wired up. compile the new modules.
@@ -116,18 +117,20 @@ public class ScriptModuleLoader {
             try {
                 module = jbossModuleLoader.loadModule(moduleId);
                 compileModule(module);
-                JBossScriptModule scriptModule = new JBossScriptModule(scriptModuleId, module);
-                scriptModules.add(scriptModule);
-                ScriptModule oldModule = loadedScriptModules.put(scriptModuleId, scriptModule);
-                notifyModuleUpdate(scriptModule, oldModule);
             } catch (Exception e) {
                 // TODO: unfortunately, jboss-modules doesn't provide the ability to roll-back the change.
                 // this leaves us in a state in which any subsequent attempts to link to this module will
-                // fail even though the previous version worked. put rollback logic here once we have a solution
-                loadedScriptModules.remove(scriptModuleId);
+                // fail even though the previous version worked. Remove the script module from the local caches in order
+                // to stay consistent with the jboss moduleloader because it was unloaded from the jboss module loader above.
+                // put rollback logic here once we have a solution
                 Module.getModuleLogger().trace(e, "Exception loading module " + moduleId);
+                removeScriptModule(scriptModuleId);
                 continue;
             }
+            JBossScriptModule scriptModule = new JBossScriptModule(scriptModuleId, module);
+            scriptModules.add(scriptModule);
+            ScriptModule oldModule = loadedScriptModules.put(scriptModuleId, scriptModule);
+            notifyModuleUpdate(scriptModule, oldModule);
         }
         // TODO: re-link the dependents of the newly loaded modules. as it stands, even the recently added
         // modules may be linked to old versions of their dependencies depending on the order in which they were
@@ -217,7 +220,10 @@ public class ScriptModuleLoader {
         if (loadedModule != null) {
             jbossModuleLoader.unloadModule(loadedModule);
         }
-        loadedScriptModules.remove(moduleId);
+        ScriptModule oldScriptModule = loadedScriptModules.remove(moduleId);
+        if (oldScriptModule != null) {
+            notifyModuleUpdate(null, oldScriptModule);
+        }
     }
 
     @Nullable
