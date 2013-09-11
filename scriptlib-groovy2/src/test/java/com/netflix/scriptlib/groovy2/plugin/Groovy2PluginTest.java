@@ -126,7 +126,7 @@ public class Groovy2PluginTest {
      * Test loading/executing a script which has a dependency on a library
      */
     @Test
-    public void testLoadReloadLibrary() throws Exception {
+    public void testReloadLibrary() throws Exception {
         ScriptModuleLoader moduleLoader = createGroovyModuleLoader();
         Path dependsOnARootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.DEPENDS_ON_A);
         ScriptArchive dependsOnAArchive = new PathScriptArchive.Builder(dependsOnARootPath)
@@ -154,9 +154,6 @@ public class Groovy2PluginTest {
             .setModuleSpec(createGroovyModuleSpec(TestScript.LIBRARY_A.getModuleId()).build())
             .build();
         moduleLoader.updateScriptArchives(Collections.singleton(libAV2Archive));
-
-        // reload dependent to force a re-link. Once we add an auto re-link feature or ordered loading, this shouldn't be necessary.
-        moduleLoader.updateScriptArchives(Collections.singleton(dependsOnAArchive));
 
         // find the dependent and execute it
         ScriptModule scriptModuleDependOnA = moduleLoader.getScriptModule(TestScript.DEPENDS_ON_A.getModuleId());
