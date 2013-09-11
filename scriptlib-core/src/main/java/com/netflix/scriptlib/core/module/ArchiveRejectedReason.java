@@ -17,34 +17,13 @@
  */
 package com.netflix.scriptlib.core.module;
 
-import javax.annotation.Nullable;
-
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleFinder;
-import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoader;
-
 /**
- * Trivial specialization of the {@link ModuleLoader} which exposes it's protected methods
+ * Reason why an Archive was rejected loader
  *
  * @author James Kojo
  */
-public class JBossModuleLoader extends ModuleLoader {
-
-
-    public JBossModuleLoader() {
-    }
-
-    public JBossModuleLoader(ModuleFinder[] moduleFinders) {
-        super(moduleFinders);
-    }
-
-    public void unloadModule(Module module) {
-        unloadModuleLocal(module);
-    }
-
-    @Nullable
-    public Module findLoadedModule(ModuleIdentifier identifier) {
-        return findLoadedModuleLocal(identifier);
-    }
+public enum ArchiveRejectedReason {
+    HIGHER_REVISION_AVAILABLE,
+    ARCHIVE_IO_EXCEPTION,
+    COMPILE_FAILURE
 }

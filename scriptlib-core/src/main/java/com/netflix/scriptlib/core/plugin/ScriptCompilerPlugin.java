@@ -19,7 +19,7 @@ package com.netflix.scriptlib.core.plugin;
 
 import java.util.Set;
 
-import com.netflix.scriptlib.core.compile.ScriptCompiler;
+import com.netflix.scriptlib.core.compile.ScriptArchiveCompiler;
 
 /**
  * Language plugin bootstrapper. Factory/provider interfaces for exporting classes needed for
@@ -29,5 +29,5 @@ import com.netflix.scriptlib.core.compile.ScriptCompiler;
  */
 public interface ScriptCompilerPlugin {
 
-    public Set<? extends ScriptCompiler> getCompilers();
+    public Set<? extends ScriptArchiveCompiler> getCompilers();
 }

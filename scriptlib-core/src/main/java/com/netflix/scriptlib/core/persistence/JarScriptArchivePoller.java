@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Set;
 
 import com.netflix.scriptlib.core.archive.JarScriptArchive;
@@ -52,18 +53,19 @@ public class JarScriptArchivePoller extends FileSystemScriptArchivePoller {
      * Search the root directory for jar archives that have changed
      * @param lastPollTime lower bound for the search
      * @param visitedArchivePaths result parameter which will be populated with the archive roots that were visited
-     * @param updatedArchivePaths result parameter which will be populated with the updated archives
+     * @param updatedArchivePaths result parameter which will be populated with the updated archives mapped
+     * to the last update time of the archive
      * @throws IOException
      */
     @Override
     protected void findUpdatedArchives(final long lastPollTime, Set<Path> visitedArchivePaths,
-        final Set<Path> updatedArchivePaths) throws IOException {
+        final Map<Path, Long> updatedArchivePaths) throws IOException {
         DirectoryStream<Path> jarPaths = Files.newDirectoryStream(rootDir, JAR_FILE_FILTER);
         for (final Path jarPath: jarPaths) {
             Path absoluteJarPath = rootDir.resolve(jarPath);
             long lastModifiedTime = Files.getLastModifiedTime(jarPath).toMillis();
             if (lastModifiedTime > lastPollTime) {
-                updatedArchivePaths.add(absoluteJarPath);
+                updatedArchivePaths.put(absoluteJarPath, lastModifiedTime);
             }
             visitedArchivePaths.add(absoluteJarPath);
         }
@@ -73,8 +75,10 @@ public class JarScriptArchivePoller extends FileSystemScriptArchivePoller {
      * Create the script archive from the given archive root for updated archives
      */
     @Override
-    protected ScriptArchive createScriptArchive(Path jarFilePath) throws IOException {
-        ScriptArchive archive = new JarScriptArchive.Builder(jarFilePath).build();
+    protected ScriptArchive createScriptArchive(Path jarFilePath, long createTime) throws IOException {
+        ScriptArchive archive = new JarScriptArchive.Builder(jarFilePath)
+            .setCreateTime(createTime)
+            .build();
         return archive;
     }
 }

@@ -52,13 +52,15 @@ public abstract class FileSystemScriptArchivePoller implements ScriptArchivePoll
     @Override
     public synchronized PollResult poll(final long lastPollTime) throws IOException {
         Set<Path> visitedArchivePaths = new HashSet<Path>(moduleIdIndex.size()*2);
-        final Set<Path> updatedArchivePaths = new HashSet<Path>(moduleIdIndex.size());
+        final Map<Path, Long> updatedArchivePaths = new HashMap<Path, Long>(moduleIdIndex.size());
         findUpdatedArchives(lastPollTime, visitedArchivePaths, updatedArchivePaths);
         final Set<ScriptArchive> updatedArchives = new HashSet<ScriptArchive>(moduleIdIndex.size());
 
         // archive has been updated. convert it to a ScriptArchive and note the name
-        for (Path archivePath : updatedArchivePaths) {
-            ScriptArchive scriptArchive = createScriptArchive(archivePath);
+        for (Entry<Path, Long> entry : updatedArchivePaths.entrySet()) {
+            Path archivePath = entry.getKey();
+            Long createTime = entry.getValue();
+            ScriptArchive scriptArchive = createScriptArchive(archivePath, createTime);
             updatedArchives.add(scriptArchive);
             moduleIdIndex.put(archivePath, scriptArchive.getModuleSpec().getModuleId());
         }
@@ -76,17 +78,19 @@ public abstract class FileSystemScriptArchivePoller implements ScriptArchivePoll
      * @param lastPollTime lower bound for the search
      * @param visitedArchivePaths result parameter which will be populated with the archive roots that were visited
      * @param updatedArchivePaths result parameter which will be populated with the subset of Paths that were recently modified
+     * mapped to the last modified time of the archive
      * @throws IOException
      */
-    protected abstract void findUpdatedArchives(long lastPollTime, Set<Path> visitedArchivePaths, Set<Path> updatedArchivePaths) throws IOException;
+    protected abstract void findUpdatedArchives(long lastPollTime, Set<Path> visitedArchivePaths, Map<Path, Long> updatedArchivePaths) throws IOException;
 
     /**
      * Create a {@link ScriptArchive} from the given archivePath.
      * @param archivePath
+     * @param createTime time that should be used for the archives createTime
      * @return the created {@link ScriptArchive}
      * @throws IOException
      */
-    protected abstract ScriptArchive createScriptArchive(Path archivePath) throws IOException;
+    protected abstract ScriptArchive createScriptArchive(Path archivePath, long createTime) throws IOException;
 
     /**
      * Updates the deleted time index.

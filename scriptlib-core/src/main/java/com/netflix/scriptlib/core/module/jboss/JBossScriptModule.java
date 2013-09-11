@@ -15,14 +15,17 @@
  *     limitations under the License.
  *
  */
-package com.netflix.scriptlib.core.module;
+package com.netflix.scriptlib.core.module.jboss;
 
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 import org.jboss.modules.Module;
 
 import com.netflix.scriptlib.core.archive.ScriptArchive;
+import com.netflix.scriptlib.core.module.ScriptModule;
 
 /**
  * Encapsulates a the compiled classes and the resources in a {@link ScriptArchive}
@@ -32,10 +35,14 @@ import com.netflix.scriptlib.core.archive.ScriptArchive;
 public class JBossScriptModule implements ScriptModule {
     private final String moduleId;
     private final Module jbossModule;
+    private final long createTime;
+    private final ScriptArchive sourceArchive;
 
-    public JBossScriptModule(String moduleName, Module jbossModule) {
+    public JBossScriptModule(String moduleName, Module jbossModule, ScriptArchive sourceArchive) {
         this.moduleId = Objects.requireNonNull(moduleName, "moduleName");
         this.jbossModule =  Objects.requireNonNull(jbossModule, "jbossModule");
+        this.createTime = sourceArchive.getCreateTime();
+        this.sourceArchive = Objects.requireNonNull(sourceArchive, "sourceArchive");
     }
 
     /**
@@ -55,7 +62,26 @@ public class JBossScriptModule implements ScriptModule {
     }
 
     @Override
-    public ScriptModuleClassLoader getModuleClassLoader() {
-        return (ScriptModuleClassLoader)jbossModule.getClassLoader();
+    public JBossModuleClassLoader getModuleClassLoader() {
+        return (JBossModuleClassLoader)jbossModule.getClassLoader();
+    }
+
+    @Override
+    public long getCreateTime() {
+        return createTime;
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+            .append("moduleId", moduleId)
+            .append("jbossModule", jbossModule)
+            .append("createTime", createTime)
+            .append("sourceArchive", sourceArchive)
+            .toString();
+    }
+
+    public ScriptArchive getSourceArchive() {
+        return sourceArchive;
     }
 }

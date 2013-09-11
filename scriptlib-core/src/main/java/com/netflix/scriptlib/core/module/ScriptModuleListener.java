@@ -19,6 +19,8 @@ package com.netflix.scriptlib.core.module;
 
 import javax.annotation.Nullable;
 
+import com.netflix.scriptlib.core.archive.ScriptArchive;
+
 /**
  * Listener for new/updated or deleted modules.
  *
@@ -33,4 +35,11 @@ public interface ScriptModuleListener {
      */
     void moduleUpdated(@Nullable ScriptModule newScriptModule, @Nullable ScriptModule oldScriptModule);
 
+    /**
+     * Notification that a script archive was rejected by the module loader
+     * @param scriptArchive archive that was rejected
+     * @param reason reason it was rejected
+     * @param cause underlying exception which triggered the rejection
+     */
+    void archiveRejected(ScriptArchive scriptArchive, ArchiveRejectedReason reason, @Nullable Throwable cause);
 }

@@ -17,6 +17,7 @@
  */
 package com.netflix.scriptlib.core.archive;
 
+import static com.netflix.scriptlib.core.testutil.CoreTestResourceUtil.TestResource.TEST_MODULE_SPEC_PATH;
 import static com.netflix.scriptlib.core.testutil.CoreTestResourceUtil.TestResource.TEST_TEXT_PATH;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -34,8 +35,6 @@ import java.util.Set;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.testng.annotations.Test;
-
-import com.netflix.scriptlib.core.testutil.CoreTestResourceUtil.TestResource;
 
 
 /**
@@ -69,18 +68,18 @@ public class PathScriptArchiveTest {
         URL rootPathUrl = getClass().getClassLoader().getResource(TEST_TEXT_PATH.getResourcePath());
         Path rootPath = Paths.get(rootPathUrl.toURI()).toAbsolutePath();
         PathScriptArchive scriptArchive = new PathScriptArchive.Builder(rootPath).build();
-        assertEquals(scriptArchive.getModuleSpec().getModuleId(), "test-text");
+        assertEquals(scriptArchive.getModuleSpec().getModuleId(), TEST_TEXT_PATH.getModuleId());
     }
 
     @Test
     public void testLoadWithModuleSpec() throws Exception {
-        URL rootPathUrl = getClass().getClassLoader().getResource(TestResource.TEST_MODULE_SPEC_PATH.getResourcePath());
+        URL rootPathUrl = getClass().getClassLoader().getResource(TEST_MODULE_SPEC_PATH.getResourcePath());
         Path rootPath = Paths.get(rootPathUrl.toURI()).toAbsolutePath();
 
         // if the module spec isn't provided, it should be discovered in the path
         PathScriptArchive scriptArchive = new PathScriptArchive.Builder(rootPath).build();
         ScriptModuleSpec moduleSpec = scriptArchive.getModuleSpec();
-        assertEquals(moduleSpec.getModuleId(), "test-modulespec-moduleId");
+        assertEquals(moduleSpec.getModuleId(), TEST_MODULE_SPEC_PATH.getModuleId());
         assertEquals(moduleSpec.getDependencies(), new HashSet<String>(Arrays.asList("dependencyModuleId1", "dependencyModuleId2")));
         Map<String, String> expectedMetadata = new HashMap<String, String>();
         expectedMetadata.put("metadataName1", "metadataValue1");

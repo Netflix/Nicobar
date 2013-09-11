@@ -20,6 +20,7 @@ package com.netflix.scriptlib.core.module;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -38,19 +39,25 @@ import javax.annotation.Nullable;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleFinder;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
-import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
+import org.jgrapht.DirectedGraph;
+import org.jgrapht.graph.DefaultEdge;
 
 import com.netflix.scriptlib.core.archive.ScriptArchive;
+import com.netflix.scriptlib.core.compile.ScriptArchiveCompiler;
 import com.netflix.scriptlib.core.compile.ScriptCompilationException;
-import com.netflix.scriptlib.core.compile.ScriptCompiler;
+import com.netflix.scriptlib.core.module.jboss.JBossModuleClassLoader;
+import com.netflix.scriptlib.core.module.jboss.JBossModuleLoader;
+import com.netflix.scriptlib.core.module.jboss.JBossModuleUtils;
+import com.netflix.scriptlib.core.module.jboss.JBossScriptModule;
 import com.netflix.scriptlib.core.persistence.ScriptArchivePoller;
 import com.netflix.scriptlib.core.persistence.ScriptArchivePoller.PollResult;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPlugin;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * Top level API for loading and accessing scripts.
@@ -125,6 +132,7 @@ public class ScriptModuleLoader {
     protected static class ArchivePollerContext {
         protected final int pollInterval;
         protected volatile long lastPollTime;
+        @SuppressFBWarnings(value="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD", justification="will use later")
         protected volatile ScheduledFuture<?> future;
         protected ArchivePollerContext(int pollInterval) {
             this.pollInterval = pollInterval;
@@ -141,14 +149,8 @@ public class ScriptModuleLoader {
     /** Map of script ModuleId to the loaded ScriptModules */
     protected final Map<String, ScriptModule> loadedScriptModules = new ConcurrentHashMap<String, ScriptModule>();
 
-    /** Map of the ModuleId to the Module specifications for {@link ScriptModule}s. This is used for the jboss-modules integration */
-    protected final Map<ModuleIdentifier, ModuleSpec> scriptModuleSpecs = new ConcurrentHashMap<ModuleIdentifier, ModuleSpec>();
-
-    /** Map of the ModuleId to the Module specifications for {@link ScriptCompilerPlugin}. This is used for the jboss-modules integration */
-    protected final Map<ModuleIdentifier, ModuleSpec> pluginModuleSpecs = new ConcurrentHashMap<ModuleIdentifier, ModuleSpec>();
-
     protected final Set<ScriptCompilerPluginSpec> pluginSpecs;
-    protected final List<ScriptCompiler> compilers = new ArrayList<ScriptCompiler>();
+    protected final List<ScriptArchiveCompiler> compilers = new ArrayList<ScriptArchiveCompiler>();
 
     protected final Set<ScriptModuleListener> listeners =
         Collections.newSetFromMap(new ConcurrentHashMap<ScriptModuleListener, Boolean>());
@@ -160,18 +162,7 @@ public class ScriptModuleLoader {
             final Set<ScriptModuleListener> listeners,
             final ScheduledExecutorService pollerThreadPool) throws ModuleLoadException {
         this.pluginSpecs = Objects.requireNonNull(pluginSpecs);
-        ModuleFinder moduleFinder = new ModuleFinder() {
-            @Override
-            public ModuleSpec findModule(ModuleIdentifier moduleIdentifier, ModuleLoader delegateLoader) throws ModuleLoadException {
-                // check all of the different maps that we store precurser module artifacts in
-                ModuleSpec moduleSpec = scriptModuleSpecs.get(moduleIdentifier);
-                if (moduleSpec == null) {
-                    moduleSpec = pluginModuleSpecs.get(moduleIdentifier);
-                }
-                return moduleSpec;
-            }
-        };
-        this.jbossModuleLoader = new JBossModuleLoader(new ModuleFinder[] {moduleFinder});
+        this.jbossModuleLoader = new JBossModuleLoader();
         for (ScriptCompilerPluginSpec pluginSpec : pluginSpecs) {
             addCompilerPlugin(pluginSpec);
         }
@@ -185,67 +176,127 @@ public class ScriptModuleLoader {
         }
     }
 
-    public synchronized Set<ScriptModule> updateScriptArchives(Set<? extends ScriptArchive> archives)  {
-        Objects.requireNonNull(archives);
-        List<ModuleIdentifier> moduleIds = new ArrayList<ModuleIdentifier>(archives.size());
-        // setup the precursor artifacts so jboss-modules can find them.
-        for (ScriptArchive scriptArchive : archives) {
-            ModuleSpec moduleSpec;
-            try {
-                moduleSpec = createModuleSpec(scriptArchive);
-            } catch (ModuleLoadException e) {
-                // TODO: add real logging.
-                Module.getModuleLogger().trace(e, "Exception loading archive " +
-                    scriptArchive.getModuleSpec().getModuleId());
-                continue;
-            }
-            ModuleIdentifier moduleIdentifier = moduleSpec.getModuleIdentifier();
-            moduleIds.add(moduleIdentifier);
-            ModuleSpec replacedSpec = scriptModuleSpecs.put(moduleIdentifier, moduleSpec);
-            if (replacedSpec != null) {
-                // unload the module or jboss won't reload it
-                Module replacedModule = jbossModuleLoader.findLoadedModule(moduleIdentifier);
-                jbossModuleLoader.unloadModule(replacedModule);
-            }
-        }
-        // the graphs is now wired up. compile the new modules.
-        LinkedHashSet<ScriptModule> scriptModules = new LinkedHashSet<ScriptModule>(archives.size());
-        for (ModuleIdentifier moduleId : moduleIds) {
-            String scriptModuleId = moduleId.getName();
-            Module module;
-            try {
-                module = jbossModuleLoader.loadModule(moduleId);
-                compileModule(module);
-            } catch (Exception e) {
-                // TODO: unfortunately, jboss-modules doesn't provide the ability to roll-back the change.
-                // this leaves us in a state in which any subsequent attempts to link to this module will
-                // fail even though the previous version worked. Remove the script module from the local caches in order
-                // to stay consistent with the jboss moduleloader because it was unloaded from the jboss module loader above.
-                // put rollback logic here once we have a solution
-                Module.getModuleLogger().trace(e, "Exception loading module " + moduleId);
-                removeScriptModule(scriptModuleId);
-                continue;
-            }
-            JBossScriptModule scriptModule = new JBossScriptModule(scriptModuleId, module);
-            scriptModules.add(scriptModule);
-            ScriptModule oldModule = loadedScriptModules.put(scriptModuleId, scriptModule);
-            notifyModuleUpdate(scriptModule, oldModule);
-        }
-        // TODO: re-link the dependents of the newly loaded modules. as it stands, even the recently added
-        // modules may be linked to old versions of their dependencies depending on the order in which they were
-        // compiled.
-        return scriptModules;
-    }
-
     /**
-     * Create a ModuleSpec artifact which is used to prepare a {@link ScriptArchive} for loading.
+     * Add or update the existing {@link ScriptModule}s with the given script archives.
+     * This method will convert the archives to modules and then compile + link them in to the
+     * dependency graph. It will then recursively re-link any modules depending on the new modules.
+     * If this loader already contains an old version of the module, it will be unloaded on
+     * successful compile of the new module.
+     *
+     * @param candidateArchives archives to load or update
      */
-    protected synchronized ModuleSpec createModuleSpec(ScriptArchive scriptArchive) throws ModuleLoadException {
-        ModuleIdentifier moduleId = ModuleUtils.getModuleId(scriptArchive);
-        ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(moduleId);
-        ModuleUtils.populateModuleSpec(moduleSpecBuilder, scriptArchive);
-        ModuleSpec moduleSpec = moduleSpecBuilder.create();
-        return moduleSpec;
+    public synchronized void updateScriptArchives(Set<ScriptArchive> candidateArchives)  {
+        Objects.requireNonNull(candidateArchives);
+        long updateNumber = System.currentTimeMillis();
+
+        // map script module id to archive to be compiled
+        Map<String, ScriptArchive> archivesToCompile = new HashMap<String, ScriptArchive>(candidateArchives.size()*2);
+
+        // create an updated mapping of the scriptModuleId to latest revisionId including the yet-to-be-compiled archives
+        Map<String, ModuleIdentifier> oldRevisionIdMap = jbossModuleLoader.getLatestRevisionIds();
+        Map<String, ModuleIdentifier> updatedRevisionIdMap = new HashMap<String, ModuleIdentifier>((oldRevisionIdMap.size()+candidateArchives.size())*2);
+        updatedRevisionIdMap.putAll(oldRevisionIdMap);
+
+        // Map of the scriptModuleId to it's updated set of dependencies
+        Map<String, Set<String>> archiveDependencies = new HashMap<String, Set<String>>();
+        for (ScriptArchive scriptArchive : candidateArchives) {
+            String scriptModuleId = scriptArchive.getModuleSpec().getModuleId();
+
+            // filter out archives that have a newer module already loaded
+            long createTime = scriptArchive.getCreateTime();
+            ScriptModule scriptModule = loadedScriptModules.get(scriptModuleId);
+            long latestCreateTime = scriptModule != null ? scriptModule.getCreateTime() : 0;
+            if (createTime < latestCreateTime) {
+                notifyArchiveRejected(scriptArchive, ArchiveRejectedReason.HIGHER_REVISION_AVAILABLE, null);
+                continue;
+            }
+
+            // create the new revisionIds that should be used for the linkages when the new modules
+            // are defined.
+            ModuleIdentifier newRevisionId = JBossModuleUtils.createRevisionId(scriptModuleId, updateNumber);
+            updatedRevisionIdMap.put(scriptModuleId, newRevisionId);
+
+            archivesToCompile.put(scriptModuleId, scriptArchive);
+
+            // create a dependency map of the incoming archives so that we can later build a candidate graph
+            archiveDependencies.put(scriptModuleId, scriptArchive.getModuleSpec().getDependencies());
+        }
+
+        // create a dependency graph with the candidates swapped in in order to figure out the
+        // order in which the candidates should be loaded
+        DirectedGraph<String, DefaultEdge> candidateGraph = jbossModuleLoader.getModuleNameGraph();
+        GraphUtils.swapVertices(candidateGraph, archiveDependencies);
+
+        // iterate over the graph in reverse dependency order
+        Set<String> leaves = GraphUtils.getLeafVertices(candidateGraph);
+        while (!leaves.isEmpty()) {
+            for (String scriptModuleId : leaves) {
+                ScriptArchive scriptArchive = archivesToCompile.get(scriptModuleId);
+                if (scriptArchive == null) {
+                    continue;
+                }
+                ModuleSpec moduleSpec;
+                ModuleIdentifier candidateRevisionId;
+                try {
+                    // create the jboss module pre-cursor artifact
+                    candidateRevisionId = updatedRevisionIdMap.get(scriptModuleId);
+                    ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(candidateRevisionId);
+                    JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, scriptArchive, updatedRevisionIdMap);
+                    moduleSpec = moduleSpecBuilder.create();
+                } catch (ModuleLoadException e) {
+                    // TODO: add real logging.
+                    Module.getModuleLogger().trace(e, "Exception loading archive " +
+                        scriptArchive.getModuleSpec().getModuleId());
+                    notifyArchiveRejected(scriptArchive, ArchiveRejectedReason.ARCHIVE_IO_EXCEPTION, e);
+                    continue;
+                }
+
+                // load and compile the module
+                jbossModuleLoader.addModuleSpec(moduleSpec);
+                Module jbossModule = null;
+                try {
+                    jbossModule = jbossModuleLoader.loadModule(candidateRevisionId);
+                    compileModule(jbossModule);
+                } catch (Exception e) {
+                    // rollback
+                    Module.getModuleLogger().trace(e, "Exception loading module " + candidateRevisionId);
+                    if (candidateArchives.contains(scriptArchive)) {
+                        // this spec came from a candidate archive. Send reject notification
+                        notifyArchiveRejected(scriptArchive, ArchiveRejectedReason.COMPILE_FAILURE, e);
+                    }
+                    if (jbossModule != null) {
+                        jbossModuleLoader.unloadModule(jbossModule);
+                    }
+                    continue;
+                }
+
+                // commit the change by removing the old module
+                ModuleIdentifier oldRevisionId = oldRevisionIdMap.get(scriptModuleId);
+                if (oldRevisionId != null) {
+                    jbossModuleLoader.unloadModule(oldRevisionId);
+                }
+
+                JBossScriptModule scriptModule = new JBossScriptModule(scriptModuleId, jbossModule, scriptArchive);
+                ScriptModule oldModule = loadedScriptModules.put(scriptModuleId, scriptModule);
+                notifyModuleUpdate(scriptModule, oldModule);
+
+                // find dependents and add them to the to be compiled set
+                Set<String> dependents = GraphUtils.getIncomingVertices(candidateGraph, scriptModuleId);
+                for (String dependentScriptModuleId : dependents) {
+                    if (!archivesToCompile.containsKey(dependentScriptModuleId)) {
+                        ScriptModule dependentScriptModule = loadedScriptModules.get(dependentScriptModuleId);
+                        if (dependentScriptModule != null) {
+                            archivesToCompile.put(dependentScriptModuleId, dependentScriptModule.getSourceArchive());
+                            ModuleIdentifier dependentRevisionId = JBossModuleUtils.createRevisionId(dependentScriptModuleId, updateNumber);
+                            updatedRevisionIdMap.put(dependentScriptModuleId, dependentRevisionId);
+                        }
+                    }
+                }
+            }
+
+            GraphUtils.removeVertices(candidateGraph, leaves);
+            leaves = GraphUtils.getLeafVertices(candidateGraph);
+        }
     }
 
     /**
@@ -258,12 +309,12 @@ public class ScriptModuleLoader {
         // compile the script archive for the module, and inject the resultant classes into
         // the ModuleClassLoader
         ModuleClassLoader moduleClassLoader = module.getClassLoader();
-        if (moduleClassLoader instanceof ScriptModuleClassLoader) {
-            ScriptModuleClassLoader scriptModuleClassLoader = (ScriptModuleClassLoader)moduleClassLoader;
-            ScriptArchive scriptArchive = scriptModuleClassLoader.getScriptArchive();
-            ScriptCompiler compiler = findCompiler(scriptArchive);
+        if (moduleClassLoader instanceof JBossModuleClassLoader) {
+            JBossModuleClassLoader jBossModuleClassLoader = (JBossModuleClassLoader)moduleClassLoader;
+            ScriptArchive scriptArchive = jBossModuleClassLoader.getScriptArchive();
+            ScriptArchiveCompiler compiler = findCompiler(scriptArchive);
             if (compiler != null) {
-                compiler.compile(scriptArchive, scriptModuleClassLoader);
+                compiler.compile(scriptArchive, jBossModuleClassLoader);
             }
         }
     }
@@ -273,24 +324,24 @@ public class ScriptModuleLoader {
      * @param pluginSpec
      * @throws ModuleLoadException
      */
-    public void addCompilerPlugin(ScriptCompilerPluginSpec pluginSpec) throws ModuleLoadException  {
+    public synchronized void addCompilerPlugin(ScriptCompilerPluginSpec pluginSpec) throws ModuleLoadException  {
         Objects.requireNonNull(pluginSpec, "pluginSpec");
-        ModuleIdentifier moduleId = ModuleUtils.getModuleId(pluginSpec);
-        ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(moduleId);
-        ModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec);
+        ModuleIdentifier scriptModuleId = JBossModuleUtils.getModuleId(pluginSpec);
+        ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(scriptModuleId);
+        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec);
         ModuleSpec moduleSpec = moduleSpecBuilder.create();
-        pluginModuleSpecs.put(moduleId, moduleSpec);
 
         // spin up the module, and get the compiled classes from it's classloader
         String providerClassName = pluginSpec.getPluginClassName();
         if (providerClassName != null) {
-            Module pluginModule = jbossModuleLoader.loadModule(moduleId);
+            jbossModuleLoader.addModuleSpec(moduleSpec);
+            Module pluginModule = jbossModuleLoader.loadModule(scriptModuleId);
             ModuleClassLoader pluginClassLoader = pluginModule.getClassLoader();
             Class<?> compilerProviderClass;
             try {
                 compilerProviderClass = pluginClassLoader.loadClass(providerClassName);
                 ScriptCompilerPlugin pluginBootstrap = (ScriptCompilerPlugin) compilerProviderClass.newInstance();
-                Set<? extends ScriptCompiler> pluginCompilers = pluginBootstrap.getCompilers();
+                Set<? extends ScriptArchiveCompiler> pluginCompilers = pluginBootstrap.getCompilers();
                 compilers.addAll(pluginCompilers);
             } catch (Exception e) {
                 throw new ModuleLoadException(e);
@@ -298,14 +349,14 @@ public class ScriptModuleLoader {
         }
     }
 
-    public synchronized void removeScriptModule(String moduleId) {
-        ModuleIdentifier moduleIdentifier = ModuleIdentifier.create(moduleId);
-        scriptModuleSpecs.remove(moduleIdentifier);
-        Module loadedModule = jbossModuleLoader.findLoadedModule(moduleIdentifier);
-        if (loadedModule != null) {
-            jbossModuleLoader.unloadModule(loadedModule);
-        }
-        ScriptModule oldScriptModule = loadedScriptModules.remove(moduleId);
+    /**
+     * Remove a module from being served by this instance. Note that any
+     * instances of the module cached outside of this module loader will remain
+     * un-effected and will continue to operate.
+     */
+    public synchronized void removeScriptModule(String scriptModuleId) {
+        jbossModuleLoader.unloadAllModuleRevision(scriptModuleId);
+        ScriptModule oldScriptModule = loadedScriptModules.remove(scriptModuleId);
         if (oldScriptModule != null) {
             notifyModuleUpdate(null, oldScriptModule);
         }
@@ -316,6 +367,13 @@ public class ScriptModuleLoader {
         return loadedScriptModules.get(scriptModuleId);
     }
 
+    /**
+     * Get a view of the loaded script modules
+     * @return immutable view of the Map that retains the script modules. Map ModuleId the loaded ScriptModule
+     */
+    public Map<String, ScriptModule> getAllScriptModules() {
+        return Collections.unmodifiableMap(loadedScriptModules);
+    }
     /**
      * Add listeners to this module loader. Listeners will only be notified of events that occurred after they
      * were added.
@@ -337,7 +395,14 @@ public class ScriptModuleLoader {
         }
         ScheduledFuture<?> future = pollerThreadPool.scheduleWithFixedDelay(new Runnable() {
             public void run() {
-                pollForUpdates(poller);
+                ArchivePollerContext context = pollerContexts.get(poller);
+                if (context == null) {
+
+                    return;
+                }
+                long now = System.currentTimeMillis();
+                pollForUpdates(poller, context.lastPollTime);
+                context.lastPollTime = now;
             }
         },
         0, pollInterval, TimeUnit.SECONDS);
@@ -345,30 +410,22 @@ public class ScriptModuleLoader {
         return true;
     }
 
-    protected void pollForUpdates(ScriptArchivePoller poller) {
-        ArchivePollerContext context = pollerContexts.get(poller);
-        if (context == null) {
+    protected void pollForUpdates(ScriptArchivePoller poller, long lastPollTime) {
+        PollResult pollResult;
+        try {
+            pollResult = poller.poll(lastPollTime);
+        } catch (IOException e) {
+            Module.getModuleLogger().trace(e, "Error attempting to poll");
             return;
         }
-        synchronized (context) {
-            long now = System.currentTimeMillis();
-            PollResult pollResult;
-            try {
-                pollResult = poller.poll(context.lastPollTime);
-                context.lastPollTime = now;
-            } catch (IOException e) {
-                Module.getModuleLogger().trace(e, "Error attempting to poll");
-                return;
-            }
-            Set<ScriptArchive> updatedArchives = pollResult.getUpdatedArchives();
-            if (!updatedArchives.isEmpty()) {
-                updateScriptArchives(updatedArchives);
-            }
-            Set<String> deletedModuleIds = pollResult.getDeletedModuleIds();
-            if (!deletedModuleIds.isEmpty()) {
-                for (String moduleId : deletedModuleIds) {
-                    removeScriptModule(moduleId);
-                }
+        Set<ScriptArchive> updatedArchives = pollResult.getUpdatedArchives();
+        if (!updatedArchives.isEmpty()) {
+            updateScriptArchives(updatedArchives);
+        }
+        Set<String> deletedModuleIds = pollResult.getDeletedModuleIds();
+        if (!deletedModuleIds.isEmpty()) {
+            for (String scriptModuleId : deletedModuleIds) {
+                removeScriptModule(scriptModuleId);
             }
         }
     }
@@ -376,8 +433,8 @@ public class ScriptModuleLoader {
     /**
      * Match a compiler up to the given archive
      */
-    protected ScriptCompiler findCompiler(ScriptArchive archive) {
-        for (ScriptCompiler compiler : compilers) {
+    protected ScriptArchiveCompiler findCompiler(ScriptArchive archive) {
+        for (ScriptArchiveCompiler compiler : compilers) {
             if (compiler.shouldCompile(archive)) {
                 return compiler;
             }
@@ -393,6 +450,18 @@ public class ScriptModuleLoader {
     protected void notifyModuleUpdate(@Nullable ScriptModule newModule, @Nullable ScriptModule oldModule) {
         for (ScriptModuleListener listener : listeners) {
             listener.moduleUpdated(newModule, oldModule);
+        }
+    }
+
+    /**
+     * Notify listeners that a script archive was rejected by this loader
+     * @param scriptArchive archive that was rejected
+     * @param reason reason it was rejected
+     * @param cause underlying exception which triggered the rejection
+     */
+    protected void notifyArchiveRejected(ScriptArchive scriptArchive, ArchiveRejectedReason reason, @Nullable Throwable cause) {
+        for (ScriptModuleListener listener : listeners) {
+            listener.archiveRejected(scriptArchive, reason, cause);
         }
     }
 }

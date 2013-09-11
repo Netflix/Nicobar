@@ -22,6 +22,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 /**
  * Data object which represents a bundle of scripts and associated resources.
  *
@@ -39,6 +41,7 @@ public interface ScriptArchive {
      * @return {@link URL}s representing the contents of this archive. should be
      * suitable for passing to a {@link URLClassLoader}
      */
+    @Nullable
     public URL getRootUrl();
 
     /**
@@ -50,5 +53,12 @@ public interface ScriptArchive {
      * @return a URL to the resource.
      * @throws IOException
      */
+    @Nullable
     public URL getEntry(String entryName) throws IOException;
+
+    /**
+     * Timestamp used to resolve multiple revisions of the archive. If multiple archives
+     * are submitted with the same moduleId, only the one with the highest timestamp will be used.
+     */
+    public long getCreateTime();
 }

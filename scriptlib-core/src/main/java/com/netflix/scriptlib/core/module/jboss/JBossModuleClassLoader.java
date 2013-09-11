@@ -15,7 +15,7 @@
  *     limitations under the License.
  *
  */
-package com.netflix.scriptlib.core.module;
+package com.netflix.scriptlib.core.module.jboss;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -37,18 +37,18 @@ import com.netflix.scriptlib.core.archive.ScriptArchive;
  * adds a post-construction hook to inject classes into the classloader
  * @author James Kojo
  */
-public class ScriptModuleClassLoader extends ModuleClassLoader {
+public class JBossModuleClassLoader extends ModuleClassLoader {
     private final ScriptArchive scriptArchive;
     private final Map<String, Class<?>> localClassCache;
 
-    public ScriptModuleClassLoader(Configuration moduleClassLoaderContext, ScriptArchive scriptArchive) {
+    public JBossModuleClassLoader(Configuration moduleClassLoaderContext, ScriptArchive scriptArchive) {
         super(moduleClassLoaderContext);
         this.scriptArchive = scriptArchive;
         this.localClassCache = new ConcurrentHashMap<String, Class<?>>(scriptArchive.getArchiveEntryNames().size());
     }
 
     /**
-     * Creates a ModuleClassLoaderFactory that produces a {@link ScriptModuleClassLoader}.
+     * Creates a ModuleClassLoaderFactory that produces a {@link JBossModuleClassLoader}.
      * This method is necessary to inject our custom {@link ModuleClassLoader} into
      * the {@link ModuleSpec}
      */
@@ -56,9 +56,9 @@ public class ScriptModuleClassLoader extends ModuleClassLoader {
         return new ModuleClassLoaderFactory() {
             public ModuleClassLoader create(final Configuration configuration) {
                 return AccessController.doPrivileged(
-                    new PrivilegedAction<ScriptModuleClassLoader>() {
-                        public ScriptModuleClassLoader run() {
-                            return new ScriptModuleClassLoader(configuration, scriptArchive);
+                    new PrivilegedAction<JBossModuleClassLoader>() {
+                        public JBossModuleClassLoader run() {
+                            return new JBossModuleClassLoader(configuration, scriptArchive);
                         }
                     });
             }

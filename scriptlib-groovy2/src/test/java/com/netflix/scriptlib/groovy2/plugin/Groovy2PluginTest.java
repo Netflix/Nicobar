@@ -18,9 +18,7 @@
 package com.netflix.scriptlib.groovy2.plugin;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.lang.reflect.Method;
@@ -33,7 +31,6 @@ import java.util.LinkedHashSet;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -41,7 +38,7 @@ import org.testng.annotations.Test;
 import com.netflix.scriptlib.core.archive.PathScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
-import com.netflix.scriptlib.core.compile.ScriptCompiler.MetadataName;
+import com.netflix.scriptlib.core.compile.ScriptArchiveCompiler.MetadataName;
 import com.netflix.scriptlib.core.module.ScriptModule;
 import com.netflix.scriptlib.core.module.ScriptModuleLoader;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
@@ -87,11 +84,11 @@ public class Groovy2PluginTest {
             .addFile(TestScript.HELLO_WORLD.getScriptPath())
             .setModuleSpec(createGroovyModuleSpec(TestScript.HELLO_WORLD.getModuleId()).build())
             .build();
-        Set<ScriptModule> scriptModules = moduleLoader.updateScriptArchives(Collections.singleton(scriptArchive));
-        assertNotNull(CollectionUtils.isNotEmpty(scriptModules));
+        moduleLoader.updateScriptArchives(Collections.singleton(scriptArchive));
 
         // locate the class file in the module and execute it
-        Class<?> clazz = findClassByName(scriptModules, TestScript.HELLO_WORLD);
+        ScriptModule scriptModule = moduleLoader.getScriptModule(TestScript.HELLO_WORLD.getModuleId());
+        Class<?> clazz = findClassByName(scriptModule, TestScript.HELLO_WORLD);
         assertGetMessage(clazz, "Hello, World!");
     }
 
@@ -117,11 +114,11 @@ public class Groovy2PluginTest {
             .setModuleSpec(createGroovyModuleSpec(TestScript.LIBRARY_A.getModuleId()).build())
             .build();
         // load them in dependency order to make sure that transitive dependency resolution is working
-        Set<ScriptModule> scriptModules = moduleLoader.updateScriptArchives(new LinkedHashSet<ScriptArchive>(Arrays.asList(dependsOnAArchive, libAArchive)));
-        assertTrue(CollectionUtils.isNotEmpty(scriptModules));
+        moduleLoader.updateScriptArchives(new LinkedHashSet<ScriptArchive>(Arrays.asList(dependsOnAArchive, libAArchive)));
 
         // locate the class file in the module and execute it
-        Class<?> clazz = findClassByName(scriptModules, TestScript.DEPENDS_ON_A);
+        ScriptModule scriptModule = moduleLoader.getScriptModule(TestScript.DEPENDS_ON_A.getModuleId());
+        Class<?> clazz = findClassByName(scriptModule, TestScript.DEPENDS_ON_A);
         assertGetMessage(clazz, "DepondOnA: Called LibraryA and got message:'I'm LibraryA!'");
     }
 
@@ -156,15 +153,14 @@ public class Groovy2PluginTest {
             .addFile(TestScript.LIBRARY_AV2.getScriptPath())
             .setModuleSpec(createGroovyModuleSpec(TestScript.LIBRARY_A.getModuleId()).build())
             .build();
-        Set<ScriptModule> scriptModules = moduleLoader.updateScriptArchives(Collections.singleton(libAV2Archive));
-        assertEquals(scriptModules.size(), 1);
+        moduleLoader.updateScriptArchives(Collections.singleton(libAV2Archive));
 
         // reload dependent to force a re-link. Once we add an auto re-link feature or ordered loading, this shouldn't be necessary.
         moduleLoader.updateScriptArchives(Collections.singleton(dependsOnAArchive));
 
         // find the dependent and execute it
         ScriptModule scriptModuleDependOnA = moduleLoader.getScriptModule(TestScript.DEPENDS_ON_A.getModuleId());
-        Class<?> clazz = findClassByName(Collections.singleton(scriptModuleDependOnA), TestScript.DEPENDS_ON_A);
+        Class<?> clazz = findClassByName(scriptModuleDependOnA, TestScript.DEPENDS_ON_A);
         assertGetMessage(clazz, "DepondOnA: Called LibraryA and got message:'I'm LibraryA V2!'");
     }
 
@@ -190,8 +186,8 @@ public class Groovy2PluginTest {
             .setModuleSpec(createGroovyModuleSpec(TestScript.LIBRARY_A.getModuleId()).build())
             .build();
 
-        Set<ScriptModule> scriptModules = moduleLoader.updateScriptArchives(new LinkedHashSet<ScriptArchive>(Arrays.asList(dependsOnAArchive, libAArchive)));
-        assertTrue(CollectionUtils.isNotEmpty(scriptModules));
+        moduleLoader.updateScriptArchives(new LinkedHashSet<ScriptArchive>(Arrays.asList(dependsOnAArchive, libAArchive)));
+        assertEquals(moduleLoader.getAllScriptModules().size(), 2);
 
         // attempt reload library-A with invalid groovy
         libAArchive = new PathScriptArchive.Builder(uncompilableArchiveDir)
@@ -199,12 +195,12 @@ public class Groovy2PluginTest {
             .addFile(uncompilableScriptRelativePath)
             .setModuleSpec(createGroovyModuleSpec(TestScript.LIBRARY_A.getModuleId()).build())
             .build();
-        scriptModules = moduleLoader.updateScriptArchives(new LinkedHashSet<ScriptArchive>(Arrays.asList(libAArchive)));
-        assertTrue(scriptModules.isEmpty(), scriptModules.toString());
+        moduleLoader.updateScriptArchives(new LinkedHashSet<ScriptArchive>(Arrays.asList(libAArchive)));
+        assertEquals(moduleLoader.getAllScriptModules().size(), 2);
 
         // find the dependent and execute it
         ScriptModule scriptModuleDependOnA = moduleLoader.getScriptModule(TestScript.DEPENDS_ON_A.getModuleId());
-        Class<?> clazz = findClassByName(Collections.singleton(scriptModuleDependOnA), TestScript.DEPENDS_ON_A);
+        Class<?> clazz = findClassByName(scriptModuleDependOnA, TestScript.DEPENDS_ON_A);
         assertGetMessage(clazz, "DepondOnA: Called LibraryA and got message:'I'm LibraryA!'");
     }
 
@@ -214,7 +210,7 @@ public class Groovy2PluginTest {
     private ScriptModuleLoader createGroovyModuleLoader() throws Exception {
         // create the groovy plugin spec. this plugin specified a new module and classloader called "Groovy2Runtime"
         // which contains the groovy-all-2.1.6.jar and the scriptlib-groovy2 project.
-        ScriptCompilerPluginSpec pluginSpec = new ScriptCompilerPluginSpec.Builder("Groovy2RuntimeModule", 1)
+        ScriptCompilerPluginSpec pluginSpec = new ScriptCompilerPluginSpec.Builder("Groovy2RuntimeModule")
             .addRuntimeResource(GroovyTestResourceUtil.getGroovyRuntime())
             .addRuntimeResource(GroovyTestResourceUtil.getGroovyPluginLocation())
             // hack to make the gradle build work. still doesn't seem to properly instrument the code
@@ -239,15 +235,13 @@ public class Groovy2PluginTest {
             .addMetadata(MetadataName.SCRIPT_LANGUAGE.name(), "groovy2");
     }
 
-    private Class<?> findClassByName(Set<ScriptModule> scriptModules, TestScript testScript) {
-        assertFalse(scriptModules.contains("null"), "Invalid script modules for " + testScript + ". scriptModules: " +scriptModules);
+    private Class<?> findClassByName(ScriptModule scriptModule, TestScript testScript) {
+        assertNotNull(scriptModule, "Missing scriptModule for  " + testScript);
         String className = testScript.getClassName();
-        for (ScriptModule scriptModule : scriptModules) {
-            Set<Class<?>> classes = scriptModule.getLoadedClasses();
-            for (Class<?> clazz : classes) {
-                if (clazz.getName().equals(className)) {
-                    return clazz;
-                }
+        Set<Class<?>> classes = scriptModule.getLoadedClasses();
+        for (Class<?> clazz : classes) {
+            if (clazz.getName().equals(className)) {
+                return clazz;
             }
         }
         fail("couldn't find class " + className);

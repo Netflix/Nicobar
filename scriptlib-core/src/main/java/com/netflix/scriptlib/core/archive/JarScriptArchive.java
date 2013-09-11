@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -60,6 +61,7 @@ public class JarScriptArchive implements ScriptArchive {
         private ScriptModuleSpec moduleSpec;
         private String specFileName;
         private ScriptModuleSpecSerializer specSerializer;
+        private long createTime;
         /**
          * Start a builder with required parameters.
          * @param jarPath absolute path to the jarfile that this will represent
@@ -80,6 +82,11 @@ public class JarScriptArchive implements ScriptArchive {
         /** override the default module spec file name */
         public Builder setModuleSpecSerializer(ScriptModuleSpecSerializer specSerializer) {
             this.specSerializer = specSerializer;
+            return this;
+        }
+        /** Set the creation time */
+        public Builder setCreateTime(long createTime) {
+            this.createTime = createTime;
             return this;
         }
         /** Build the {@link JarScriptArchive}. */
@@ -115,15 +122,21 @@ public class JarScriptArchive implements ScriptArchive {
                     buildModuleSpec = new ScriptModuleSpec.Builder(moduleId).build();
                 }
             }
-            return new JarScriptArchive(buildModuleSpec,jarPath);
+            long buildCreateTime = createTime;
+            if (buildCreateTime <= 0) {
+                buildCreateTime = Files.getLastModifiedTime(jarPath).toMillis();
+            }
+            return new JarScriptArchive(buildModuleSpec,jarPath, buildCreateTime);
         }
     }
 
     private final ScriptModuleSpec moduleSpec;
     private final Set<String> entryNames;
     private final URL rootUrl;
+    private final long createTime;
 
-    protected JarScriptArchive(ScriptModuleSpec moduleSpec, Path jarPath) throws IOException {
+    protected JarScriptArchive(ScriptModuleSpec moduleSpec, Path jarPath, long createTime) throws IOException {
+        this.createTime = createTime;
         this.moduleSpec = Objects.requireNonNull(moduleSpec, "moduleSpec");
         Objects.requireNonNull(jarPath, "jarFile");
         if (!jarPath.isAbsolute()) throw new IllegalArgumentException("jarPath must be absolute.");
@@ -165,6 +178,7 @@ public class JarScriptArchive implements ScriptArchive {
         return entryNames;
     }
 
+    @Override
     @Nullable
     public URL getEntry(String entryName) throws IOException {
         if (!entryNames.contains(entryName)) {
@@ -173,5 +187,26 @@ public class JarScriptArchive implements ScriptArchive {
         String spec = new StringBuilder()
             .append("jar:").append(rootUrl.toString()).append("!/").append(entryName).toString();
         return new URL(spec);
+    }
+
+    @Override
+    public long getCreateTime() {
+        return createTime;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) { return true; }
+        if (o == null || getClass() != o.getClass()) { return false; }
+        JarScriptArchive other = (JarScriptArchive) o;
+        return Objects.equals(this.moduleSpec, other.moduleSpec) &&
+            Objects.equals(this.entryNames, other.entryNames) &&
+            Objects.equals(this.rootUrl, other.rootUrl) &&
+            Objects.equals(this.createTime, other.createTime);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(moduleSpec, entryNames, rootUrl, createTime);
     }
 }

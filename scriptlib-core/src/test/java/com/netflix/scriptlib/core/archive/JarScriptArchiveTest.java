@@ -67,7 +67,7 @@ public class JarScriptArchiveTest {
         URL rootPathUrl = getClass().getClassLoader().getResource(TEST_TEXT_JAR.getResourcePath());
         Path rootPath = Paths.get(rootPathUrl.toURI()).toAbsolutePath();
         JarScriptArchive scriptArchive = new JarScriptArchive.Builder(rootPath).build();
-        assertEquals(scriptArchive.getModuleSpec().getModuleId(), "test-text");
+        assertEquals(scriptArchive.getModuleSpec().getModuleId(), TEST_TEXT_JAR.getModuleId());
     }
 
     @Test
@@ -78,7 +78,7 @@ public class JarScriptArchiveTest {
         // if the module spec isn't provided, it should be discovered in the jar
         JarScriptArchive scriptArchive = new JarScriptArchive.Builder(rootPath).build();
         ScriptModuleSpec moduleSpec = scriptArchive.getModuleSpec();
-        assertEquals(moduleSpec.getModuleId(), "test-modulespec-moduleId");
+        assertEquals(moduleSpec.getModuleId(), TEST_MODULE_SPEC_JAR.getModuleId());
         assertEquals(moduleSpec.getDependencies(), new HashSet<String>(Arrays.asList("dependencyModuleId1", "dependencyModuleId2")));
         Map<String, String> expectedMetadata = new HashMap<String, String>();
         expectedMetadata.put("metadataName1", "metadataValue1");

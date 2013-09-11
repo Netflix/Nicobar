@@ -15,7 +15,7 @@
  *     limitations under the License.
  *
  */
-package com.netflix.scriptlib.core.module;
+package com.netflix.scriptlib.core.module.jboss;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +23,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -51,7 +50,7 @@ import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
  *
  * @author James Kojo
  */
-public class ModuleUtils {
+public class JBossModuleUtils {
     /** Dependency specification which allows for importing the core library classes */
     public static final DependencySpec SCRIPTLIB_CORE_DEPENDENCY_SPEC;
     /** Dependency specification which allows for importing the core JRE classes */
@@ -63,8 +62,9 @@ public class ModuleUtils {
         pathFilter.add("com/netflix/scriptlib/core/archive");
         pathFilter.add("com/netflix/scriptlib/core/compile");
         pathFilter.add("com/netflix/scriptlib/core/module");
+        pathFilter.add("com/netflix/scriptlib/core/module/jboss");
         pathFilter.add("com/netflix/scriptlib/core/plugin");
-        SCRIPTLIB_CORE_DEPENDENCY_SPEC = DependencySpec.createClassLoaderDependencySpec(ModuleUtils.class.getClassLoader(), pathFilter);
+        SCRIPTLIB_CORE_DEPENDENCY_SPEC = DependencySpec.createClassLoaderDependencySpec(JBossModuleUtils.class.getClassLoader(), pathFilter);
         ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
         JRE_DEPENDENCY_SPEC = DependencySpec.createClassLoaderDependencySpec(systemClassLoader, __JDKPaths.JDK);
     }
@@ -74,37 +74,46 @@ public class ModuleUtils {
      * {@link ScriptArchive}
      * @param moduleSpecBuilder builder to populate
      * @param scriptArchive {@link ScriptArchive} to copy from
+     * @param latestRevisionIds used to lookup the latest dependencies. see {@link JBossModuleLoader#getLatestRevisionIds()}
      */
-    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ScriptArchive scriptArchive) throws ModuleLoadException {
+    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ScriptArchive scriptArchive, Map<String, ModuleIdentifier> latestRevisionIds) throws ModuleLoadException {
         Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
         Objects.requireNonNull(moduleSpecBuilder, "scriptArchive");
+        Objects.requireNonNull(latestRevisionIds, "latestRevisionIds");
+
         MultiplePathFilterBuilder pathFilterBuilder = PathFilters.multiplePathFilterBuilder(true);
         Set<String> archiveEntryNames = scriptArchive.getArchiveEntryNames();
         pathFilterBuilder.addFilter(PathFilters.in(archiveEntryNames), true);
 
-        // add the root resouces and classes to the module. If the root is a directory, all files under the tree
+        // add the root resources and classes to the module. If the root is a directory, all files under the tree
         // are added to the module. If it's a jar, then all files in the jar are added.
         URL url = scriptArchive.getRootUrl();
-        File file = Paths.get(url.getPath()).toFile();
-        String filePath = file.getPath();
-        ResourceLoader rootResourceLoader = null;
-        if (file.isDirectory()) {
-            rootResourceLoader = ResourceLoaders.createFileResourceLoader(filePath, file);
-        } else if (file.getPath().endsWith(".jar")) {
-            try {
-                rootResourceLoader = ResourceLoaders.createJarResourceLoader(filePath, new JarFile(file));
-            } catch (IOException e) {
-                throw new ModuleLoadException(e);
+        if (url != null) {
+            File file = Paths.get(url.getPath()).toFile();
+            String filePath = file.getPath();
+            ResourceLoader rootResourceLoader = null;
+            if (file.isDirectory()) {
+                rootResourceLoader = ResourceLoaders.createFileResourceLoader(filePath, file);
+            } else if (file.getPath().endsWith(".jar")) {
+                try {
+                    rootResourceLoader = ResourceLoaders.createJarResourceLoader(filePath, new JarFile(file));
+                } catch (IOException e) {
+                    throw new ModuleLoadException(e);
+                }
             }
-        }
-        if (rootResourceLoader != null) {
-            moduleSpecBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(rootResourceLoader, pathFilterBuilder.create()));
+            if (rootResourceLoader != null) {
+                moduleSpecBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(rootResourceLoader, pathFilterBuilder.create()));
+            }
         }
         // add dependencies to the module spec
         ScriptModuleSpec scriptModuleSpec = scriptArchive.getModuleSpec();
-        List<String> dependencies = scriptModuleSpec.getDependencies();
-        for (String moduleName : dependencies) {
-            moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(ModuleIdentifier.create(moduleName), true, false));
+        Set<String> dependencies = scriptModuleSpec.getDependencies();
+        for (String scriptModuleId : dependencies) {
+            ModuleIdentifier latestIdentifier = latestRevisionIds.get(scriptModuleId);
+            if (latestIdentifier == null) {
+                latestIdentifier = JBossModuleUtils.createRevisionId(scriptModuleId, 0);
+            }
+            moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(latestIdentifier, true, false));
         }
         moduleSpecBuilder.addDependency(JRE_DEPENDENCY_SPEC);
         moduleSpecBuilder.addDependency(SCRIPTLIB_CORE_DEPENDENCY_SPEC);
@@ -115,7 +124,7 @@ public class ModuleUtils {
         addPropertiesToSpec(moduleSpecBuilder, archiveMetadata);
 
         // override the default ModuleClassLoader to use our customer classloader
-        moduleSpecBuilder.setModuleClassLoaderFactory(ScriptModuleClassLoader.createFactory(scriptArchive));
+        moduleSpecBuilder.setModuleClassLoaderFactory(JBossModuleClassLoader.createFactory(scriptArchive));
     }
 
     /**
@@ -170,16 +179,17 @@ public class ModuleUtils {
     }
 
     /**
-     * Create the {@link ModuleIdentifier} for the given {@link ScriptArchive}
-     */
-    public static ModuleIdentifier getModuleId(ScriptArchive archive) {
-        return ModuleIdentifier.create(archive.getModuleSpec().getModuleId());
-    }
-
-    /**
      * Create the {@link ModuleIdentifier} for the given ScriptCompilerPluginSpec
      */
     public static ModuleIdentifier getModuleId(ScriptCompilerPluginSpec pluginSpec) {
         return ModuleIdentifier.create(pluginSpec.getPluginName());
+    }
+
+    /**
+     * Helper method to create a revisionId in a consistent manner
+     */
+    public static ModuleIdentifier createRevisionId(String scriptModuleId, long revisionNumber) {
+        Objects.requireNonNull(scriptModuleId, "scriptModuleId");
+        return ModuleIdentifier.create(scriptModuleId, Long.toString(revisionNumber));
     }
 }
