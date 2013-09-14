@@ -48,7 +48,8 @@ public class GroovyTestResourceUtil {
         HELLO_PACKAGE("hellopackage", "package1/HelloPackage.groovy", "package1.HelloPackage"),
         LIBRARY_A("libA", "LibraryA.groovy", "LibraryA"),
         LIBRARY_AV2("libAV2", "LibraryA.groovy", "LibraryA"),
-        DEPENDS_ON_A("dependsonA", "DependsOnA.groovy", "DependsOnA");
+        DEPENDS_ON_A("dependsonA", "DependsOnA.groovy", "DependsOnA"),
+        INTERNAL_DEPENDENCY_A("internaldependencies", "InternalDependencyA.groovy", "InternalDependencyA");
 
         private String moduleId;
         private final Path scriptPath;

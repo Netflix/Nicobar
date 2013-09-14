@@ -202,6 +202,31 @@ public class Groovy2PluginTest {
     }
 
     /**
+     * Test loading a module which is composed of several interdependent scripts.
+     * InternalDepdencyA->InternalDepdencyB-InternalDepdencyC->InternalDepdencyD
+     */
+    @Test
+    public void testLoadScriptWithInternalDependencies() throws Exception {
+        ScriptModuleLoader moduleLoader = createGroovyModuleLoader();
+
+        Path scriptRootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.INTERNAL_DEPENDENCY_A);
+        ScriptArchive scriptArchive = new PathScriptArchive.Builder(scriptRootPath)
+            .setRecurseRoot(false)
+            .addFile(Paths.get("InternalDependencyB.groovy"))
+            .addFile(Paths.get("InternalDependencyA.groovy"))
+            .addFile(Paths.get("InternalDependencyD.groovy"))
+            .addFile(Paths.get("InternalDependencyC.groovy"))
+            .setModuleSpec(createGroovyModuleSpec(TestScript.INTERNAL_DEPENDENCY_A.getModuleId()).build())
+            .build();
+        moduleLoader.updateScriptArchives(Collections.singleton(scriptArchive));
+
+        // locate the class file in the module and execute it
+        ScriptModule scriptModule = moduleLoader.getScriptModule(TestScript.INTERNAL_DEPENDENCY_A.getModuleId());
+        Class<?> clazz = findClassByName(scriptModule, TestScript.INTERNAL_DEPENDENCY_A);
+        assertGetMessage(clazz, "I'm A.  Called B and got: I'm B. Called C and got: I'm C. Called D and got: I'm D.");
+    }
+
+    /**
      * Create a module loader this is wired up with the groovy compiler plugin
      */
     private ScriptModuleLoader createGroovyModuleLoader() throws Exception {
