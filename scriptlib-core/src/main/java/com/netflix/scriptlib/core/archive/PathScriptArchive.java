@@ -36,7 +36,6 @@ import org.apache.commons.io.Charsets;
 /**
  * Script archive backed by a files in a {@link Path}.
  *
- *
  * @author James Kojo
  */
 public class PathScriptArchive implements ScriptArchive {
@@ -60,6 +59,7 @@ public class PathScriptArchive implements ScriptArchive {
         boolean recurseRoot = true;
         private String specFileName;
         private ScriptModuleSpecSerializer specSerializer;
+        private long createTime;
 
         /**
          * Start a builder with required parameters.
@@ -96,6 +96,11 @@ public class PathScriptArchive implements ScriptArchive {
             if (file != null) {
                 addedFiles.add(file);
             }
+            return this;
+        }
+        /** Set the creation time */
+        public Builder setCreateTime(long createTime) {
+            this.createTime = createTime;
             return this;
         }
         /** Build the {@link PathScriptArchive}. */
@@ -136,7 +141,11 @@ public class PathScriptArchive implements ScriptArchive {
                 }
                 buildEntries.add(file.toString());
             }
-            return new PathScriptArchive(buildModuleSpec, rootDirPath, buildEntries);
+            long buildCreateTime = createTime;
+            if (buildCreateTime <= 0) {
+                buildCreateTime = System.currentTimeMillis();
+            }
+            return new PathScriptArchive(buildModuleSpec, rootDirPath, buildEntries, buildCreateTime);
         }
     }
 
@@ -144,13 +153,15 @@ public class PathScriptArchive implements ScriptArchive {
     private final Set<String> entryNames;
     private final Path rootDirPath;
     private final URL rootUrl;
+    private final long createTime;
 
-    protected PathScriptArchive(ScriptModuleSpec moduleSpec, Path rootDirPath, Set<String> entries) throws IOException {
+    protected PathScriptArchive(ScriptModuleSpec moduleSpec, Path rootDirPath, Set<String> entries, long createTime) throws IOException {
         this.moduleSpec = Objects.requireNonNull(moduleSpec, "moduleSpec");
         this.rootDirPath = Objects.requireNonNull(rootDirPath, "rootDirPath");
         if (!this.rootDirPath.isAbsolute()) throw new IllegalArgumentException("rootPath must be absolute.");
         this.entryNames = Collections.unmodifiableSet(Objects.requireNonNull(entries, "entries"));
         this.rootUrl = this.rootDirPath.toUri().toURL();
+        this.createTime = createTime;
     }
 
     @Override
@@ -175,5 +186,27 @@ public class PathScriptArchive implements ScriptArchive {
             return null;
         }
         return rootDirPath.resolve(entryName).toUri().toURL();
+    }
+
+    @Override
+    public long getCreateTime() {
+        return createTime;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) { return true; }
+        if (o == null || getClass() != o.getClass()) { return false; }
+        PathScriptArchive other = (PathScriptArchive) o;
+        return Objects.equals(this.moduleSpec, other.moduleSpec) &&
+            Objects.equals(this.entryNames, other.entryNames) &&
+            Objects.equals(this.rootDirPath, other.rootDirPath) &&
+            Objects.equals(this.rootUrl, other.rootUrl) &&
+            Objects.equals(this.createTime, other.createTime);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(moduleSpec, entryNames,rootDirPath, rootUrl, createTime);
     }
 }

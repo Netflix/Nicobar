@@ -20,7 +20,7 @@ package com.netflix.scriptlib.groovy2.plugin;
 import java.util.Collections;
 import java.util.Set;
 
-import com.netflix.scriptlib.core.compile.ScriptCompiler;
+import com.netflix.scriptlib.core.compile.ScriptArchiveCompiler;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPlugin;
 import com.netflix.scriptlib.groovy2.compile.Groovy2Compiler;
 
@@ -35,7 +35,7 @@ public class Groovy2CompilerPlugin implements ScriptCompilerPlugin {
     }
 
     @Override
-    public Set<? extends ScriptCompiler> getCompilers() {
+    public Set<? extends ScriptArchiveCompiler> getCompilers() {
         return Collections.singleton(new Groovy2Compiler());
     }
 }

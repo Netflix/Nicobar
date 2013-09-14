@@ -17,6 +17,8 @@
  */
 package com.netflix.scriptlib.core.archive;
 
+import static com.netflix.scriptlib.core.testutil.CoreTestResourceUtil.TestResource.TEST_MODULE_SPEC_PATH;
+import static com.netflix.scriptlib.core.testutil.CoreTestResourceUtil.TestResource.TEST_TEXT_PATH;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
@@ -41,11 +43,9 @@ import org.testng.annotations.Test;
  * @author James Kojo
  */
 public class PathScriptArchiveTest {
-    private final static String TEXT_PATH_RESOURCE_NAME = "paths/test-text";
-    private final static String MODULE_SPEC_PATH_RESOURCE_NAME = "paths/test-modulespec";
     @Test
     public void testLoadTextPath() throws Exception {
-        URL rootPathUrl = getClass().getClassLoader().getResource(TEXT_PATH_RESOURCE_NAME);
+        URL rootPathUrl = getClass().getClassLoader().getResource(TEST_TEXT_PATH.getResourcePath());
         Path rootPath = Paths.get(rootPathUrl.toURI()).toAbsolutePath();
 
         PathScriptArchive scriptArchive = new PathScriptArchive.Builder(rootPath)
@@ -53,7 +53,7 @@ public class PathScriptArchiveTest {
             .build();
         assertEquals(scriptArchive.getModuleSpec().getModuleId(), "testModuleId");
         Set<String> archiveEntryNames = scriptArchive.getArchiveEntryNames();
-        assertEquals(archiveEntryNames, new HashSet<String>(Arrays.asList("sub1/sub1.txt", "sub2/sub2.txt", "root.txt", "META-INF/MANIFEST.MF")));
+        assertEquals(archiveEntryNames, TEST_TEXT_PATH.getContentPaths());
         for (String entryName : archiveEntryNames) {
             URL entryUrl = scriptArchive.getEntry(entryName);
             assertNotNull(entryUrl);
@@ -65,21 +65,21 @@ public class PathScriptArchiveTest {
 
     @Test
     public void testDefaultModuleId() throws Exception {
-        URL rootPathUrl = getClass().getClassLoader().getResource(TEXT_PATH_RESOURCE_NAME);
+        URL rootPathUrl = getClass().getClassLoader().getResource(TEST_TEXT_PATH.getResourcePath());
         Path rootPath = Paths.get(rootPathUrl.toURI()).toAbsolutePath();
         PathScriptArchive scriptArchive = new PathScriptArchive.Builder(rootPath).build();
-        assertEquals(scriptArchive.getModuleSpec().getModuleId(), "test-text");
+        assertEquals(scriptArchive.getModuleSpec().getModuleId(), TEST_TEXT_PATH.getModuleId());
     }
 
     @Test
     public void testLoadWithModuleSpec() throws Exception {
-        URL rootPathUrl = getClass().getClassLoader().getResource(MODULE_SPEC_PATH_RESOURCE_NAME);
+        URL rootPathUrl = getClass().getClassLoader().getResource(TEST_MODULE_SPEC_PATH.getResourcePath());
         Path rootPath = Paths.get(rootPathUrl.toURI()).toAbsolutePath();
 
         // if the module spec isn't provided, it should be discovered in the path
         PathScriptArchive scriptArchive = new PathScriptArchive.Builder(rootPath).build();
         ScriptModuleSpec moduleSpec = scriptArchive.getModuleSpec();
-        assertEquals(moduleSpec.getModuleId(), "test-modulespec-moduleId");
+        assertEquals(moduleSpec.getModuleId(), TEST_MODULE_SPEC_PATH.getModuleId());
         assertEquals(moduleSpec.getDependencies(), new HashSet<String>(Arrays.asList("dependencyModuleId1", "dependencyModuleId2")));
         Map<String, String> expectedMetadata = new HashMap<String, String>();
         expectedMetadata.put("metadataName1", "metadataValue1");

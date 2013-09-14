@@ -26,15 +26,15 @@ import org.codehaus.groovy.tools.GroovyClass;
 
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 import com.netflix.scriptlib.core.compile.ScriptCompilationException;
-import com.netflix.scriptlib.core.compile.ScriptCompiler;
-import com.netflix.scriptlib.core.module.ScriptModuleClassLoader;
+import com.netflix.scriptlib.core.compile.ScriptArchiveCompiler;
+import com.netflix.scriptlib.core.module.jboss.JBossModuleClassLoader;
 
 /**
- * Groovy specific implementation of the {@link ScriptCompiler}
+ * Groovy specific implementation of the {@link ScriptArchiveCompiler}
  *
  * @author James Kojo
  */
-public class Groovy2Compiler implements ScriptCompiler {
+public class Groovy2Compiler implements ScriptArchiveCompiler {
     public final static String COMPILER_NAME = "groovy2";
     @Override
     public boolean shouldCompile(ScriptArchive archive) {
@@ -43,7 +43,7 @@ public class Groovy2Compiler implements ScriptCompiler {
     }
 
     @Override
-    public Set<Class<?>> compile(ScriptArchive archive, ScriptModuleClassLoader moduleClassLoader)
+    public Set<Class<?>> compile(ScriptArchive archive, JBossModuleClassLoader moduleClassLoader)
         throws ScriptCompilationException, IOException {
          Set<GroovyClass> groovyClasses = new Groovy2CompilerHelper()
             .addScriptArchive(archive)
