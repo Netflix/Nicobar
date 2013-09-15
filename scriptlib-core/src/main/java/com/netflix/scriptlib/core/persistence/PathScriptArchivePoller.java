@@ -26,18 +26,19 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 
 import com.netflix.scriptlib.core.archive.PathScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 
 /**
- * ScriptArchiveDao which scans the local filesystem for directories which
+ * {@link ScriptArchivePoller} which scans the local filesystem for directories which
  * are turned into {@link ScriptArchive}s.
  *
  * @author James Kojo
  */
-public class PathScriptArchiveDao extends FileSystemScriptArchiveDao {
+public class PathScriptArchivePoller extends FileSystemScriptArchivePoller {
 
     /**
      * Directory filter which finds readable directories
@@ -48,7 +49,7 @@ public class PathScriptArchiveDao extends FileSystemScriptArchiveDao {
         }
     };
 
-    public PathScriptArchiveDao(final Path rootDir) throws IOException {
+    public PathScriptArchivePoller(final Path rootDir) throws IOException {
         super(rootDir);
     }
 
@@ -61,7 +62,7 @@ public class PathScriptArchiveDao extends FileSystemScriptArchiveDao {
      */
     @Override
     protected void findUpdatedArchives(final long lastPollTime, Set<Path> visitedArchivePaths,
-        final Set<Path> updated) throws IOException {
+        final Map<Path, Long> updated) throws IOException {
         DirectoryStream<Path> archiveDirs = Files.newDirectoryStream(rootDir, DIRECTORY_FILTER);
         for (final Path archiveDir: archiveDirs) {
             final Path absoluteArchiveDir = rootDir.resolve(archiveDir);
@@ -77,7 +78,7 @@ public class PathScriptArchiveDao extends FileSystemScriptArchiveDao {
                 public FileVisitResult visit(Path path) throws IOException {
                     long visitedLastModified = Files.getLastModifiedTime(path).toMillis();
                     if (visitedLastModified > lastPollTime) {
-                        updated.add(absoluteArchiveDir);
+                        updated.put(absoluteArchiveDir, visitedLastModified);
                         return FileVisitResult.TERMINATE;
                     }
                     return FileVisitResult.CONTINUE;
@@ -91,8 +92,10 @@ public class PathScriptArchiveDao extends FileSystemScriptArchiveDao {
      * Create the script archive from the given archive root for updated archives
      */
     @Override
-    protected ScriptArchive createScriptArchive(Path archiveRootPath) throws IOException {
-        ScriptArchive archive = new PathScriptArchive.Builder(archiveRootPath).build();
+    protected ScriptArchive createScriptArchive(Path archiveRootPath, long lastUpdateTime) throws IOException {
+        ScriptArchive archive = new PathScriptArchive.Builder(archiveRootPath)
+            .setCreateTime(lastUpdateTime)
+            .build();
         return archive;
     }
 }

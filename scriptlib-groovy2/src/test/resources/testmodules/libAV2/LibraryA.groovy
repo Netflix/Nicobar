@@ -1,6 +1,6 @@
 /*
- *
  *  Copyright 2013 Netflix, Inc.
+ *
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -15,19 +15,8 @@
  *     limitations under the License.
  *
  */
-package com.netflix.scriptlib.core.plugin;
-
-import java.util.Set;
-
-import com.netflix.scriptlib.core.compile.ScriptArchiveCompiler;
-
-/**
- * Language plugin bootstrapper. Factory/provider interfaces for exporting classes needed for
- * loading a language plugin
- *
- * @author James Kojo
- */
-public interface ScriptCompilerPlugin {
-
-    public Set<? extends ScriptArchiveCompiler> getCompilers();
+public class LibraryA {
+    public String getMessage() {
+       return "I'm LibraryA V2!";
+    }
 }

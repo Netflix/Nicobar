@@ -36,14 +36,24 @@ public class CoreTestResourceUtil {
      * Metadata for test resources found in test/resource
      */
     public static enum TestResource {
-        TEST_TEXT_PATH("paths/test-text", "sub1/sub1.txt", "sub2/sub2.txt", "root.txt", "META-INF/MANIFEST.MF"),
-        TEST_TEXT_JAR("jars/test-text.jar", "sub1/sub1.txt", "sub2/sub2.txt", "root.txt", "META-INF/MANIFEST.MF");
+        TEST_TEXT_PATH("test-text", "paths/test-text", "sub1/sub1.txt", "sub2/sub2.txt", "root.txt", "META-INF/MANIFEST.MF"),
+        TEST_TEXT_JAR("test-text", "jars/test-text.jar", "sub1/sub1.txt", "sub2/sub2.txt", "root.txt", "META-INF/MANIFEST.MF"),
+        TEST_MODULE_SPEC_PATH("test-modulespec-moduleId", "paths/test-modulespec", "root.txt", "META-INF/MANIFEST.MF"),
+        TEST_MODULE_SPEC_JAR("test-modulespec-moduleId", "jars/test-modulespec.jar", "root.txt", "META-INF/MANIFEST.MF");
 
+        private final String moduleId;
         private final String resourcePath;
         private final Set<String> contentPaths;
-        private TestResource(String resourcePath, String... contentPaths) {
+        private TestResource(String moduleId, String resourcePath, String... contentPaths) {
+            this.moduleId = moduleId;
             this.resourcePath = resourcePath;
             this.contentPaths = new LinkedHashSet<String>(Arrays.asList(contentPaths));
+        }
+        /**
+         * @return the expected moduleId after this is converted to a archive
+         */
+        public String getModuleId() {
+            return moduleId;
         }
         /**
          * @return path name suitable for passing to {@link ClassLoader#getResource(String)}

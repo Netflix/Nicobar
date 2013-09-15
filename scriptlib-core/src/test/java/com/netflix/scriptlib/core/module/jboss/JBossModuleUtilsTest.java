@@ -15,7 +15,7 @@
  *     limitations under the License.
  *
  */
-package com.netflix.scriptlib.core.module;
+package com.netflix.scriptlib.core.module.jboss;
 
 import static com.netflix.scriptlib.core.testutil.CoreTestResourceUtil.TestResource.TEST_TEXT_JAR;
 import static com.netflix.scriptlib.core.testutil.CoreTestResourceUtil.TestResource.TEST_TEXT_PATH;
@@ -44,15 +44,14 @@ import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPlugin;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
 import com.netflix.scriptlib.core.testutil.CoreTestResourceUtil;
-import com.netflix.scriptlib.core.testutil.TestModuleLoader;
 
 
 /**
- * Unit tests for {@link ModuleUtils}
+ * Unit tests for {@link JBossModuleUtils}
  *
  * @author James Kojo
  */
-public class ModuleUtilsTest {
+public class JBossModuleUtilsTest {
     private static final String METADATA_NAME = "TestMetadataName";
     private static final String METADATA_VALUE = "TestMetadataValue";
     @BeforeClass
@@ -65,14 +64,15 @@ public class ModuleUtilsTest {
      */
     @Test
     public void testExpectedPluginDependencies() throws Exception {
-        ScriptCompilerPluginSpec pluginSpec = new ScriptCompilerPluginSpec.Builder("TestPlugin", 1)
+        ScriptCompilerPluginSpec pluginSpec = new ScriptCompilerPluginSpec.Builder("TestPlugin")
             .addMetatdata(METADATA_NAME, METADATA_VALUE)
             .build();
-        ModuleIdentifier pluginId = ModuleUtils.getModuleId(pluginSpec);
+        ModuleIdentifier pluginId = JBossModuleUtils.getModuleId(pluginSpec);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginId);
-        ModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec);
+        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec);
 
-        TestModuleLoader moduleLoader = new TestModuleLoader(moduleSpecBuilder.create());
+        JBossModuleLoader moduleLoader = new JBossModuleLoader();
+        moduleLoader.addModuleSpec(moduleSpecBuilder.create());
         Module module = moduleLoader.loadModule(pluginId);
         assertNotNull(module);
         ModuleClassLoader moduleClassLoader = module.getClassLoader();
@@ -101,12 +101,14 @@ public class ModuleUtilsTest {
                 .addMetadata(METADATA_NAME, METADATA_VALUE)
                 .build())
             .build();
-        ModuleIdentifier pluginId = ModuleUtils.getModuleId(jarScriptArchive);
-        ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginId);
-        ModuleUtils.populateModuleSpec(moduleSpecBuilder, jarScriptArchive);
 
-        TestModuleLoader moduleLoader = new TestModuleLoader(moduleSpecBuilder.create());
-        Module module = moduleLoader.loadModule(pluginId);
+        ModuleIdentifier revisionId = JBossModuleUtils.createRevisionId(TEST_TEXT_JAR.getModuleId(), 1);
+        ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(revisionId);
+        JBossModuleLoader moduleLoader = new JBossModuleLoader();
+        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, jarScriptArchive, moduleLoader.getLatestRevisionIds());
+
+        moduleLoader.addModuleSpec(moduleSpecBuilder.create());
+        Module module = moduleLoader.loadModule(revisionId);
         ModuleClassLoader moduleClassLoader = module.getClassLoader();
 
         // verify the metadata was transfered
@@ -128,12 +130,13 @@ public class ModuleUtilsTest {
                 .addMetadata(METADATA_NAME, METADATA_VALUE)
                 .build())
             .build();
-        ModuleIdentifier pluginId = ModuleUtils.getModuleId(jarScriptArchive);
-        ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginId);
-        ModuleUtils.populateModuleSpec(moduleSpecBuilder, jarScriptArchive);
+        ModuleIdentifier revisionId = JBossModuleUtils.createRevisionId(TEST_TEXT_PATH.getModuleId(), 1);
+        ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(revisionId);
+        JBossModuleLoader moduleLoader = new JBossModuleLoader();
+        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, jarScriptArchive, moduleLoader.getLatestRevisionIds());
+        moduleLoader.addModuleSpec(moduleSpecBuilder.create());
 
-        TestModuleLoader moduleLoader = new TestModuleLoader(moduleSpecBuilder.create());
-        Module module = moduleLoader.loadModule(pluginId);
+        Module module = moduleLoader.loadModule(revisionId);
         ModuleClassLoader moduleClassLoader = module.getClassLoader();
 
         // verify the metadata was transfered

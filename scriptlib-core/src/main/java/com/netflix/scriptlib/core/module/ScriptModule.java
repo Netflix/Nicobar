@@ -20,6 +20,7 @@ package com.netflix.scriptlib.core.module;
 import java.util.Set;
 
 import com.netflix.scriptlib.core.archive.ScriptArchive;
+import com.netflix.scriptlib.core.module.jboss.JBossModuleClassLoader;
 
 /**
  * Encapsulates a the compiled classes and the resources in a {@link ScriptArchive}
@@ -31,12 +32,7 @@ public interface ScriptModule {
     /**
      * @return module identifier
      */
-    public String getModuleName();
-
-    /**
-     * @return module version identifier
-     */
-    public int getModuleVersion();
+    public String getModuleId();
 
     /**
      * @return the classes that were compiled and loaded from the scripts
@@ -49,6 +45,17 @@ public interface ScriptModule {
      * was not necessarily the one used to load the classes in getLoadedClasses(),
      * since thos may have been injected.
      */
-    public ScriptModuleClassLoader getModuleClassLoader();
+    public JBossModuleClassLoader getModuleClassLoader();
+
+    /**
+     * Timestamp used to resolve multiple revisions of a {@link ScriptModule}. This is usually
+     * copied from the {@link ScriptArchive} which sourced this {@link ScriptModule}
+     */
+    public long getCreateTime();
+
+    /**
+     * @return the original archive this module was produced from
+     */
+    ScriptArchive getSourceArchive();
 
 }

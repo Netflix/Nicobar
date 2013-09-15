@@ -15,19 +15,15 @@
  *     limitations under the License.
  *
  */
-package com.netflix.scriptlib.core.plugin;
-
-import java.util.Set;
-
-import com.netflix.scriptlib.core.compile.ScriptArchiveCompiler;
+package com.netflix.scriptlib.core.module;
 
 /**
- * Language plugin bootstrapper. Factory/provider interfaces for exporting classes needed for
- * loading a language plugin
+ * Reason why an Archive was rejected loader
  *
  * @author James Kojo
  */
-public interface ScriptCompilerPlugin {
-
-    public Set<? extends ScriptArchiveCompiler> getCompilers();
+public enum ArchiveRejectedReason {
+    HIGHER_REVISION_AVAILABLE,
+    ARCHIVE_IO_EXCEPTION,
+    COMPILE_FAILURE
 }

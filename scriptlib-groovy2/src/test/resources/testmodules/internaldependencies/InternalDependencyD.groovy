@@ -15,19 +15,8 @@
  *     limitations under the License.
  *
  */
-package com.netflix.scriptlib.core.plugin;
-
-import java.util.Set;
-
-import com.netflix.scriptlib.core.compile.ScriptArchiveCompiler;
-
-/**
- * Language plugin bootstrapper. Factory/provider interfaces for exporting classes needed for
- * loading a language plugin
- *
- * @author James Kojo
- */
-public interface ScriptCompilerPlugin {
-
-    public Set<? extends ScriptArchiveCompiler> getCompilers();
+public class InternalDependencyD {
+    public String getMessage() {
+       return "I'm D."
+    }
 }

@@ -17,14 +17,16 @@
  */
 package com.netflix.scriptlib.core.archive;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 
 /**
  * Common configuration elements for converting a {@link ScriptArchive} to a module.
@@ -37,7 +39,7 @@ public class ScriptModuleSpec {
     public static class Builder {
         private final String moduleId;
         private final Map<String, String> archiveMetadata = new LinkedHashMap<String, String>();
-        private final List<String> dependencies = new LinkedList<String>();
+        private final Set<String> dependencies = new LinkedHashSet<String>();
 
         public Builder(String moduleId) {
             this.moduleId = moduleId;
@@ -64,7 +66,7 @@ public class ScriptModuleSpec {
             return this;
         }
         /** Add Module dependencies. */
-        public Builder addDependencies(List<String> dependencies) {
+        public Builder addDependencies(Set<String> dependencies) {
             if (dependencies != null) {
                 dependencies.addAll(dependencies);
             }
@@ -74,15 +76,15 @@ public class ScriptModuleSpec {
         public ScriptModuleSpec build() {
             return new ScriptModuleSpec(moduleId,
                Collections.unmodifiableMap(new HashMap<String, String>(archiveMetadata)),
-               Collections.unmodifiableList(new ArrayList<String>(dependencies)));
+               Collections.unmodifiableSet(new LinkedHashSet<String>(dependencies)));
         }
     }
 
     private final String moduleId;
     private final Map<String, String> archiveMetadata;
-    private final List<String> dependencies;
+    private final Set<String> dependencies;
 
-    protected ScriptModuleSpec(String moduleId, Map<String, String> archiveMetadata, List<String> dependencies) {
+    protected ScriptModuleSpec(String moduleId, Map<String, String> archiveMetadata, Set<String> dependencies) {
         this.moduleId = Objects.requireNonNull(moduleId, "moduleId");
         this.archiveMetadata = Objects.requireNonNull(archiveMetadata, "archiveMetadata");
         this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
@@ -106,7 +108,7 @@ public class ScriptModuleSpec {
     /**
      * @return the names of the modules that this archive depends on
      */
-    public List<String> getDependencies() {
+    public Set<String> getDependencies() {
         return dependencies;
     }
 
@@ -123,6 +125,15 @@ public class ScriptModuleSpec {
     @Override
     public int hashCode() {
         return Objects.hash(moduleId, moduleId, dependencies);
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+            .append("moduleId", moduleId)
+            .append("archiveMetadata", archiveMetadata)
+            .append("dependencies", dependencies)
+            .toString();
     }
 }
 

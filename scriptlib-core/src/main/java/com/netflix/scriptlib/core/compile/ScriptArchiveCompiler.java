@@ -22,7 +22,7 @@ import java.util.Set;
 
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
-import com.netflix.scriptlib.core.module.ScriptModuleClassLoader;
+import com.netflix.scriptlib.core.module.jboss.JBossModuleClassLoader;
 
 
 /**
@@ -30,7 +30,7 @@ import com.netflix.scriptlib.core.module.ScriptModuleClassLoader;
  *
  * @author James Kojo
  */
-public interface ScriptCompiler {
+public interface ScriptArchiveCompiler {
     /**
      * Common names used to query the {@link ScriptModuleSpec#getMetadata()} that are relevant
      * to compilers.
@@ -53,5 +53,5 @@ public interface ScriptCompiler {
      * @throws ScriptCompilationException if there was a compilation issue in the archive.
      * @throws IOException if there was a problem reading/writing the archive
      */
-    public Set<Class<?>> compile(ScriptArchive archive, ScriptModuleClassLoader moduleClassLoader) throws ScriptCompilationException, IOException;
+    public Set<Class<?>> compile(ScriptArchive archive, JBossModuleClassLoader moduleClassLoader) throws ScriptCompilationException, IOException;
 }
