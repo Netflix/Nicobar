@@ -28,8 +28,10 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import org.apache.commons.io.FileUtils;
 import org.testng.annotations.BeforeClass;
@@ -39,19 +41,17 @@ import com.netflix.scriptlib.core.archive.PathScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
 import com.netflix.scriptlib.core.compile.ScriptArchiveCompiler.MetadataName;
+import com.netflix.scriptlib.core.execution.HystrixScriptModuleExecutor;
+import com.netflix.scriptlib.core.execution.ScriptModuleExecutable;
 import com.netflix.scriptlib.core.module.ScriptModule;
 import com.netflix.scriptlib.core.module.ScriptModuleLoader;
+import com.netflix.scriptlib.core.module.ScriptModuleUtils;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
 import com.netflix.scriptlib.groovy2.testutil.GroovyTestResourceUtil;
 import com.netflix.scriptlib.groovy2.testutil.GroovyTestResourceUtil.TestScript;
 
 /**
  * Integration tests for the Groovy2 language plugin
- *
- * Future tests:
- *  . test can't delete plugin spec
- *  . deploy uncompilable archive doesn't unload the previous version
- *  . re-link newly deployed depdencies
  *
  * @author James Kojo
  */
@@ -90,6 +90,34 @@ public class Groovy2PluginTest {
         ScriptModule scriptModule = moduleLoader.getScriptModule(TestScript.HELLO_WORLD.getModuleId());
         Class<?> clazz = findClassByName(scriptModule, TestScript.HELLO_WORLD);
         assertGetMessage(clazz, "Hello, World!");
+    }
+
+    @Test
+    public void testLoadScriptWithInterface() throws Exception {
+        ScriptModuleLoader moduleLoader = createGroovyModuleLoader();
+        Path scriptRootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.IMPLEMENTS_INTERFACE);
+        ScriptArchive scriptArchive = new PathScriptArchive.Builder(scriptRootPath)
+            .setRecurseRoot(false)
+            .addFile(TestScript.IMPLEMENTS_INTERFACE.getScriptPath())
+            .setModuleSpec(createGroovyModuleSpec(TestScript.IMPLEMENTS_INTERFACE.getModuleId()).build())
+            .build();
+        moduleLoader.updateScriptArchives(Collections.singleton(scriptArchive));
+
+        // locate the class file in the module and execute it via the executor
+        ScriptModuleExecutable<String> executable = new ScriptModuleExecutable<String>() {
+            @SuppressWarnings({"rawtypes","unchecked"})
+            @Override
+            public String execute(ScriptModule scriptModule) throws Exception {
+                Class<Callable> callable = ScriptModuleUtils.findAssignableClass(scriptModule, Callable.class);
+                assertNotNull(callable, "couldn't find Callable for module " + scriptModule.getModuleId());
+                Callable<String> instance = callable.newInstance();
+                String result = instance.call();
+                return result;
+            }
+        };
+        HystrixScriptModuleExecutor<String> executor = new HystrixScriptModuleExecutor<String>("TestModuleExecutor");
+        List<String> results = executor.executeModules(Collections.singletonList(TestScript.IMPLEMENTS_INTERFACE.getModuleId()), executable, moduleLoader);
+        assertEquals(results, Collections.singletonList("I'm a Callable<String>"));
     }
 
     /**

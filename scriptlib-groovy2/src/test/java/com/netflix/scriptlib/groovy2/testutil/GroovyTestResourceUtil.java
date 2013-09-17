@@ -49,7 +49,8 @@ public class GroovyTestResourceUtil {
         LIBRARY_A("libA", "LibraryA.groovy", "LibraryA"),
         LIBRARY_AV2("libAV2", "LibraryA.groovy", "LibraryA"),
         DEPENDS_ON_A("dependsonA", "DependsOnA.groovy", "DependsOnA"),
-        INTERNAL_DEPENDENCY_A("internaldependencies", "InternalDependencyA.groovy", "InternalDependencyA");
+        INTERNAL_DEPENDENCY_A("internaldependencies", "InternalDependencyA.groovy", "InternalDependencyA"),
+        IMPLEMENTS_INTERFACE("implementsinterface", "MyCallable.groovy", "MyCallable");
 
         private String moduleId;
         private final Path scriptPath;
