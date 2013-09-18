@@ -85,7 +85,9 @@ public class HystrixScriptModuleExecutor<V> {
         List<ScriptModule> modules = new ArrayList<ScriptModule>(moduleIds.size());
         for (String moduleId : moduleIds) {
            ScriptModule module = moduleLoader.getScriptModule(moduleId);
-           modules.add(module);
+           if (module != null) {
+               modules.add(module);
+           }
         }
         return executeModules(modules, executable);
     }
