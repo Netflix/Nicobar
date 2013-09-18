@@ -35,12 +35,11 @@ public class ScriptModuleUtils {
      * @param targetClass target type to search for
      * @return first instance that matches the given type
      */
-    @SuppressWarnings("unchecked")
-    public static <T> Set<Class<T>> findAssignableClasses(ScriptModule module, Class<T> targetClass) {
-        Set<Class<T>> result = new LinkedHashSet<Class<T>>();
+    public static Set<Class<?>> findAssignableClasses(ScriptModule module, Class<?> targetClass) {
+        Set<Class<?>> result = new LinkedHashSet<Class<?>>();
         for (Class<?> candidateClass : module.getLoadedClasses()) {
             if (targetClass.isAssignableFrom(candidateClass)) {
-                result.add((Class<T>) candidateClass);
+                result.add(candidateClass);
             }
         }
         return result;
@@ -53,11 +52,10 @@ public class ScriptModuleUtils {
      * @return first instance that matches the given type
      */
     @Nullable
-    @SuppressWarnings("unchecked")
-    public static <T> Class<T> findAssignableClass(ScriptModule module, Class<T> targetClass) {
+    public static Class<?> findAssignableClass(ScriptModule module, Class<?> targetClass) {
         for (Class<?> candidateClass : module.getLoadedClasses()) {
             if (targetClass.isAssignableFrom(candidateClass)) {
-                return (Class<T>) candidateClass;
+                return candidateClass;
             }
         }
         return null;

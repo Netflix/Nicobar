@@ -17,6 +17,9 @@
  */
 package com.netflix.scriptlib.example.groovy2;
 
+import static com.netflix.scriptlib.example.groovy2.ExampleResourceLocator.GROOVY2_COMPILER_PLUGIN_CLASS;
+import static com.netflix.scriptlib.example.groovy2.ExampleResourceLocator.GROOVY2_MODULE_ID;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -38,8 +41,6 @@ import com.netflix.scriptlib.core.module.ScriptModuleLoader;
 import com.netflix.scriptlib.core.module.ScriptModuleUtils;
 import com.netflix.scriptlib.core.persistence.PathScriptArchivePoller;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
-import com.netflix.scriptlib.core.utils.ClassPathUtils;
-import com.netflix.scriptlib.groovy2.testutil.GroovyTestResourceUtil;
 
 /**
  * Example of how to build a script runtime that polls for Groovy based archives on disk.
@@ -55,11 +56,6 @@ import com.netflix.scriptlib.groovy2.testutil.GroovyTestResourceUtil;
  * @author James Kojo
  */
 public class GroovyModuleLoaderExample {
-
-    // module ID to use for the Groovy plugin
-    private static final String GROOVY2_MODULE_ID = "Groovy2RuntimeModule";
-    private static final String GROOVY2_COMPILER_PLUGIN_CLASS = "com.netflix.scriptlib.groovy2.plugin.Groovy2CompilerPlugin";
-
     // test script module info
     private static final String SCRIPT_MODULE_ID = "HelloWorld";
     private static final Path SCRIPT_RELATIVE_PATH = Paths.get("helloworld", "HelloWorld.groovy");
@@ -81,8 +77,8 @@ public class GroovyModuleLoaderExample {
         // create and start the loader with the plugin
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
             .addPluginSpec(new ScriptCompilerPluginSpec.Builder(GROOVY2_MODULE_ID) // configure Groovy plugin
-                .addRuntimeResource(getGroovyRuntime())
-                .addRuntimeResource(getGroovyPluginLocation())
+                .addRuntimeResource(ExampleResourceLocator.getGroovyRuntime())
+                .addRuntimeResource(ExampleResourceLocator.getGroovyPluginLocation())
                 .withPluginClassName(GROOVY2_COMPILER_PLUGIN_CLASS)
                 .build())
             .addPoller(new PathScriptArchivePoller(baseArchiveDir) , 5)  // add a poller to detect new archives
@@ -99,13 +95,13 @@ public class GroovyModuleLoaderExample {
         // the test module has now been compiled and is ready for execution.
         // create a closure which knows how to bind any request time inputs (if any) and execute the module.
         ScriptModuleExecutable<String> executable = new ScriptModuleExecutable<String>() {
-            @SuppressWarnings({"rawtypes","unchecked"})
             @Override
             public String execute(ScriptModule scriptModule) throws Exception {
                 // the script doesn't necessarily have to implement any specific interfaces, but it does need to
                 // be compilable to a class.
-                Class<Callable> callable = ScriptModuleUtils.findAssignableClass(scriptModule, Callable.class);
-                Callable<String> instance = callable.newInstance();
+                Class<?> callable = ScriptModuleUtils.findAssignableClass(scriptModule, Callable.class);
+                @SuppressWarnings("unchecked")
+                Callable<String> instance = (Callable<String>) callable.newInstance();
                 String result = instance.call();
                 return result;
             }
@@ -118,47 +114,6 @@ public class GroovyModuleLoaderExample {
 
         // release the Hystrix resources
         Hystrix.reset();
-    }
-
-    /**
-     * Locate the groovy-all-n.n.n.jar file on the classpath.
-     *
-     * The ScriptModuleLoader will attempt to load the scripting runtimes into their own classloaders.
-     * To accomplish this, the loader requires the actual file location of the groovy runtime jar.
-     * This method is an example of a strategy for locating the groovy jar file in a programmatic way.
-     *
-     * This strategy assumes that the classloader of this example application has the
-     * script runtime somewhere in it's classpath.
-     * This is not necessarily true of all applications, depending on disposition of the deployed application artifacts.
-     *
-     * It further assumes that the groovy runtime contains the file "groovy-release-info.properties"
-     * which was true of the time of groovy-all-2.1.6.jar
-     */
-    public static Path getGroovyRuntime() {
-        Path path = ClassPathUtils.findRootPathForResource("META-INF/groovy-release-info.properties", GroovyTestResourceUtil.class.getClassLoader());
-        if (path == null) {
-            throw new IllegalStateException("coudln't find groovy-all.n.n.n.jar in the classpath.");
-        }
-        return path;
-    }
-
-    /**
-     * Locate the classpath root which contains the groovy2 plugin.
-     *
-     * The ScriptModuleLoader will load the groovy2 plugin into the same classlaoder as the
-     * groovy runtime. To accomplish this, the loader requires the file location of the groovy2 plugin.
-     * This method is an example strategy for locating the plugin's jar file in a programmatic way.
-     *
-     * This strategy assumes that the classloader of this example application has the plugin in it' classpath.
-     * see {@link GroovyModuleLoaderExample#getGroovyRuntime()}.
-     */
-    public static Path getGroovyPluginLocation() {
-        String resourceName = ClassPathUtils.classNameToResourceName(GROOVY2_COMPILER_PLUGIN_CLASS);
-        Path path = ClassPathUtils.findRootPathForResource(resourceName, GroovyTestResourceUtil.class.getClassLoader());
-        if (path == null) {
-            throw new IllegalStateException("coudln't find groovy2 plugin jar in the classpath.");
-        }
-        return path;
     }
 
     /*
