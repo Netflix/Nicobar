@@ -43,8 +43,9 @@ subprojects {
 
 project(':scriptlib-core') {
     dependencies {
-        compile 'org.jboss.modules:jboss-modules:1.3.0.Beta3'
         compile 'com.google.code.gson:gson:2.2.4'
+        compile 'com.netflix.hystrix:hystrix-core:1.3.3'
+        compile 'org.jboss.modules:jboss-modules:1.3.0.Beta3'
     }
 }
 
