@@ -1,3 +1,4 @@
 rootProject.name='scriptlib'
 include 'scriptlib-core'
 include 'scriptlib-groovy2'
+include 'scriptlib-example'
