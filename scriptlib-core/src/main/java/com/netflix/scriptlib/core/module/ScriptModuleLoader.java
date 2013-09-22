@@ -78,7 +78,9 @@ public class ScriptModuleLoader {
     private final static ThreadFactory DEFAULT_POLLER_THREAD_FACTORY = new ThreadFactory() {
         @Override
         public Thread newThread(Runnable r) {
-            return new Thread(r, ScriptModuleLoader.class.getSimpleName() + "-" + "PollerThread");
+             Thread thread = new Thread(r, ScriptModuleLoader.class.getSimpleName() + "-" + "PollerThread");
+             thread.setDaemon(true);
+             return thread;
         }
     };
 

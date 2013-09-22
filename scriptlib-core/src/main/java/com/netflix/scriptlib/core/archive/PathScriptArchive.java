@@ -19,12 +19,14 @@ package com.netflix.scriptlib.core.archive;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -127,7 +129,7 @@ public class PathScriptArchive implements ScriptArchive {
             }
             final LinkedHashSet<String> buildEntries = new LinkedHashSet<String>();
             if (recurseRoot) {
-                Files.walkFileTree(this.rootDirPath, new SimpleFileVisitor<Path>() {
+                Files.walkFileTree(this.rootDirPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                         Path relativePath = rootDirPath.relativize(file);
                         buildEntries.add(relativePath.toString());

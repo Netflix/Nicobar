@@ -134,7 +134,18 @@ public class ClassPathUtils {
      * @return resource name appropriate for using with {@link ClassLoader#getResource(String)}
      */
     public static String classToResourceName(Class<?> clazz) {
-        // from URLClassLoader.findClass()
-        return clazz.getName().replace('.', '/').concat(".class");
+        return classNameToResourceName(clazz.getName());
     }
+
+    /**
+     * Get the resource name for the class file for the given class name
+     * @param className fully qualified classname to convert
+     * @return resource name appropriate for using with {@link ClassLoader#getResource(String)}
+     */
+    public static String classNameToResourceName(String className) {
+        // from URLClassLoader.findClass()
+        return className.replace('.', '/').concat(".class");
+    }
+
+
 }
