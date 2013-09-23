@@ -36,6 +36,8 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 
 /**
  * Script archive backed by a {@link JarFile}.
@@ -208,5 +210,15 @@ public class JarScriptArchive implements ScriptArchive {
     @Override
     public int hashCode() {
         return Objects.hash(moduleSpec, entryNames, rootUrl, createTime);
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+            .append("moduleSpec", moduleSpec)
+            .append("entryNames", entryNames)
+            .append("rootUrl", rootUrl)
+            .append("createTime", createTime)
+            .toString();
     }
 }
