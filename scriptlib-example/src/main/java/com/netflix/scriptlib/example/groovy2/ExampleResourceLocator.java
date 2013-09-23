@@ -20,7 +20,6 @@ package com.netflix.scriptlib.example.groovy2;
 import java.nio.file.Path;
 
 import com.netflix.scriptlib.core.utils.ClassPathUtils;
-import com.netflix.scriptlib.groovy2.testutil.GroovyTestResourceUtil;
 
 /**
  * Examples of how to find resource jars in the classpath for loading as separate modules.
@@ -48,7 +47,7 @@ public class ExampleResourceLocator {
      * which was true of the time of groovy-all-2.1.6.jar
      */
     public static Path getGroovyRuntime() {
-        Path path = ClassPathUtils.findRootPathForResource("META-INF/groovy-release-info.properties", GroovyTestResourceUtil.class.getClassLoader());
+        Path path = ClassPathUtils.findRootPathForResource("META-INF/groovy-release-info.properties", ExampleResourceLocator.class.getClassLoader());
         if (path == null) {
             throw new IllegalStateException("coudln't find groovy-all.n.n.n.jar in the classpath.");
         }
@@ -67,7 +66,7 @@ public class ExampleResourceLocator {
      */
     public static Path getGroovyPluginLocation() {
         String resourceName = ClassPathUtils.classNameToResourceName(GROOVY2_COMPILER_PLUGIN_CLASS);
-        Path path = ClassPathUtils.findRootPathForResource(resourceName, GroovyTestResourceUtil.class.getClassLoader());
+        Path path = ClassPathUtils.findRootPathForResource(resourceName, ExampleResourceLocator.class.getClassLoader());
         if (path == null) {
             throw new IllegalStateException("coudln't find groovy2 plugin jar in the classpath.");
         }

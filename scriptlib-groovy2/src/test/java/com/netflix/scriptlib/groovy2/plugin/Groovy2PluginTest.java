@@ -108,7 +108,7 @@ public class Groovy2PluginTest {
             @SuppressWarnings({"rawtypes","unchecked"})
             @Override
             public String execute(ScriptModule scriptModule) throws Exception {
-                Class<Callable> callable = ScriptModuleUtils.findAssignableClass(scriptModule, Callable.class);
+                Class<Callable> callable = (Class<Callable>) ScriptModuleUtils.findAssignableClass(scriptModule, Callable.class);
                 assertNotNull(callable, "couldn't find Callable for module " + scriptModule.getModuleId());
                 Callable<String> instance = callable.newInstance();
                 String result = instance.call();
