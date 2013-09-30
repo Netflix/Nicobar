@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 import com.netflix.astyanax.Keyspace;
+import com.netflix.scriptlib.core.archive.GsonScriptModuleSpecSerializer;
+import com.netflix.scriptlib.core.archive.ScriptModuleSpecSerializer;
 
 /**
  * Configuration provider for the {@link ScriptArchiveCassandraDao}
@@ -46,6 +48,7 @@ public class BasicScriptCassandraDaoConfig implements ScriptCassandraDaoConfig {
         private int shardCount = -1;
         private int fetchBatchSize = -1;
         private Path archiveOutputDirectory;
+        private ScriptModuleSpecSerializer specSerializer;
 
         public Builder(Keyspace keyspace) {
             this.keyspace = keyspace;
@@ -66,9 +69,14 @@ public class BasicScriptCassandraDaoConfig implements ScriptCassandraDaoConfig {
             this.fetchBatchSize = fetchBatchSize;
             return this;
         }
-        /** Output Directory for the script archives */
+        /** Output Directory for the script archives that were downloaded  */
         public Builder setArchiveOutputDirectory(Path archiveOutputDirectory) {
             this.archiveOutputDirectory = archiveOutputDirectory;
+            return this;
+        }
+        /** Set a customer serializer for the module specification */
+        public Builder setModuleSpecSerialize(ScriptModuleSpecSerializer specSerializer) {
+            this.specSerializer = specSerializer;
             return this;
         }
         /** Construct the config with defaults if necessary */
@@ -89,7 +97,11 @@ public class BasicScriptCassandraDaoConfig implements ScriptCassandraDaoConfig {
             if (buildArchiveDir == null) {
                 buildArchiveDir = Files.createTempDirectory("ScriptArchiveOutputDir");
             }
-            return new BasicScriptCassandraDaoConfig(keyspace, buildColumnFamilyName, buildShardCount, buildFetchBatchSize, archiveOutputDirectory);
+            ScriptModuleSpecSerializer buildSpecSerializer = specSerializer;
+            if (buildSpecSerializer == null) {
+                buildSpecSerializer = new GsonScriptModuleSpecSerializer();
+            }
+            return new BasicScriptCassandraDaoConfig(keyspace, buildColumnFamilyName, buildShardCount, buildFetchBatchSize, buildArchiveDir, buildSpecSerializer);
         }
     }
 
@@ -98,13 +110,17 @@ public class BasicScriptCassandraDaoConfig implements ScriptCassandraDaoConfig {
     private final int shardCount;
     private final int fetchBatchSize;
     private final Path archiveOutputDirectory;
+    private final ScriptModuleSpecSerializer moduleSpecSerializer;
 
-    protected BasicScriptCassandraDaoConfig(Keyspace keyspace, String columnFamilyName, int shardCount, int fetchBatchSize, Path archiveOutputDirectory) {
+
+    protected BasicScriptCassandraDaoConfig(Keyspace keyspace, String columnFamilyName, int shardCount, int fetchBatchSize, Path archiveOutputDirectory,
+            ScriptModuleSpecSerializer moduleSpecSerializer) {
         this.keyspace = Objects.requireNonNull(keyspace, "keyspace");
         this.columnFamilyName = Objects.requireNonNull(columnFamilyName, "columnFamilyName");
         this.shardCount = shardCount;
         this.fetchBatchSize = fetchBatchSize;
-        this.archiveOutputDirectory = Objects.requireNonNull(archiveOutputDirectory, "archiveOutputDirectory");;
+        this.archiveOutputDirectory = Objects.requireNonNull(archiveOutputDirectory, "archiveOutputDirectory");
+        this.moduleSpecSerializer = Objects.requireNonNull(moduleSpecSerializer, "moduleSpecSerializer");
     }
 
     @Override
@@ -130,5 +146,10 @@ public class BasicScriptCassandraDaoConfig implements ScriptCassandraDaoConfig {
     @Override
     public Path getArchiveOutputDirectory() {
         return archiveOutputDirectory;
+    }
+
+    @Override
+    public ScriptModuleSpecSerializer getModuleSpecSerializer() {
+        return moduleSpecSerializer;
     }
 }

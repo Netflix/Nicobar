@@ -20,6 +20,8 @@ package com.netflix.scriptlib.cassandra;
 import java.nio.file.Path;
 
 import com.netflix.astyanax.Keyspace;
+import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
+import com.netflix.scriptlib.core.archive.ScriptModuleSpecSerializer;
 
 /**
  * Configuration provider interface for the {@link ScriptArchiveCassandraDao}
@@ -52,4 +54,9 @@ public interface ScriptCassandraDaoConfig {
      * @return the output directory for archives
      */
     public Path getArchiveOutputDirectory();
+
+    /**
+     * @return serializer for the {@link ScriptModuleSpec} for use when inserting or fetching data.
+     */
+    public ScriptModuleSpecSerializer getModuleSpecSerializer();
 }
