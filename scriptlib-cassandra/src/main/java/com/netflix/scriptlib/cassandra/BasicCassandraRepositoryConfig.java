@@ -22,16 +22,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
+import com.netflix.astyanax.Clock;
 import com.netflix.astyanax.Keyspace;
+import com.netflix.astyanax.clock.MillisecondsClock;
 import com.netflix.scriptlib.core.archive.GsonScriptModuleSpecSerializer;
 import com.netflix.scriptlib.core.archive.ScriptModuleSpecSerializer;
 
 /**
- * Configuration provider for the {@link ScriptArchiveCassandraDao}
+ * Configuration provider for the {@link CassandraArchiveRepository}
  *
  * @author James Kojo
  */
-public class BasicScriptCassandraDaoConfig implements ScriptCassandraDaoConfig {
+public class BasicCassandraRepositoryConfig implements CassandraArchiveRepositoryConfig {
 
     /** default column family name if not overriden in the builder */
     public static final String DEFAULT_COLUMN_FAMILY_NAME = "script_repo";
@@ -42,18 +44,29 @@ public class BasicScriptCassandraDaoConfig implements ScriptCassandraDaoConfig {
     /** Default number of archives to fetch per round-trip */
     public static final int DEFAULT_FETCH_BATCH_SIZE = 10;
 
+    /** Default module spec serializer */
+    public static final ScriptModuleSpecSerializer DEFAULT_SPEC_SERIALIZER = new GsonScriptModuleSpecSerializer();
+
+    private static final Clock DEFAULT_UPDATE_TIME_CLOCK = new MillisecondsClock();
+
     public static class Builder {
         private final Keyspace keyspace;
-        private String columnFamilyName;
-        private int shardCount = -1;
-        private int fetchBatchSize = -1;
+        private String repositoryId;
+        private String columnFamilyName = DEFAULT_COLUMN_FAMILY_NAME;
+        private int shardCount = DEFAULT_SHARD_COUNT;
+        private int fetchBatchSize = DEFAULT_FETCH_BATCH_SIZE;
         private Path archiveOutputDirectory;
-        private ScriptModuleSpecSerializer specSerializer;
+        private ScriptModuleSpecSerializer specSerializer = DEFAULT_SPEC_SERIALIZER;
+        private Clock updateTimeClock = DEFAULT_UPDATE_TIME_CLOCK;
 
         public Builder(Keyspace keyspace) {
             this.keyspace = keyspace;
         }
-
+        /** Set a unique, descriptive identifier used for reporting and display*/
+        public Builder setRepositoryId(String repositoryId) {
+            this.repositoryId = repositoryId;
+            return this;
+        }
         /** Override the default column family name that will be used */
         public Builder setColumnFamilyName(String columnFamilyName) {
             this.columnFamilyName = columnFamilyName;
@@ -79,42 +92,38 @@ public class BasicScriptCassandraDaoConfig implements ScriptCassandraDaoConfig {
             this.specSerializer = specSerializer;
             return this;
         }
+        /** Set a custom clock for generating the last update time. Mostly for testing. */
+        public Builder setUpdateTimeClock(Clock clock) {
+            this.updateTimeClock = clock;
+            return this;
+        }
         /** Construct the config with defaults if necessary */
-        ScriptCassandraDaoConfig build() throws IOException {
-            String buildColumnFamilyName = columnFamilyName;
-            if (buildColumnFamilyName == null) {
-                buildColumnFamilyName = DEFAULT_COLUMN_FAMILY_NAME;
-            }
-            int buildShardCount = shardCount;
-            if (buildShardCount <= 0) {
-                buildShardCount = DEFAULT_SHARD_COUNT;
-            }
-            int buildFetchBatchSize = fetchBatchSize;
-            if (buildFetchBatchSize <= 0) {
-                buildFetchBatchSize = DEFAULT_FETCH_BATCH_SIZE;
+        public CassandraArchiveRepositoryConfig build() throws IOException {
+            String buildRepositoryId = repositoryId;
+            if (buildRepositoryId == null) {
+                buildRepositoryId = keyspace.getKeyspaceName() + "-" + columnFamilyName;
             }
             Path buildArchiveDir = archiveOutputDirectory;
             if (buildArchiveDir == null) {
                 buildArchiveDir = Files.createTempDirectory("ScriptArchiveOutputDir");
             }
-            ScriptModuleSpecSerializer buildSpecSerializer = specSerializer;
-            if (buildSpecSerializer == null) {
-                buildSpecSerializer = new GsonScriptModuleSpecSerializer();
-            }
-            return new BasicScriptCassandraDaoConfig(keyspace, buildColumnFamilyName, buildShardCount, buildFetchBatchSize, buildArchiveDir, buildSpecSerializer);
+            return new BasicCassandraRepositoryConfig(buildRepositoryId, keyspace, columnFamilyName, shardCount, fetchBatchSize, buildArchiveDir, specSerializer, updateTimeClock);
         }
     }
 
+    private final String repositoryId;
     private final Keyspace keyspace;
     private final String columnFamilyName;
     private final int shardCount;
     private final int fetchBatchSize;
     private final Path archiveOutputDirectory;
     private final ScriptModuleSpecSerializer moduleSpecSerializer;
+    private final Clock updateTimeClock;
 
-
-    protected BasicScriptCassandraDaoConfig(Keyspace keyspace, String columnFamilyName, int shardCount, int fetchBatchSize, Path archiveOutputDirectory,
-            ScriptModuleSpecSerializer moduleSpecSerializer) {
+    protected BasicCassandraRepositoryConfig(String repositoryId, Keyspace keyspace, String columnFamilyName, int shardCount, int fetchBatchSize, Path archiveOutputDirectory,
+            ScriptModuleSpecSerializer moduleSpecSerializer, Clock updateTimeClock) {
+        this.updateTimeClock = updateTimeClock;
+        this.repositoryId =  Objects.requireNonNull(repositoryId, "repositoryId");
         this.keyspace = Objects.requireNonNull(keyspace, "keyspace");
         this.columnFamilyName = Objects.requireNonNull(columnFamilyName, "columnFamilyName");
         this.shardCount = shardCount;
@@ -151,5 +160,15 @@ public class BasicScriptCassandraDaoConfig implements ScriptCassandraDaoConfig {
     @Override
     public ScriptModuleSpecSerializer getModuleSpecSerializer() {
         return moduleSpecSerializer;
+    }
+
+    @Override
+    public String getRepositoryId() {
+        return repositoryId;
+    }
+
+    @Override
+    public Clock getUpdateTimeClock() {
+        return updateTimeClock;
     }
 }

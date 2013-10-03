@@ -26,34 +26,30 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 
-import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 import com.netflix.scriptlib.core.persistence.ScriptArchivePoller;
+import com.netflix.scriptlib.core.persistence.ScriptArchiveRepository;
 
 /**
  * Implementation of the {@link ScriptArchivePoller} interface which is backed
- * by a {@link ScriptArchiveCassandraDao}.
+ * by a {@link CassandraArchiveRepository}.
  *
  * @author James Kojo
  */
 public class ScriptArchiveCassandraPoller implements ScriptArchivePoller {
-    private final ScriptArchiveCassandraDao archiveDao;
+    private final ScriptArchiveRepository archiveRepository;
 
     /** Map of moduleId to last known update time of the archive */
     private final Map<String, Long> lastUpdateTimes = new HashMap<String, Long>();
 
-    public ScriptArchiveCassandraPoller(ScriptArchiveCassandraDao archiveDao) {
-        this.archiveDao = Objects.requireNonNull(archiveDao, "archiveDao");
+    public ScriptArchiveCassandraPoller(CassandraArchiveRepository archiveRepository) {
+        this.archiveRepository = Objects.requireNonNull(archiveRepository, "archiveDao");
     }
 
     @Override
     public synchronized PollResult poll(long lastPollTime) throws IOException {
         Map<String, Long> queryUpdateTimes;
-        try {
-            queryUpdateTimes = archiveDao.getArchiveUpdateTimes();
-        } catch (ConnectionException e) {
-            throw new IOException("Exception when attempting to query for last update times.",e);
-        }
+        queryUpdateTimes = archiveRepository.getArchiveUpdateTimes();
         Set<String> updatedModuleIds = new HashSet<String>(queryUpdateTimes.size());
         for (Entry<String, Long> entry : queryUpdateTimes.entrySet()) {
             String moduleId = entry.getKey();
@@ -83,8 +79,8 @@ public class ScriptArchiveCassandraPoller implements ScriptArchivePoller {
         // lookup updated archives and update archive times
         Set<ScriptArchive> scriptArchives;
         try {
-            scriptArchives = archiveDao.getScriptArchives(updatedModuleIds);
-        } catch (ConnectionException e) {
+            scriptArchives = archiveRepository.getScriptArchives(updatedModuleIds);
+        } catch (Exception e) {
             throw new IOException("Exception when attempting to Fetch archives for moduleIds: " +
                 updatedModuleIds, e);
         }

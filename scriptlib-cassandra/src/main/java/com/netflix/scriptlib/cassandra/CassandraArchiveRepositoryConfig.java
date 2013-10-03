@@ -19,16 +19,17 @@ package com.netflix.scriptlib.cassandra;
 
 import java.nio.file.Path;
 
+import com.netflix.astyanax.Clock;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
 import com.netflix.scriptlib.core.archive.ScriptModuleSpecSerializer;
 
 /**
- * Configuration provider interface for the {@link ScriptArchiveCassandraDao}
+ * Configuration provider interface for the {@link CassandraArchiveRepository}
  *
  * @author James Kojo
  */
-public interface ScriptCassandraDaoConfig {
+public interface CassandraArchiveRepositoryConfig {
     /**
      * The keyspace must have CQL 3.0.0 enabled. see Astynax docs for instructions on setting the cql version number.
      * @return the {@link Keyspace} in which the operations should be performed.
@@ -59,4 +60,14 @@ public interface ScriptCassandraDaoConfig {
      * @return serializer for the {@link ScriptModuleSpec} for use when inserting or fetching data.
      */
     public ScriptModuleSpecSerializer getModuleSpecSerializer();
+
+    /**
+     * @return Descriptive string which uniquely identifies the repository. Used for display and reporting.
+     */
+    public String getRepositoryId();
+
+    /**
+     * @return the clock used for generating the last update timestamp column.
+     */
+    Clock getUpdateTimeClock();
 }

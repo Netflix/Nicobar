@@ -24,7 +24,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -40,9 +39,14 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Iterables;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.netflix.astyanax.ColumnListMutation;
 import com.netflix.astyanax.MutationBatch;
+import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
+import com.netflix.astyanax.connectionpool.exceptions.OperationException;
 import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.model.ColumnList;
@@ -53,6 +57,9 @@ import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.scriptlib.core.archive.JarScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
+import com.netflix.scriptlib.core.persistence.ArchiveSummary;
+import com.netflix.scriptlib.core.persistence.RepositorySummary;
+import com.netflix.scriptlib.core.persistence.ScriptArchiveRepository;
 
 /**
  * Data access object of {@link ScriptArchive}s stored in Cassandra.
@@ -83,11 +90,11 @@ import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
  * CREATE INDEX script_repo_shard_num_index on script_repo (shard_num);
  * </pre>
  *
- * See {@link ScriptCassandraDaoConfig} to override the default table name.
+ * See {@link CassandraArchiveRepositoryConfig} to override the default table name.
  * @author James Kojo
  */
-public class ScriptArchiveCassandraDao {
-    private final static Logger logger = LoggerFactory.getLogger(ScriptArchiveCassandraDao.class);
+public class CassandraArchiveRepository implements ScriptArchiveRepository {
+    private final static Logger logger = LoggerFactory.getLogger(CassandraArchiveRepository.class);
 
     /** column names */
     public static enum Columns {
@@ -99,14 +106,19 @@ public class ScriptArchiveCassandraDao {
         archive_content;
     }
 
-    private final ScriptCassandraDaoConfig config;
+    private final CassandraArchiveRepositoryConfig config;
 
     /**
-     * Construct a instance of the dao with the given configuration
+     * Construct a instance of the repository with the given configuration
      * @param config
      */
-    public ScriptArchiveCassandraDao(ScriptCassandraDaoConfig config) {
+    public CassandraArchiveRepository(CassandraArchiveRepositoryConfig config) {
         this.config = Objects.requireNonNull(config, "config");
+    }
+
+    @Override
+    public String getRepositoryId() {
+        return getConfig().getRepositoryId();
     }
 
     /**
@@ -116,54 +128,42 @@ public class ScriptArchiveCassandraDao {
      * @param createTime create time to use for insertion. should be a timestamp in ms
      * @param moduleSpec optional {@link ScriptModuleSpec} for the archive
      */
-    public void insertJarArchive(String moduleId, Path jarFilePath, long createTime, @Nullable ScriptModuleSpec moduleSpec) throws IOException, ConnectionException {
+    @Override
+    public void insertArchive(String moduleId, Path jarFilePath, @Nullable ScriptModuleSpec moduleSpec) throws IOException {
         Objects.requireNonNull(moduleId, "moduleId");
         Objects.requireNonNull(jarFilePath, "jarFilePath");
-        int shardNum = Math.abs(moduleId.hashCode() % config.getShardCount());
+        int shardNum = Math.abs(moduleId.hashCode() % getConfig().getShardCount());
         byte[] jarBytes = Files.readAllBytes(jarFilePath);
         byte[] hash = calculateHash(jarBytes);
-        MutationBatch mutationBatch = config.getKeyspace().prepareMutationBatch();
+        MutationBatch mutationBatch = getConfig().getKeyspace().prepareMutationBatch();
         ColumnListMutation<String> columnMutation = mutationBatch.withRow(getColumnFamily(), moduleId);
         columnMutation
             .putColumn(Columns.shard_num.name(), shardNum)
-            .putColumn(Columns.last_update.name(), createTime)
+            .putColumn(Columns.last_update.name(), getConfig().getUpdateTimeClock().getCurrentTime())
             .putColumn(Columns.archive_content_hash.name(), hash)
             .putColumn(Columns.archive_content.name(), jarBytes);
         if (moduleSpec != null) {
-            String serialized = config.getModuleSpecSerializer().serialize(moduleSpec);
+            String serialized = getConfig().getModuleSpecSerializer().serialize(moduleSpec);
             columnMutation.putColumn(Columns.module_spec.name(), serialized);
         }
-        mutationBatch.execute();
+        try {
+            mutationBatch.execute();
+        } catch (ConnectionException e) {
+            throw new IOException(e);
+        }
     }
 
     /**
-     * Get the last update times of all of the script archives managed by this Dao.
+     * Get the last update times of all of the script archives managed by this Repository.
      * @return map of moduleId to last update time
      */
-    public Map<String, Long> getArchiveUpdateTimes() throws ConnectionException, IOException {
-        int shardCount = config.getShardCount();
-
-        // shuffle the order the shards are queried in order to avoid hotspots
-        List<Integer> shards = new ArrayList<Integer>(shardCount);
-        for (int i = 0; i < shardCount; i++) {
-            shards.add(i);
+    public Map<String, Long> getArchiveUpdateTimes() throws IOException {
+        Iterable<Row<String, String>> rows;
+        try {
+            rows = getRows(EnumSet.of(Columns.module_id, Columns.last_update));
+        } catch (ConnectionException e) {
+            throw new IOException(e);
         }
-        Collections.shuffle(shards);
-        Map<String, Long> updateTimes = new LinkedHashMap<String, Long>();
-        for (int shard : shards) {
-            Map<String, Long> shardUpdateTimes = getArchiveUpdateTimes(shard);
-            updateTimes.putAll(shardUpdateTimes);
-        }
-        return updateTimes;
-    }
-
-    /**
-     * Get the last update times of all of the script archives within a given shard
-     * @param shardNum shard number to query
-     * @return map of moduleId to last update time
-     */
-    public Map<String, Long> getArchiveUpdateTimes(int shardNum) throws ConnectionException {
-        Rows<String, String> rows = getRows(EnumSet.of(Columns.module_id, Columns.last_update), shardNum);
         Map<String, Long> updateTimes = new LinkedHashMap<String, Long>();
         for (Row<String, String> row : rows) {
             String moduleId = row.getKey();
@@ -176,80 +176,137 @@ public class ScriptArchiveCassandraDao {
         return updateTimes;
     }
 
+    @Override
+    public RepositorySummary getRepositorySummary() throws IOException {
+        Map<String, Long> updateTimes = getArchiveUpdateTimes();
+        int archiveCount = updateTimes.size();
+        long maxUpdateTime = 0;
+        for (Long updateTime : updateTimes.values()) {
+            if (updateTime > maxUpdateTime) {
+                maxUpdateTime = updateTime;
+            }
+        }
+        String description = String.format("Cassandra Keyspace: %s Column Family: %s",
+            config.getKeyspace().getKeyspaceName(), config.getColumnFamilyName());
+        RepositorySummary repositorySummary = new RepositorySummary(getRepositoryId(),
+            description, archiveCount, maxUpdateTime);
+        return repositorySummary;
+    }
+
     /**
-     * Get all of the rows in a shard
+     * Get a summary of all archives in this Repository
+     * @return List of summaries
+     */
+    @Override
+    public List<ArchiveSummary> getArchiveSummaries() throws IOException {
+        List<ArchiveSummary> summaries = new LinkedList<ArchiveSummary>();
+        Iterable<Row<String, String>> rows;
+        try {
+                rows = getRows(EnumSet.of(Columns.module_id, Columns.last_update, Columns.module_spec));
+        } catch (ConnectionException e) {
+            throw new IOException(e);
+        }
+
+        for (Row<String, String> row : rows) {
+            String moduleId = row.getKey();
+            ColumnList<String> columns = row.getColumns();
+            Column<String> lastUpdateColumn = columns.getColumnByName(Columns.last_update.name());
+            long updateTime = lastUpdateColumn != null ? lastUpdateColumn.getLongValue() : 0;
+            ScriptModuleSpec moduleSpec = getModuleSpec(columns);
+            ArchiveSummary summary = new ArchiveSummary(moduleId, moduleSpec, updateTime);
+            summaries.add(summary);
+        }
+        return summaries;
+    }
+
+    /**
+     * Get all of the rows in in the table. Attempts to reduce the load on cassandra by splitting up the query into smaller sub-queries
      * @param columns which columns to select
-     * @param shardNum shard number to select from
      * @return result rows
      */
-    public Rows<String, String> getRows(EnumSet<Columns> columns, int shardNum) throws ConnectionException {
-        CqlResult<String, String> result = config.getKeyspace()
-            .prepareQuery(getColumnFamily())
-            .withCql(generateSelectByShardCql(columns))
-            .asPreparedStatement()
-            .withIntegerValue(shardNum)
-            .execute()
-            .getResult();
-        Rows<String, String> rows = result.getRows();
+    public Iterable<Row<String, String>> getRows(EnumSet<?> columns) throws ConnectionException {
+        int shardCount = config.getShardCount();
+        List<ListenableFuture<OperationResult<CqlResult<String,String>>>> futures =
+            new ArrayList<ListenableFuture<OperationResult<CqlResult<String,String>>>>(shardCount);
+        for (int i = 0; i < shardCount; i++) {
+            ListenableFuture<OperationResult<CqlResult<String,String>>> future = getConfig().getKeyspace()
+                .prepareQuery(getColumnFamily())
+                .withCql(generateSelectByShardCql(columns))
+                .asPreparedStatement()
+                .withIntegerValue(i).executeAsync();
+
+            futures.add(future);
+        }
+        // unpack the results
+        List<OperationResult<CqlResult<String, String>>> result;
+        try {
+             result = Futures.allAsList(futures).get();
+        } catch (Exception e) {
+            throw new OperationException(e);
+        }
+        List<Row<String, String>> rows = new LinkedList<Row<String, String>>();
+        for (OperationResult<CqlResult<String,String>> operationResult : result) {
+            Iterables.addAll(rows, operationResult.getResult().getRows());
+        }
         return rows;
     }
 
     /**
      * Get all of the {@link ScriptArchive}s for the given set of moduleIds. Will perform the operation in batches
-     * as specified by {@link ScriptCassandraDaoConfig#getArchiveFetchBatchSize()} and outputs the jar files in
-     * the path specified by {@link ScriptCassandraDaoConfig#getArchiveOutputDirectory()}.
+     * as specified by {@link CassandraArchiveRepositoryConfig#getArchiveFetchBatchSize()} and outputs the jar files in
+     * the path specified by {@link CassandraArchiveRepositoryConfig#getArchiveOutputDirectory()}.
      *
      * @param moduleIds keys to search for
      * @return set of ScriptArchives retrieved from the database
      */
-    public Set<ScriptArchive> getScriptArchives(Set<String> moduleIds) throws ConnectionException, IOException {
+    @Override
+    public Set<ScriptArchive> getScriptArchives(Set<String> moduleIds) throws IOException {
         Set<ScriptArchive> archives = new LinkedHashSet<ScriptArchive>(moduleIds.size()*2);
-        Path archiveOuputDir = config.getArchiveOutputDirectory();
+        Path archiveOuputDir = getConfig().getArchiveOutputDirectory();
         List<String> moduleIdList = new LinkedList<String>(moduleIds);
-        int batchSize = config.getArchiveFetchBatchSize();
+        int batchSize = getConfig().getArchiveFetchBatchSize();
         int start = 0;
-        while (start < moduleIdList.size()) {
-            int end = Math.min(moduleIdList.size(), start + batchSize);
-            List<String> batchModuleIds = moduleIdList.subList(start, end);
+        try {
+            while (start < moduleIdList.size()) {
+                int end = Math.min(moduleIdList.size(), start + batchSize);
+                List<String> batchModuleIds = moduleIdList.subList(start, end);
 
-            Rows<String,String> rows = config.getKeyspace().prepareQuery(getColumnFamily())
-                .getKeySlice(batchModuleIds)
-                .execute()
-                .getResult();
-            for (Row<String, String> row : rows) {
-                String moduleId = row.getKey();
-                ColumnList<String> columns = row.getColumns();
-                Column<String> lastUpdateColumn = columns.getColumnByName(Columns.last_update.name());
-                Column<String> hashColumn = columns.getColumnByName(Columns.archive_content_hash.name());
-                Column<String> contentColumn = columns.getColumnByName(Columns.archive_content.name());
-                if (lastUpdateColumn == null || hashColumn == null || contentColumn == null) {
-                    continue;
-                }
-                Column<String> moduleSpecColumn = columns.getColumnByName(Columns.module_spec.name());
-                ScriptModuleSpec moduleSpec = null;
-                if (moduleSpecColumn != null && moduleSpecColumn.hasValue()) {
-                    String moduleSpecString = moduleSpecColumn.getStringValue();
-                    moduleSpec = config.getModuleSpecSerializer().deserialize(moduleSpecString);
-                }
-                long lastUpdateTime = lastUpdateColumn.getLongValue();
-                byte[] hash = hashColumn.getByteArrayValue();
-                byte[] content = contentColumn.getByteArrayValue();
+                Rows<String,String> rows = getConfig().getKeyspace().prepareQuery(getColumnFamily())
+                    .getKeySlice(batchModuleIds)
+                    .execute()
+                    .getResult();
+                for (Row<String, String> row : rows) {
+                    String moduleId = row.getKey();
+                    ColumnList<String> columns = row.getColumns();
+                    Column<String> lastUpdateColumn = columns.getColumnByName(Columns.last_update.name());
+                    Column<String> hashColumn = columns.getColumnByName(Columns.archive_content_hash.name());
+                    Column<String> contentColumn = columns.getColumnByName(Columns.archive_content.name());
+                    if (lastUpdateColumn == null || hashColumn == null || contentColumn == null) {
+                        continue;
+                    }
+                    ScriptModuleSpec moduleSpec = getModuleSpec(columns);
+                    long lastUpdateTime = lastUpdateColumn.getLongValue();
+                    byte[] hash = hashColumn.getByteArrayValue();
+                    byte[] content = contentColumn.getByteArrayValue();
 
-                // verify the hash
-                if (hash != null && hash.length > 0 && !verifyHash(hash, content)) {
-                    logger.warn("Content hash validation failed for moduleId {}. size: {}", moduleId, content.length);
-                    continue;
+                    // verify the hash
+                    if (hash != null && hash.length > 0 && !verifyHash(hash, content)) {
+                        logger.warn("Content hash validation failed for moduleId {}. size: {}", moduleId, content.length);
+                        continue;
+                    }
+                    String fileName = new StringBuilder().append(moduleId).append("-").append(lastUpdateTime).append(".jar").toString();
+                    Path jarFile = archiveOuputDir.resolve(fileName);
+                    Files.write(jarFile, content);
+                    JarScriptArchive scriptArchive = new JarScriptArchive.Builder(jarFile)
+                        .setModuleSpec(moduleSpec)
+                        .setCreateTime(lastUpdateTime)
+                        .build();
+                    archives.add(scriptArchive);
                 }
-                String fileName = new StringBuilder().append(moduleId).append("-").append(lastUpdateTime).append(".jar").toString();
-                Path jarFile = archiveOuputDir.resolve(fileName);
-                Files.write(jarFile, content);
-                JarScriptArchive scriptArchive = new JarScriptArchive.Builder(jarFile)
-                    .setModuleSpec(moduleSpec)
-                    .setCreateTime(lastUpdateTime)
-                    .build();
-                archives.add(scriptArchive);
+                start = end;
             }
-            start = end;
+        } catch (ConnectionException e) {
+            throw new IOException(e);
         }
         return archives;
     }
@@ -259,11 +316,16 @@ public class ScriptArchiveCassandraDao {
      * @param moduleId module id to delete
      * @throws ConnectionException
      */
-    public void deleteArchive(String moduleId) throws ConnectionException {
+    @Override
+    public void deleteArchive(String moduleId) throws IOException {
         Objects.requireNonNull(moduleId, "moduleId");
-        MutationBatch mutationBatch = config.getKeyspace().prepareMutationBatch();
+        MutationBatch mutationBatch = getConfig().getKeyspace().prepareMutationBatch();
         mutationBatch.withRow(getColumnFamily(), moduleId).delete();
-        mutationBatch.execute();
+        try {
+            mutationBatch.execute();
+        } catch (ConnectionException e) {
+            throw new IOException(e);
+        }
 
     }
 
@@ -271,11 +333,11 @@ public class ScriptArchiveCassandraDao {
      * Generate the CQL to select specific columns by shard number.
      *  SELECT <columns>... FROM script_repo WHERE shard_num = ?
      */
-    protected String generateSelectByShardCql(EnumSet<Columns> columns) {
+    protected String generateSelectByShardCql(EnumSet<?> columns) {
         StringBuilder sb = new StringBuilder()
             .append("SELECT ");
         boolean first = true;
-        for (Columns column : columns) {
+        for (Enum<?> column : columns) {
             if (first) {
                 first = false;
             } else {
@@ -284,16 +346,16 @@ public class ScriptArchiveCassandraDao {
             sb.append(column.name());
         }
         sb.append("\n")
-            .append("FROM ").append(config.getColumnFamilyName()).append("\n")
+            .append("FROM ").append(getConfig().getColumnFamilyName()).append("\n")
             .append("WHERE ").append(Columns.shard_num.name()).append(" = ?\n");
         return sb.toString();
     }
 
     /**
-     * Create a column family object using the dao configuration.
+     * Create a column family object using the repository configuration.
      */
     protected ColumnFamily<String, String> getColumnFamily() {
-        return ColumnFamily.newColumnFamily(config.getColumnFamilyName(), StringSerializer.get(), StringSerializer.get());
+        return ColumnFamily.newColumnFamily(getConfig().getColumnFamilyName(), StringSerializer.get(), StringSerializer.get());
     }
 
     protected boolean verifyHash(byte[] expectedHashCode, byte[] content) {
@@ -311,5 +373,24 @@ public class ScriptArchiveCassandraDao {
         }
         byte[] hashCode = digester.digest(content);
         return hashCode;
+    }
+
+    private ScriptModuleSpec getModuleSpec(ColumnList<String> columns) {
+        ScriptModuleSpec moduleSpec = null;
+        if (columns != null) {
+            Column<String> moduleSpecColumn = columns.getColumnByName(Columns.module_spec.name());
+            if (moduleSpecColumn != null && moduleSpecColumn.hasValue()) {
+                String moduleSpecString = moduleSpecColumn.getStringValue();
+                moduleSpec = getConfig().getModuleSpecSerializer().deserialize(moduleSpecString);
+            }
+        }
+        return moduleSpec;
+    }
+
+    /**
+     * @return configuration settings for this repository
+     */
+    public CassandraArchiveRepositoryConfig getConfig() {
+        return config;
     }
 }
