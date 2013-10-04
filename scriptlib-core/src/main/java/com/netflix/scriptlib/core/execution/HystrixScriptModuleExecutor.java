@@ -75,7 +75,7 @@ public class HystrixScriptModuleExecutor<V> {
      * @param moduleIds moduleIds for modules to execute
      * @param executable execution logic to be performed for each module.
      * @param moduleLoader loader which manages the modules.
-     * @return
+     * @return list of the outputs from the executable.
      */
     public List<V> executeModules(List<String> moduleIds, ScriptModuleExecutable<V> executable, ScriptModuleLoader moduleLoader) {
         Objects.requireNonNull(moduleIds, "moduleIds");
@@ -97,7 +97,7 @@ public class HystrixScriptModuleExecutor<V> {
      *
      * @param modules modules to execute.
      * @param executable execution logic to be performed for each module.
-     * @return
+     * @return list of the outputs from the executable.
      */
     public List<V> executeModules(List<ScriptModule> modules, ScriptModuleExecutable<V> executable) {
         Objects.requireNonNull(modules, "modules");
