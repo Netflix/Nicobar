@@ -1,6 +1,7 @@
 {
     "moduleId": "test-modulespec-moduleId",
-    "dependencies": [
+    "compilerDependencies": [],
+    "moduleDependencies": [
         "dependencyModuleId1", 
         "dependencyModuleId2"
     ], 

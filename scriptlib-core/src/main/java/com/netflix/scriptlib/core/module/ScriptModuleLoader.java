@@ -221,7 +221,7 @@ public class ScriptModuleLoader {
             archivesToCompile.put(scriptModuleId, scriptArchive);
 
             // create a dependency map of the incoming archives so that we can later build a candidate graph
-            archiveDependencies.put(scriptModuleId, scriptArchive.getModuleSpec().getDependencies());
+            archiveDependencies.put(scriptModuleId, scriptArchive.getModuleSpec().getModuleDependencies());
         }
 
         // create a dependency graph with the candidates swapped in in order to figure out the
@@ -328,8 +328,8 @@ public class ScriptModuleLoader {
      */
     public synchronized void addCompilerPlugin(ScriptCompilerPluginSpec pluginSpec) throws ModuleLoadException  {
         Objects.requireNonNull(pluginSpec, "pluginSpec");
-        ModuleIdentifier scriptModuleId = JBossModuleUtils.getModuleId(pluginSpec);
-        ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(scriptModuleId);
+        ModuleIdentifier pluginModuleId = JBossModuleUtils.getPluginModuleId(pluginSpec);
+        ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginModuleId);
         JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec);
         ModuleSpec moduleSpec = moduleSpecBuilder.create();
 
@@ -337,7 +337,7 @@ public class ScriptModuleLoader {
         String providerClassName = pluginSpec.getPluginClassName();
         if (providerClassName != null) {
             jbossModuleLoader.addModuleSpec(moduleSpec);
-            Module pluginModule = jbossModuleLoader.loadModule(scriptModuleId);
+            Module pluginModule = jbossModuleLoader.loadModule(pluginModuleId);
             ModuleClassLoader pluginClassLoader = pluginModule.getClassLoader();
             Class<?> compilerProviderClass;
             try {

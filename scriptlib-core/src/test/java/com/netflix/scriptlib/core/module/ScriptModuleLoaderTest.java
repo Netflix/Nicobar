@@ -150,9 +150,9 @@ public class ScriptModuleLoaderTest {
         // original graph: A->B->C->D
         long originalCreateTime = 1000;
         Set<ScriptArchive> updateArchives = new HashSet<ScriptArchive>();
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addDependency("B").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addDependency("C").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addDependency("D").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addModuleDependency("B").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addModuleDependency("C").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addModuleDependency("D").build(), originalCreateTime));
         updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").build(), originalCreateTime));
 
         ScriptModuleListener mockListener = createMockListener();
@@ -170,9 +170,9 @@ public class ScriptModuleLoaderTest {
         // updated graph: D->C->B->A
         updateArchives.clear();
         long updatedCreateTime = 2000;
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").addDependency("C").build(), updatedCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addDependency("B").build(), updatedCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addDependency("A").build(), updatedCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").addModuleDependency("C").build(), updatedCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addModuleDependency("B").build(), updatedCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addModuleDependency("A").build(), updatedCreateTime));
         updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").build(), updatedCreateTime));
 
         moduleLoader.updateScriptArchives(updateArchives);
@@ -198,9 +198,9 @@ public class ScriptModuleLoaderTest {
         // original graph: A->B->C->D
         long originalCreateTime = 1000;
         Set<ScriptArchive> updateArchives = new HashSet<ScriptArchive>();
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addDependency("B").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addDependency("C").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addDependency("D").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addModuleDependency("B").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addModuleDependency("C").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addModuleDependency("D").build(), originalCreateTime));
         updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").build(), originalCreateTime));
 
         ScriptModuleListener mockListener = createMockListener();
@@ -213,7 +213,7 @@ public class ScriptModuleLoaderTest {
         // update C. should cause C,B,A to be compiled in order
         updateArchives.clear();
         long updatedCreateTime = 2000;
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addDependency("D").build(), updatedCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addModuleDependency("D").build(), updatedCreateTime));
 
         moduleLoader.updateScriptArchives(updateArchives);
 
@@ -237,10 +237,10 @@ public class ScriptModuleLoaderTest {
         // original graph: A->B->C->D
         long originalCreateTime = 1000;
         Set<ScriptArchive> updateArchives = new HashSet<ScriptArchive>();
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addDependency("B").build(), originalCreateTime));
-        ScriptArchive archiveB = new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addDependency("C").build(), originalCreateTime);
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addModuleDependency("B").build(), originalCreateTime));
+        ScriptArchive archiveB = new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addModuleDependency("C").build(), originalCreateTime);
         updateArchives.add(archiveB);
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addDependency("D").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addModuleDependency("D").build(), originalCreateTime));
         updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").build(), originalCreateTime));
 
         ScriptModuleListener mockListener = createMockListener();
@@ -259,7 +259,7 @@ public class ScriptModuleLoaderTest {
         // update C. would normally cause C,B,A to be compiled in order, but B will fail, so A will be skipped
         updateArchives.clear();
         long updatedCreateTime = 2000;
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addDependency("D").build(), updatedCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addModuleDependency("D").build(), updatedCreateTime));
 
 
         moduleLoader.updateScriptArchives(updateArchives);
@@ -282,9 +282,9 @@ public class ScriptModuleLoaderTest {
         // original graph: A->B->C->D
         long originalCreateTime = 1000;
         Set<ScriptArchive> updateArchives = new HashSet<ScriptArchive>();
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addDependency("B").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addDependency("C").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addDependency("D").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addModuleDependency("B").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addModuleDependency("C").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addModuleDependency("D").build(), originalCreateTime));
         updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").build(), originalCreateTime));
 
         ScriptModuleListener mockListener = createMockListener();
@@ -301,7 +301,7 @@ public class ScriptModuleLoaderTest {
         // update C, but set compilation to fail.
         updateArchives.clear();
         long updatedCreateTime = 2000;
-        TestDependecyScriptArchive updatedArchiveC = new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addDependency("D").build(), updatedCreateTime);
+        TestDependecyScriptArchive updatedArchiveC = new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addModuleDependency("D").build(), updatedCreateTime);
         updateArchives.add(updatedArchiveC);
         reset(MOCK_COMPILER);
         when(MOCK_COMPILER.shouldCompile(Mockito.eq(updatedArchiveC))).thenReturn(true);

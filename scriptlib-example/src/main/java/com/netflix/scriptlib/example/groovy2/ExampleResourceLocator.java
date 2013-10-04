@@ -29,7 +29,7 @@ import com.netflix.scriptlib.core.utils.ClassPathUtils;
 public class ExampleResourceLocator {
 
     // module ID to use for the Groovy plugin
-    public static final String GROOVY2_MODULE_ID = "Groovy2RuntimeModule";
+    public static final String GROOVY2_PLUGIN_ID = "groovy2";
     public static final String GROOVY2_COMPILER_PLUGIN_CLASS = "com.netflix.scriptlib.groovy2.plugin.Groovy2CompilerPlugin";
 
     /**

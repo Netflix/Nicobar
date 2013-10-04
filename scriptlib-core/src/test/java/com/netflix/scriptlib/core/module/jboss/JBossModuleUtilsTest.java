@@ -67,7 +67,7 @@ public class JBossModuleUtilsTest {
         ScriptCompilerPluginSpec pluginSpec = new ScriptCompilerPluginSpec.Builder("TestPlugin")
             .addMetatdata(METADATA_NAME, METADATA_VALUE)
             .build();
-        ModuleIdentifier pluginId = JBossModuleUtils.getModuleId(pluginSpec);
+        ModuleIdentifier pluginId = JBossModuleUtils.getPluginModuleId(pluginSpec);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginId);
         JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec);
 

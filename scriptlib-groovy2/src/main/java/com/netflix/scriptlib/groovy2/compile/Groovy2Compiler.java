@@ -25,8 +25,8 @@ import java.util.Set;
 import org.codehaus.groovy.tools.GroovyClass;
 
 import com.netflix.scriptlib.core.archive.ScriptArchive;
-import com.netflix.scriptlib.core.compile.ScriptCompilationException;
 import com.netflix.scriptlib.core.compile.ScriptArchiveCompiler;
+import com.netflix.scriptlib.core.compile.ScriptCompilationException;
 import com.netflix.scriptlib.core.module.jboss.JBossModuleClassLoader;
 
 /**
@@ -35,11 +35,10 @@ import com.netflix.scriptlib.core.module.jboss.JBossModuleClassLoader;
  * @author James Kojo
  */
 public class Groovy2Compiler implements ScriptArchiveCompiler {
-    public final static String COMPILER_NAME = "groovy2";
+    public final static String GROOVY2_COMPILER_ID = "groovy2";
     @Override
     public boolean shouldCompile(ScriptArchive archive) {
-        String compilerName = archive.getModuleSpec().getMetadata().get(MetadataName.SCRIPT_LANGUAGE.name());
-        return COMPILER_NAME.equals(compilerName);
+       return archive.getModuleSpec().getCompilerDependencies().contains(GROOVY2_COMPILER_ID);
     }
 
     @Override

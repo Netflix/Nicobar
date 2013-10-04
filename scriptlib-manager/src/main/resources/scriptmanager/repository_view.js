@@ -17,9 +17,14 @@ $(document).ready(function() {
         			return JSON.stringify(oObj.aData.moduleSpec.archiveMetadata);
         		}
         	},
-        	{ "sTitle": "Dependencies", "sWidth" : "30%", "sDefaultContent": "-" ,
+        	{ "sTitle": "Compilers", "sWidth" : "20%", "sDefaultContent": "-" ,
         		"fnRender" : function (oObj) {
-        			return JSON.stringify(oObj.aData.moduleSpec.dependencies);
+        			return JSON.stringify(oObj.aData.moduleSpec.compilerDependencies);
+        		}
+        	},
+        	{ "sTitle": "Module Dependencies", "sWidth" : "30%", "sDefaultContent": "-" ,
+        		"fnRender" : function (oObj) {
+        			return JSON.stringify(oObj.aData.moduleSpec.moduleDependencies);
         		}
         	},
           

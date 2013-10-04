@@ -107,13 +107,17 @@ public class JBossModuleUtils {
         }
         // add dependencies to the module spec
         ScriptModuleSpec scriptModuleSpec = scriptArchive.getModuleSpec();
-        Set<String> dependencies = scriptModuleSpec.getDependencies();
+        Set<String> dependencies = scriptModuleSpec.getModuleDependencies();
         for (String scriptModuleId : dependencies) {
             ModuleIdentifier latestIdentifier = latestRevisionIds.get(scriptModuleId);
             if (latestIdentifier == null) {
                 latestIdentifier = JBossModuleUtils.createRevisionId(scriptModuleId, 0);
             }
             moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(latestIdentifier, true, false));
+        }
+        Set<String> compilerDependencies = scriptModuleSpec.getCompilerDependencies();
+        for (String compilerPluginId : compilerDependencies) {
+            moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(getPluginModuleId(compilerPluginId), true, false));
         }
         moduleSpecBuilder.addDependency(JRE_DEPENDENCY_SPEC);
         moduleSpecBuilder.addDependency(SCRIPTLIB_CORE_DEPENDENCY_SPEC);
@@ -181,10 +185,16 @@ public class JBossModuleUtils {
     /**
      * Create the {@link ModuleIdentifier} for the given ScriptCompilerPluginSpec
      */
-    public static ModuleIdentifier getModuleId(ScriptCompilerPluginSpec pluginSpec) {
-        return ModuleIdentifier.create(pluginSpec.getPluginName());
+    public static ModuleIdentifier getPluginModuleId(ScriptCompilerPluginSpec pluginSpec) {
+        return getPluginModuleId(pluginSpec.getPluginId());
     }
 
+    /**
+     * Create the {@link ModuleIdentifier} for the given ScriptCompilerPluginSpec ID
+     */
+    public static ModuleIdentifier getPluginModuleId(String pluginId) {
+        return ModuleIdentifier.create(pluginId);
+    }
     /**
      * Helper method to create a revisionId in a consistent manner
      */

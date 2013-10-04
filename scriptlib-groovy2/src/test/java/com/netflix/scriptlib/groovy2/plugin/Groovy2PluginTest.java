@@ -40,13 +40,13 @@ import org.testng.annotations.Test;
 import com.netflix.scriptlib.core.archive.PathScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
-import com.netflix.scriptlib.core.compile.ScriptArchiveCompiler.MetadataName;
 import com.netflix.scriptlib.core.execution.HystrixScriptModuleExecutor;
 import com.netflix.scriptlib.core.execution.ScriptModuleExecutable;
 import com.netflix.scriptlib.core.module.ScriptModule;
 import com.netflix.scriptlib.core.module.ScriptModuleLoader;
 import com.netflix.scriptlib.core.module.ScriptModuleUtils;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
+import com.netflix.scriptlib.groovy2.compile.Groovy2Compiler;
 import com.netflix.scriptlib.groovy2.testutil.GroovyTestResourceUtil;
 import com.netflix.scriptlib.groovy2.testutil.GroovyTestResourceUtil.TestScript;
 
@@ -132,7 +132,7 @@ public class Groovy2PluginTest {
             .setRecurseRoot(false)
             .addFile(TestScript.DEPENDS_ON_A.getScriptPath())
             .setModuleSpec(createGroovyModuleSpec(TestScript.DEPENDS_ON_A.getModuleId())
-                .addDependency(TestScript.LIBRARY_A.getModuleId())
+                .addModuleDependency(TestScript.LIBRARY_A.getModuleId())
                 .build())
             .build();
         Path libARootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.LIBRARY_A);
@@ -161,7 +161,7 @@ public class Groovy2PluginTest {
             .setRecurseRoot(false)
             .addFile(TestScript.DEPENDS_ON_A.getScriptPath())
             .setModuleSpec(createGroovyModuleSpec(TestScript.DEPENDS_ON_A.getModuleId())
-                .addDependency(TestScript.LIBRARY_A.getModuleId())
+                .addModuleDependency(TestScript.LIBRARY_A.getModuleId())
                 .build())
             .build();
 
@@ -201,7 +201,7 @@ public class Groovy2PluginTest {
             .setRecurseRoot(false)
             .addFile(TestScript.DEPENDS_ON_A.getScriptPath())
             .setModuleSpec(createGroovyModuleSpec(TestScript.DEPENDS_ON_A.getModuleId())
-                .addDependency(TestScript.LIBRARY_A.getModuleId())
+                .addModuleDependency(TestScript.LIBRARY_A.getModuleId())
                 .build())
             .build();
         Path libARootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.LIBRARY_A);
@@ -260,7 +260,7 @@ public class Groovy2PluginTest {
     private ScriptModuleLoader createGroovyModuleLoader() throws Exception {
         // create the groovy plugin spec. this plugin specified a new module and classloader called "Groovy2Runtime"
         // which contains the groovy-all-2.1.6.jar and the scriptlib-groovy2 project.
-        ScriptCompilerPluginSpec pluginSpec = new ScriptCompilerPluginSpec.Builder("Groovy2RuntimeModule")
+        ScriptCompilerPluginSpec pluginSpec = new ScriptCompilerPluginSpec.Builder(Groovy2Compiler.GROOVY2_COMPILER_ID)
             .addRuntimeResource(GroovyTestResourceUtil.getGroovyRuntime())
             .addRuntimeResource(GroovyTestResourceUtil.getGroovyPluginLocation())
             // hack to make the gradle build work. still doesn't seem to properly instrument the code
@@ -281,8 +281,7 @@ public class Groovy2PluginTest {
      */
     private ScriptModuleSpec.Builder createGroovyModuleSpec(String moduleId) {
         return new ScriptModuleSpec.Builder(moduleId)
-            .addDependency("Groovy2RuntimeModule")
-            .addMetadata(MetadataName.SCRIPT_LANGUAGE.name(), "groovy2");
+            .addCompilerDependency("groovy2");
     }
 
     private Class<?> findClassByName(ScriptModule scriptModule, TestScript testScript) {

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Set;
 
 import com.netflix.scriptlib.core.archive.ScriptArchive;
-import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
 import com.netflix.scriptlib.core.module.jboss.JBossModuleClassLoader;
 
 
@@ -31,13 +30,6 @@ import com.netflix.scriptlib.core.module.jboss.JBossModuleClassLoader;
  * @author James Kojo
  */
 public interface ScriptArchiveCompiler {
-    /**
-     * Common names used to query the {@link ScriptModuleSpec#getMetadata()} that are relevant
-     * to compilers.
-     */
-    public static enum MetadataName {
-        SCRIPT_LANGUAGE;
-    }
     /**
      * Whether or not this compiler should be used to compile the archive
      */

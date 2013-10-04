@@ -38,11 +38,19 @@ public class ScriptModuleSpec {
      */
     public static class Builder {
         private final String moduleId;
+        private final Set<String> compilerDependencies = new LinkedHashSet<String>();
         private final Map<String, String> archiveMetadata = new LinkedHashMap<String, String>();
-        private final Set<String> dependencies = new LinkedHashSet<String>();
+        private final Set<String> moduleDependencies = new LinkedHashSet<String>();
 
         public Builder(String moduleId) {
             this.moduleId = moduleId;
+        }
+        /** Add a dependency on the named compiler */
+        public Builder addCompilerDependency(String compilerName) {
+            if (compilerName != null) {
+                compilerDependencies.add(compilerName);
+            }
+            return this;
         }
         /** Append all of the given metadata. */
         public Builder addMetadata(Map<String, String> metadata) {
@@ -59,14 +67,14 @@ public class ScriptModuleSpec {
             return this;
         }
         /** Add Module dependency. */
-        public Builder addDependency(String dependencyName) {
+        public Builder addModuleDependency(String dependencyName) {
             if (dependencyName != null) {
-                dependencies.add(dependencyName);
+                moduleDependencies.add(dependencyName);
             }
             return this;
         }
         /** Add Module dependencies. */
-        public Builder addDependencies(Set<String> dependencies) {
+        public Builder addModuleDependencies(Set<String> dependencies) {
             if (dependencies != null) {
                 dependencies.addAll(dependencies);
             }
@@ -76,18 +84,21 @@ public class ScriptModuleSpec {
         public ScriptModuleSpec build() {
             return new ScriptModuleSpec(moduleId,
                Collections.unmodifiableMap(new HashMap<String, String>(archiveMetadata)),
-               Collections.unmodifiableSet(new LinkedHashSet<String>(dependencies)));
+               Collections.unmodifiableSet(new LinkedHashSet<String>(moduleDependencies)),
+               Collections.unmodifiableSet(new LinkedHashSet<String>(compilerDependencies)));
         }
     }
 
     private final String moduleId;
     private final Map<String, String> archiveMetadata;
-    private final Set<String> dependencies;
+    private final Set<String> moduleDependencies;
+    private final Set<String> compilerDependencies;
 
-    protected ScriptModuleSpec(String moduleId, Map<String, String> archiveMetadata, Set<String> dependencies) {
+    protected ScriptModuleSpec(String moduleId, Map<String, String> archiveMetadata, Set<String> moduleDependencies, Set<String> compilerDependencies) {
         this.moduleId = Objects.requireNonNull(moduleId, "moduleId");
+        this.compilerDependencies = Objects.requireNonNull(compilerDependencies, "compilerDependencies");
         this.archiveMetadata = Objects.requireNonNull(archiveMetadata, "archiveMetadata");
-        this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
+        this.moduleDependencies = Objects.requireNonNull(moduleDependencies, "dependencies");
     }
 
     /**
@@ -108,8 +119,15 @@ public class ScriptModuleSpec {
     /**
      * @return the names of the modules that this archive depends on
      */
-    public Set<String> getDependencies() {
-        return dependencies;
+    public Set<String> getModuleDependencies() {
+        return moduleDependencies;
+    }
+
+    /**
+     * @return the names of the compilers that should process this archive
+     */
+    public Set<String> getCompilerDependencies() {
+        return compilerDependencies;
     }
 
     @Override
@@ -119,12 +137,12 @@ public class ScriptModuleSpec {
         ScriptModuleSpec other = (ScriptModuleSpec) o;
         return Objects.equals(this.moduleId, other.moduleId) &&
             Objects.equals(this.archiveMetadata, other.archiveMetadata) &&
-            Objects.equals(this.dependencies, other.dependencies);
+            Objects.equals(this.moduleDependencies, other.moduleDependencies);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(moduleId, moduleId, dependencies);
+        return Objects.hash(moduleId, moduleId, moduleDependencies);
     }
 
     @Override
@@ -132,7 +150,7 @@ public class ScriptModuleSpec {
         return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
             .append("moduleId", moduleId)
             .append("archiveMetadata", archiveMetadata)
-            .append("dependencies", dependencies)
+            .append("dependencies", moduleDependencies)
             .toString();
     }
 }

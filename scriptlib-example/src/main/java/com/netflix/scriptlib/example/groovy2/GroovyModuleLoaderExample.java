@@ -18,7 +18,7 @@
 package com.netflix.scriptlib.example.groovy2;
 
 import static com.netflix.scriptlib.example.groovy2.ExampleResourceLocator.GROOVY2_COMPILER_PLUGIN_CLASS;
-import static com.netflix.scriptlib.example.groovy2.ExampleResourceLocator.GROOVY2_MODULE_ID;
+import static com.netflix.scriptlib.example.groovy2.ExampleResourceLocator.GROOVY2_PLUGIN_ID;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -76,7 +76,7 @@ public class GroovyModuleLoaderExample {
 
         // create and start the loader with the plugin
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
-            .addPluginSpec(new ScriptCompilerPluginSpec.Builder(GROOVY2_MODULE_ID) // configure Groovy plugin
+            .addPluginSpec(new ScriptCompilerPluginSpec.Builder(GROOVY2_PLUGIN_ID) // configure Groovy plugin
                 .addRuntimeResource(ExampleResourceLocator.getGroovyRuntime())
                 .addRuntimeResource(ExampleResourceLocator.getGroovyPluginLocation())
                 .withPluginClassName(GROOVY2_COMPILER_PLUGIN_CLASS)

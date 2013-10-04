@@ -30,8 +30,8 @@ public class ScriptModuleSpecSerializerTest {
     @Test
     public void testRoundTrip() {
         ScriptModuleSpec expected = new ScriptModuleSpec.Builder("myModuleId")
-            .addDependency("dependencyModuleId1")
-            .addDependency("dependencyModuleId2")
+            .addModuleDependency("dependencyModuleId1")
+            .addModuleDependency("dependencyModuleId2")
             .addMetadata("metadataName1", "metadataValue1")
             .addMetadata("metadataName2", "metadataValue2")
             .build();

@@ -39,17 +39,17 @@ public class ScriptCompilerPluginSpec {
      * Used to construct a {@link ScriptCompilerPluginSpec}
      */
     public static class Builder {
-        private final String pluginName;
+        private final String pluginId;
         private Set<Path> runtimeResources = new LinkedHashSet<Path>();
         private String providerClassName;
         private Map<String, String> pluginMetadata = new LinkedHashMap<String, String>();
 
         /**
          * Start a builder with the required parameters
-         * @param pluginName name of this plugin. Will be used to construct the Module.
+         * @param pluginId name of this plugin. Will be used to construct the Module.
          */
-        public Builder(String pluginName) {
-            this.pluginName = pluginName;
+        public Builder(String pluginId) {
+            this.pluginId = pluginId;
         }
         /**
          * @param className of the plugin class which implements {@link ScriptCompilerPlugin}
@@ -84,32 +84,32 @@ public class ScriptCompilerPluginSpec {
         }
         /** Build the instance. */
         public ScriptCompilerPluginSpec build() {
-            return new ScriptCompilerPluginSpec(pluginName,
+            return new ScriptCompilerPluginSpec(pluginId,
                 new LinkedHashSet<Path>(runtimeResources),
                 providerClassName,
                 new LinkedHashMap<String, String>(pluginMetadata));
         }
     }
-    private final String pluginName;
+    private final String pluginId;
     private final Set<Path> runtimeResources;
     private final String pluginClassName;
     private final Map<String, String> pluginMetadata;
 
     /**
-     * @param pluginName language name. will be used to create a module identifier.
+     * @param pluginId language plugin id. will be used to create a module identifier.
      * @param runtimeResources Paths to jars and resources needed to create the language runtime module. This
      *  includes the language runtime as well as the jar/path to the provider class project.
      * @param pluginClassName fully qualified classname of the implementation of the {@link ScriptCompilerPlugin} class
      */
-    protected ScriptCompilerPluginSpec(String pluginName,Set<Path> runtimeResources, String pluginClassName, Map<String, String> pluginMetadata) {
-        this.pluginName =  Objects.requireNonNull(pluginName, "pluginName");
+    protected ScriptCompilerPluginSpec(String pluginId, Set<Path> runtimeResources, String pluginClassName, Map<String, String> pluginMetadata) {
+        this.pluginId =  Objects.requireNonNull(pluginId, "pluginName");
         this.runtimeResources =  Collections.unmodifiableSet(Objects.requireNonNull(runtimeResources, "runtimeResources"));
         this.pluginClassName = pluginClassName;
         this.pluginMetadata = Collections.unmodifiableMap(Objects.requireNonNull(pluginMetadata, "pluginMetadata"));
     }
 
-    public String getPluginName() {
-        return pluginName;
+    public String getPluginId() {
+        return pluginId;
     }
 
     /**

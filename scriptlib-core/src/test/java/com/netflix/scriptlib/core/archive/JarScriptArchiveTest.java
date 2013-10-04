@@ -79,7 +79,7 @@ public class JarScriptArchiveTest {
         JarScriptArchive scriptArchive = new JarScriptArchive.Builder(rootPath).build();
         ScriptModuleSpec moduleSpec = scriptArchive.getModuleSpec();
         assertEquals(moduleSpec.getModuleId(), TEST_MODULE_SPEC_JAR.getModuleId());
-        assertEquals(moduleSpec.getDependencies(), new HashSet<String>(Arrays.asList("dependencyModuleId1", "dependencyModuleId2")));
+        assertEquals(moduleSpec.getModuleDependencies(), new HashSet<String>(Arrays.asList("dependencyModuleId1", "dependencyModuleId2")));
         Map<String, String> expectedMetadata = new HashMap<String, String>();
         expectedMetadata.put("metadataName1", "metadataValue1");
         expectedMetadata.put("metadataName2", "metadataValue2");
