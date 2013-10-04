@@ -41,7 +41,6 @@ public interface ScriptArchiveRepository {
      * insert a Jar into the script archive
      * @param moduleId module identifier for this archive. used as row key.
      * @param jarFilePath absolute path to jar file to insert
-     * @param createTime create time to use for insertion. should be a timestamp in ms
      * @param moduleSpec optional {@link ScriptModuleSpec} for the archive
      */
     public void insertArchive(String moduleId, Path jarFilePath, @Nullable ScriptModuleSpec moduleSpec)
@@ -66,9 +65,7 @@ public interface ScriptArchiveRepository {
     public List<ArchiveSummary> getArchiveSummaries() throws IOException;
 
     /**
-     * Get all of the {@link ScriptArchive}s for the given set of moduleIds. Will perform the operation in batches
-     * as specified by {@link CassandraArchiveRepositoryConfig#getArchiveFetchBatchSize()} and outputs the jar files in
-     * the path specified by {@link CassandraArchiveRepositoryConfig#getArchiveOutputDirectory()}.
+     * Get all of the {@link ScriptArchive}s for the given set of moduleIds.
      *
      * @param moduleIds keys to search for
      * @return set of ScriptArchives retrieved from the database
