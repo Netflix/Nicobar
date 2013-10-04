@@ -70,7 +70,7 @@ import com.netflix.scriptlib.core.persistence.ScriptArchiveRepository;
  * Upon insertion, all archives are assigned a shard number calculated as (moduleId.hashCode() % <number of shard>).
  * The shard number is subsequently inserted into a column for which a secondary index has been defined.
  * <p>
- * The {@link #getArchiveUpdateTimes(long)} method will first search each shard for any rows with an update timestamp greater than
+ * The {@link #getArchiveUpdateTimes()} method will first search each shard for any rows with an update timestamp greater than
  * the last poll time, and if any are found, the contents of those archives are loaded in small batches.
  *
  *
@@ -125,7 +125,6 @@ public class CassandraArchiveRepository implements ScriptArchiveRepository {
      * insert a Jar into the script archive
      * @param moduleId module identifier for this archive. used as row key.
      * @param jarFilePath absolute path to jar file to insert
-     * @param createTime create time to use for insertion. should be a timestamp in ms
      * @param moduleSpec optional {@link ScriptModuleSpec} for the archive
      */
     @Override
