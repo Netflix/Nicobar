@@ -19,9 +19,11 @@ package com.netflix.scriptlib.core.persistence;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -33,13 +35,12 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import javax.annotation.Nullable;
-
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import com.netflix.scriptlib.core.archive.GsonScriptModuleSpecSerializer;
+import com.netflix.scriptlib.core.archive.JarScriptArchive;
 import com.netflix.scriptlib.core.archive.PathScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
@@ -118,15 +119,21 @@ public class PathArchiveRepository implements ArchiveRepository {
     }
 
     @Override
-    public void insertArchive(String moduleId, Path jarFilePath, @Nullable ScriptModuleSpec moduleSpec)
+    public void insertArchive(JarScriptArchive jarScriptArchive)
             throws IOException {
-        Objects.requireNonNull(moduleId, "moduleId");
-        Objects.requireNonNull(jarFilePath, "jarFilePath");
+        Objects.requireNonNull(jarScriptArchive, "jarScriptArchive");
+        ScriptModuleSpec moduleSpec = jarScriptArchive.getModuleSpec();
+        String moduleId = moduleSpec.getModuleId();
         Path moduleDir = rootDir.resolve(moduleId);
         if (Files.exists(moduleDir)) {
             FileUtils.deleteDirectory(moduleDir.toFile());
         }
-        JarFile jarFile = new JarFile(jarFilePath.toFile());
+        JarFile jarFile;
+        try {
+            jarFile = new JarFile(jarScriptArchive.getRootUrl().toURI().getPath());
+        } catch (URISyntaxException e) {
+           throw new IOException(e);
+        }
         try {
             Enumeration<JarEntry> entries = jarFile.entries();
             while (entries.hasMoreElements()) {
@@ -146,12 +153,12 @@ public class PathArchiveRepository implements ArchiveRepository {
         } finally {
             IOUtils.closeQuietly(jarFile);
         }
-        if (moduleSpec != null) {
-            String serialized = moduleSpecSerializer.serialize(moduleSpec);
-            Files.write(moduleDir.resolve(moduleSpecSerializer.getModuleSpecFileName()), serialized.getBytes(Charsets.UTF_8));
-        }
+        // write the module spec
+        String serialized = moduleSpecSerializer.serialize(moduleSpec);
+        Files.write(moduleDir.resolve(moduleSpecSerializer.getModuleSpecFileName()), serialized.getBytes(Charsets.UTF_8));
+
         // update the timestamp on the module directory to indicate that the module has been updated
-        Files.setLastModifiedTime(moduleDir, Files.getLastModifiedTime(jarFilePath));
+        Files.setLastModifiedTime(moduleDir, FileTime.fromMillis(jarScriptArchive.getCreateTime()));
     }
 
     @Override

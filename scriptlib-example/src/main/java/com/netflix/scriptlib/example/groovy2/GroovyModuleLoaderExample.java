@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.IOUtils;
 
 import com.netflix.hystrix.Hystrix;
+import com.netflix.scriptlib.core.archive.JarScriptArchive;
 import com.netflix.scriptlib.core.execution.HystrixScriptModuleExecutor;
 import com.netflix.scriptlib.core.execution.ScriptModuleExecutable;
 import com.netflix.scriptlib.core.module.BaseScriptModuleListener;
@@ -121,7 +122,7 @@ public class GroovyModuleLoaderExample {
         Path archiveToDeploy = Files.createTempFile(SCRIPT_MODULE_ID, ".jar");
         Files.copy(archiveJarIs, archiveToDeploy, StandardCopyOption.REPLACE_EXISTING);
         IOUtils.closeQuietly(archiveJarIs);
-
-        repository.insertArchive(SCRIPT_MODULE_ID, archiveToDeploy, null);
+        JarScriptArchive jarScriptArchive = new JarScriptArchive.Builder(archiveToDeploy).build();
+        repository.insertArchive(jarScriptArchive);
     }
 }

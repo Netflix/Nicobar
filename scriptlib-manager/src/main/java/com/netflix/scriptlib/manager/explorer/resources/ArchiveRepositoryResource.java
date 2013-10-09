@@ -39,6 +39,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 
+import com.netflix.scriptlib.core.archive.JarScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
 import com.netflix.scriptlib.core.persistence.ArchiveRepository;
 import com.netflix.scriptlib.core.persistence.ArchiveSummary;
@@ -111,7 +112,10 @@ public class ArchiveRepositoryResource {
         try {
             java.nio.file.Path tempFile = Files.createTempFile(moduleId, ".jar");
             Files.copy(file, tempFile, StandardCopyOption.REPLACE_EXISTING);
-            repository.insertArchive(moduleId, tempFile, moduleSpec);
+            JarScriptArchive jarScriptArchive = new JarScriptArchive.Builder(tempFile)
+                .setModuleSpec(moduleSpec)
+                .build();
+            repository.insertArchive(jarScriptArchive);
         } catch (IOException e) {
             throw new WebApplicationException(e);
         }

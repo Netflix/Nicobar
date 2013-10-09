@@ -18,15 +18,12 @@
 package com.netflix.scriptlib.core.persistence;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
+import com.netflix.scriptlib.core.archive.JarScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
-import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
 
 /**
  * Interface to represent a persistence store for archives
@@ -39,11 +36,9 @@ public interface ArchiveRepository {
 
     /**
      * insert a Jar into the script archive
-     * @param moduleId module identifier for this archive. used as row key.
-     * @param jarFilePath absolute path to jar file to insert
-     * @param moduleSpec optional {@link ScriptModuleSpec} for the archive
+     * @param jarScriptArchive script archive which describes the jar and the ModuleSpec which should be inserted
      */
-    public void insertArchive(String moduleId, Path jarFilePath, @Nullable ScriptModuleSpec moduleSpec)
+    public void insertArchive(JarScriptArchive jarScriptArchive)
         throws IOException;
 
     /**

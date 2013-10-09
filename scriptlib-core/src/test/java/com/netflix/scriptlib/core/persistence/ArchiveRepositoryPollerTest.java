@@ -33,7 +33,6 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.FileTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -47,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.netflix.scriptlib.core.archive.JarScriptArchive;
 import com.netflix.scriptlib.core.module.ScriptModule;
 import com.netflix.scriptlib.core.module.ScriptModuleListener;
 import com.netflix.scriptlib.core.module.ScriptModuleLoader;
@@ -172,7 +172,9 @@ public abstract class ArchiveRepositoryPollerTest {
         URL archiveUrl = getClass().getClassLoader().getResource(testResourcePath);
         assertNotNull(archiveUrl, "couldn't find test resource with path " + testResourcePath);
         Path archiveJarPath = Paths.get(archiveUrl.toURI());
-        Files.setLastModifiedTime(archiveJarPath, FileTime.fromMillis(updateTime));
-        archiveRepository.insertArchive(testResource.getModuleId(), archiveJarPath, null);
+        JarScriptArchive jarScriptArchive = new JarScriptArchive.Builder(archiveJarPath)
+            .setCreateTime(updateTime)
+            .build();
+        archiveRepository.insertArchive(jarScriptArchive);
     }
 }

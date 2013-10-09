@@ -18,8 +18,10 @@
 package com.netflix.scriptlib.cassandra;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -32,8 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Nullable;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -57,9 +57,9 @@ import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.scriptlib.core.archive.JarScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
+import com.netflix.scriptlib.core.persistence.ArchiveRepository;
 import com.netflix.scriptlib.core.persistence.ArchiveSummary;
 import com.netflix.scriptlib.core.persistence.RepositorySummary;
-import com.netflix.scriptlib.core.persistence.ArchiveRepository;
 
 /**
  * Data access object of {@link ScriptArchive}s stored in Cassandra.
@@ -123,14 +123,18 @@ public class CassandraArchiveRepository implements ArchiveRepository {
 
     /**
      * insert a Jar into the script archive
-     * @param moduleId module identifier for this archive. used as row key.
-     * @param jarFilePath absolute path to jar file to insert
-     * @param moduleSpec optional {@link ScriptModuleSpec} for the archive
      */
     @Override
-    public void insertArchive(String moduleId, Path jarFilePath, @Nullable ScriptModuleSpec moduleSpec) throws IOException {
-        Objects.requireNonNull(moduleId, "moduleId");
-        Objects.requireNonNull(jarFilePath, "jarFilePath");
+    public void insertArchive(JarScriptArchive jarScriptArchive) throws IOException {
+        Objects.requireNonNull(jarScriptArchive, "jarScriptArchive");
+        ScriptModuleSpec moduleSpec = jarScriptArchive.getModuleSpec();
+        String moduleId = moduleSpec.getModuleId();
+        Path jarFilePath;
+        try {
+            jarFilePath = Paths.get(jarScriptArchive.getRootUrl().toURI());
+        } catch (URISyntaxException e) {
+            throw new IOException(e);
+        }
         int shardNum = Math.abs(moduleId.hashCode() % getConfig().getShardCount());
         byte[] jarBytes = Files.readAllBytes(jarFilePath);
         byte[] hash = calculateHash(jarBytes);
@@ -141,10 +145,9 @@ public class CassandraArchiveRepository implements ArchiveRepository {
             .putColumn(Columns.last_update.name(), getConfig().getUpdateTimeClock().getCurrentTime())
             .putColumn(Columns.archive_content_hash.name(), hash)
             .putColumn(Columns.archive_content.name(), jarBytes);
-        if (moduleSpec != null) {
-            String serialized = getConfig().getModuleSpecSerializer().serialize(moduleSpec);
-            columnMutation.putColumn(Columns.module_spec.name(), serialized);
-        }
+
+        String serialized = getConfig().getModuleSpecSerializer().serialize(moduleSpec);
+        columnMutation.putColumn(Columns.module_spec.name(), serialized);
         try {
             mutationBatch.execute();
         } catch (ConnectionException e) {

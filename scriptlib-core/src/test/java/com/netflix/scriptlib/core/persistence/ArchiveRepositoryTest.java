@@ -38,6 +38,7 @@ import org.apache.commons.io.IOUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.netflix.scriptlib.core.archive.JarScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
 
@@ -71,8 +72,9 @@ public abstract class ArchiveRepositoryTest {
     @Test
     public void testRoundTrip() throws Exception {
         ArchiveRepository repository = createRepository();
+        JarScriptArchive jarScriptArchive = new JarScriptArchive.Builder(testArchiveJarFile).build();
         String testModuleId = TEST_MODULE_SPEC_JAR.getModuleId();
-        repository.insertArchive(testModuleId, testArchiveJarFile, null);
+        repository.insertArchive(jarScriptArchive);
         Map<String, Long> archiveUpdateTimes = repository.getArchiveUpdateTimes();
         long expectedUpdateTime = Files.getLastModifiedTime(testArchiveJarFile).toMillis();
         assertEquals(archiveUpdateTimes, Collections.singletonMap(testModuleId, expectedUpdateTime));
@@ -100,7 +102,8 @@ public abstract class ArchiveRepositoryTest {
         // advance the timestamp by 10 seconds and update
         expectedUpdateTime = expectedUpdateTime + 10000;
         Files.setLastModifiedTime(testArchiveJarFile, FileTime.fromMillis(expectedUpdateTime));
-        repository.insertArchive(testModuleId, testArchiveJarFile, null);
+        jarScriptArchive = new JarScriptArchive.Builder(testArchiveJarFile).build();
+        repository.insertArchive(jarScriptArchive);
         archiveUpdateTimes = repository.getArchiveUpdateTimes();
         assertEquals(archiveUpdateTimes, Collections.singletonMap(testModuleId, expectedUpdateTime));
 
@@ -137,8 +140,10 @@ public abstract class ArchiveRepositoryTest {
         ScriptModuleSpec expectedModuleSpec = new ScriptModuleSpec.Builder(testModuleId)
             .addMetadata("externalizedMetaDataName1", "externalizedMetaDataValue1")
             .build();
-
-        repository.insertArchive(testModuleId, testArchiveJarFile, expectedModuleSpec);
+        JarScriptArchive jarScriptArchive = new JarScriptArchive.Builder(testArchiveJarFile)
+            .setModuleSpec(expectedModuleSpec)
+            .build();
+        repository.insertArchive(jarScriptArchive);
         Set<ScriptArchive> scriptArchives = repository.getScriptArchives(Collections.singleton(testModuleId));
         assertEquals(scriptArchives.size(), 1, scriptArchives.toString());
         ScriptModuleSpec actualModuleSpec = scriptArchives.iterator().next().getModuleSpec();
