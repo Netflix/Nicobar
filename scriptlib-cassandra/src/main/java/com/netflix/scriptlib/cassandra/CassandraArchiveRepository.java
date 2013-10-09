@@ -59,7 +59,7 @@ import com.netflix.scriptlib.core.archive.ScriptArchive;
 import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
 import com.netflix.scriptlib.core.persistence.ArchiveSummary;
 import com.netflix.scriptlib.core.persistence.RepositorySummary;
-import com.netflix.scriptlib.core.persistence.ScriptArchiveRepository;
+import com.netflix.scriptlib.core.persistence.ArchiveRepository;
 
 /**
  * Data access object of {@link ScriptArchive}s stored in Cassandra.
@@ -93,7 +93,7 @@ import com.netflix.scriptlib.core.persistence.ScriptArchiveRepository;
  * See {@link CassandraArchiveRepositoryConfig} to override the default table name.
  * @author James Kojo
  */
-public class CassandraArchiveRepository implements ScriptArchiveRepository {
+public class CassandraArchiveRepository implements ArchiveRepository {
     private final static Logger logger = LoggerFactory.getLogger(CassandraArchiveRepository.class);
 
     /** column names */

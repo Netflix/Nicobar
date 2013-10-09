@@ -24,11 +24,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.IOUtils;
 
@@ -39,7 +39,9 @@ import com.netflix.scriptlib.core.module.BaseScriptModuleListener;
 import com.netflix.scriptlib.core.module.ScriptModule;
 import com.netflix.scriptlib.core.module.ScriptModuleLoader;
 import com.netflix.scriptlib.core.module.ScriptModuleUtils;
-import com.netflix.scriptlib.core.persistence.PathScriptArchivePoller;
+import com.netflix.scriptlib.core.persistence.ArchiveRepository;
+import com.netflix.scriptlib.core.persistence.ArchiveRepositoryPoller;
+import com.netflix.scriptlib.core.persistence.JarArchiveRepository;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
 
 /**
@@ -58,39 +60,34 @@ import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
 public class GroovyModuleLoaderExample {
     // test script module info
     private static final String SCRIPT_MODULE_ID = "HelloWorld";
-    private static final Path SCRIPT_RELATIVE_PATH = Paths.get("helloworld", "HelloWorld.groovy");
-    private static final Path MODULE_SPEC_RELATIVE_PATH = Paths.get("helloworld", "moduleSpec.json");
+    private static final String ARCHIVE_JAR_NAME = "HelloWorld.jar";
 
     public static void main(String[] args) throws Exception {
         new GroovyModuleLoaderExample().runExample();
     }
 
     public void runExample() throws Exception {
-        // setup a directory to deploy new archives to
-        Path baseArchiveDir = Files.createTempDirectory(GroovyModuleLoaderExample.class.getSimpleName());
-        // helper latch to coordinate the main thread for this example. you woudln't normally do this.
-        final CountDownLatch countDownLatch = new CountDownLatch(1);
 
-        // simulate deploying a new archive by copying our test archive into the archive directory
-        deployTestArchive(baseArchiveDir);
-
-        // create and start the loader with the plugin
+        // create the loader with the groovy plugin
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
             .addPluginSpec(new ScriptCompilerPluginSpec.Builder(GROOVY2_PLUGIN_ID) // configure Groovy plugin
                 .addRuntimeResource(ExampleResourceLocator.getGroovyRuntime())
                 .addRuntimeResource(ExampleResourceLocator.getGroovyPluginLocation())
                 .withPluginClassName(GROOVY2_COMPILER_PLUGIN_CLASS)
                 .build())
-            .addPoller(new PathScriptArchivePoller(baseArchiveDir) , 5)  // add a poller to detect new archives
             .addListener(new BaseScriptModuleListener() {                // add an example listener for module updates
                 public void moduleUpdated(ScriptModule newScriptModule, ScriptModule oldScriptModule) {
-                    countDownLatch.countDown();
+                    System.out.printf("Received module update event. newModule: %s,  oldModule: %s%n", newScriptModule, oldScriptModule);
                 }
             })
             .build();
 
-        // the module loader has now started and is listening for new archives.
-        countDownLatch.await();
+        // create an archive repository and wrap a poller around it to feed updates to the module loader
+        Path baseArchiveDir = Files.createTempDirectory(GroovyModuleLoaderExample.class.getSimpleName());
+        JarArchiveRepository repository = new JarArchiveRepository.Builder(baseArchiveDir).build();
+        deployTestArchive(repository);
+        ArchiveRepositoryPoller poller = new ArchiveRepositoryPoller.Builder(moduleLoader).build();
+        poller.addRepository(repository, 30, TimeUnit.SECONDS, true);
 
         // the test module has now been compiled and is ready for execution.
         // create a closure which knows how to bind any request time inputs (if any) and execute the module.
@@ -117,18 +114,14 @@ public class GroovyModuleLoaderExample {
     }
 
     /*
-     * Copy the example script module files to the given output directory
+     * Copy the example script module files to temporary directory and insert it into the repository
      */
-    private static void deployTestArchive(Path baseArchiveDir) throws IOException {
-        InputStream scriptSource = GroovyModuleLoaderExample.class.getClassLoader().getResourceAsStream(SCRIPT_RELATIVE_PATH.toString());
-        InputStream moduleSpecSource =  GroovyModuleLoaderExample.class.getClassLoader().getResourceAsStream(MODULE_SPEC_RELATIVE_PATH.toString());
-        Path moduleRoot = Files.createTempDirectory("helloworld");
-        Path scriptOutputPath = moduleRoot.resolve(SCRIPT_RELATIVE_PATH.getFileName());
-        Path specOutputPath = moduleRoot.resolve(MODULE_SPEC_RELATIVE_PATH.getFileName());
-        Files.copy(scriptSource, scriptOutputPath);
-        Files.copy(moduleSpecSource, specOutputPath);
-        IOUtils.closeQuietly(scriptSource);
-        IOUtils.closeQuietly(moduleSpecSource);
-        Files.createSymbolicLink(baseArchiveDir.resolve("helloworld"), moduleRoot);
+    private static void deployTestArchive(ArchiveRepository repository) throws IOException {
+        InputStream archiveJarIs = GroovyModuleLoaderExample.class.getClassLoader().getResourceAsStream(ARCHIVE_JAR_NAME);
+        Path archiveToDeploy = Files.createTempFile(SCRIPT_MODULE_ID, ".jar");
+        Files.copy(archiveJarIs, archiveToDeploy, StandardCopyOption.REPLACE_EXISTING);
+        IOUtils.closeQuietly(archiveJarIs);
+
+        repository.insertArchive(SCRIPT_MODULE_ID, archiveToDeploy, null);
     }
 }

@@ -27,8 +27,21 @@ import com.google.gson.Gson;
  * @author James Kojo
  */
 public class GsonScriptModuleSpecSerializer implements ScriptModuleSpecSerializer {
-
+    /** Default file name of the optional {@link ScriptModuleSpec} in the archive */
+    public final static String DEFAULT_MODULE_SPEC_FILE_NAME = "moduleSpec.json";
     private static Gson SERIALIZER = new Gson();
+    private final String moduleSpecFileName;
+
+    public GsonScriptModuleSpecSerializer() {
+        this(DEFAULT_MODULE_SPEC_FILE_NAME);
+    }
+
+    /**
+     * @param moduleSpecFileName file name to use when outputting a serialized moduleSpec
+     */
+    public GsonScriptModuleSpecSerializer(String moduleSpecFileName) {
+        this.moduleSpecFileName = Objects.requireNonNull(moduleSpecFileName, "moduleSpecFileName");
+    }
 
     /**
      * Convert the {@link ScriptModuleSpec} to a JSON String
@@ -47,11 +60,18 @@ public class GsonScriptModuleSpecSerializer implements ScriptModuleSpecSerialize
         Objects.requireNonNull(json, "json");
         ScriptModuleSpec moduleSpec = SERIALIZER.fromJson(json, ScriptModuleSpec.class);
         return moduleSpec;
+
     }
+    @Override
+    public String getModuleSpecFileName() {
+        return moduleSpecFileName;
+    }
+
     /**
      * @return the serializer. Override this to customize the serialization logic
      */
     protected Gson getSerializer() {
         return SERIALIZER;
     }
+
 }

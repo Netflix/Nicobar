@@ -38,12 +38,12 @@ import org.apache.commons.collections.CollectionUtils;
 
 import com.netflix.scriptlib.core.persistence.ArchiveSummary;
 import com.netflix.scriptlib.core.persistence.RepositorySummary;
-import com.netflix.scriptlib.core.persistence.ScriptArchiveRepository;
+import com.netflix.scriptlib.core.persistence.ArchiveRepository;
 import com.sun.jersey.api.NotFoundException;
 import com.sun.jersey.api.view.Viewable;
 
 /**
- * REST resource for accessing the a collection of {@link ScriptArchiveRepository}s.
+ * REST resource for accessing the a collection of {@link ArchiveRepository}s.
  *
  * @author James Kojo
  */
@@ -51,14 +51,14 @@ import com.sun.jersey.api.view.Viewable;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ArchiveRepositoriesResource {
-    private final Map<String, ScriptArchiveRepository> repositories;
+    private final Map<String, ArchiveRepository> repositories;
 
     // avoid exception for classpath scanners which attempt to instantiate this resource
     public ArchiveRepositoriesResource() {
-        this(Collections.<String, ScriptArchiveRepository>emptyMap());
+        this(Collections.<String, ArchiveRepository>emptyMap());
     }
 
-    public ArchiveRepositoriesResource(Map<String, ScriptArchiveRepository> repositories) {
+    public ArchiveRepositoriesResource(Map<String, ArchiveRepository> repositories) {
         this.repositories = Objects.requireNonNull(repositories, "repositories");
     }
 
@@ -104,7 +104,7 @@ public class ArchiveRepositoriesResource {
 
     @Path("/{repositoryId}")
     public ArchiveRepositoryResource getScriptRepo(@PathParam("repositoryId") String repositoryId) {
-        ScriptArchiveRepository repository = repositories.get(repositoryId);
+        ArchiveRepository repository = repositories.get(repositoryId);
         if (repository == null) {
             throw new NotFoundException("no such repository '" + repositoryId + "'");
         }

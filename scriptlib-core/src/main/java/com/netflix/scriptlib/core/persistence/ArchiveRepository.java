@@ -33,7 +33,7 @@ import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
  *
  * @author James Kojo
  */
-public interface ScriptArchiveRepository {
+public interface ArchiveRepository {
 
     public String getRepositoryId();
 

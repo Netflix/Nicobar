@@ -26,9 +26,8 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -79,7 +78,7 @@ public class JarScriptArchiveTest {
         JarScriptArchive scriptArchive = new JarScriptArchive.Builder(rootPath).build();
         ScriptModuleSpec moduleSpec = scriptArchive.getModuleSpec();
         assertEquals(moduleSpec.getModuleId(), TEST_MODULE_SPEC_JAR.getModuleId());
-        assertEquals(moduleSpec.getModuleDependencies(), new HashSet<String>(Arrays.asList("dependencyModuleId1", "dependencyModuleId2")));
+        assertEquals(moduleSpec.getModuleDependencies(), Collections.emptySet());
         Map<String, String> expectedMetadata = new HashMap<String, String>();
         expectedMetadata.put("metadataName1", "metadataValue1");
         expectedMetadata.put("metadataName2", "metadataValue2");

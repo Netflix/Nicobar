@@ -15,26 +15,22 @@
  *     limitations under the License.
  *
  */
-package com.netflix.scriptlib.core.archive;
+package com.netflix.scriptlib.core.persistence;
+
+import java.nio.file.Path;
+
+import org.testng.annotations.Test;
 
 /**
- * Serializer for the {@link ScriptModuleSpec}
+ * Integration tests for {@link PathArchiveRepository} and {@link ArchiveRepositoryPoller}
  *
  * @author James Kojo
  */
-public interface ScriptModuleSpecSerializer {
-    /**
-     * Convert the {@link ScriptModuleSpec} to a JSON String
-     */
-    public String serialize(ScriptModuleSpec moduleSpec);
+@Test
+public class PathRepositoryPollerTest extends ArchiveRepositoryPollerTest {
 
-    /**
-     * Convert the input JSON String to a {@link ScriptModuleSpec}
-     */
-    public ScriptModuleSpec deserialize(String json);
-
-    /**
-     * Filename to use when outputting a serialized module spec
-     */
-    public String getModuleSpecFileName();
+    @Override
+    public ArchiveRepository createArchiveRepository(Path rootArchiveDirectory) {
+        return new PathArchiveRepository.Builder(rootArchiveDirectory).build();
+    }
 }

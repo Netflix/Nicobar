@@ -2,8 +2,6 @@
     "moduleId": "test-modulespec-moduleId",
     "compilerDependencies": [],
     "moduleDependencies": [
-        "dependencyModuleId1", 
-        "dependencyModuleId2"
     ], 
     "archiveMetadata": {
         "metadataName1": "metadataValue1", 

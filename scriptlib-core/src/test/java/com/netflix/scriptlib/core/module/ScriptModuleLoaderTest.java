@@ -50,9 +50,6 @@ import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
 import com.netflix.scriptlib.core.compile.ScriptArchiveCompiler;
 import com.netflix.scriptlib.core.compile.ScriptCompilationException;
 import com.netflix.scriptlib.core.module.jboss.JBossModuleClassLoader;
-import com.netflix.scriptlib.core.persistence.JarScriptArchivePoller;
-import com.netflix.scriptlib.core.persistence.ScriptArchivePoller;
-import com.netflix.scriptlib.core.persistence.ScriptArchivePoller.PollResult;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPlugin;
 import com.netflix.scriptlib.core.plugin.ScriptCompilerPluginSpec;
 import com.netflix.scriptlib.core.testutil.CoreTestResourceUtil;
@@ -100,34 +97,6 @@ public class ScriptModuleLoaderTest {
         verifyNoMoreInteractions(MOCK_COMPILER);
     }
 
-    @Test
-    public void testPollForUpdates() throws Exception {
-        Path jarPath = CoreTestResourceUtil.getResourceAsPath(TEST_TEXT_JAR);
-        Path rootJarsPath = jarPath.getParent();
-        JarScriptArchivePoller archivePoller = new JarScriptArchivePoller(rootJarsPath);
-
-        ScriptModuleListener mockListener = mock(ScriptModuleListener.class);
-        ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
-            .addListener(mockListener)
-            .build();
-        moduleLoader.pollForUpdates(archivePoller, 0);
-        String moduleId = TEST_TEXT_JAR.getModuleId();
-        ScriptModule scriptModule = moduleLoader.getScriptModule(moduleId);
-        assertNotNull(scriptModule);
-        assertEquals(scriptModule.getModuleId(), moduleId);
-        verify(mockListener).moduleUpdated((ScriptModule)Mockito.isNotNull(), (ScriptModule)Mockito.isNull());
-    }
-
-    @Test
-    public void testAddPoller() throws Exception {
-        ScriptArchivePoller mockPoller = mock(ScriptArchivePoller.class);
-        when(mockPoller.poll(Mockito.anyLong()))
-            .thenReturn(new PollResult(Collections.<ScriptArchive>emptySet(), Collections.<String>emptySet()));
-        new ScriptModuleLoader.Builder()
-            .addPoller(mockPoller, Integer.MAX_VALUE).build();
-        // the poller is actually called immediately because it's scheduled without an initial delay
-        verify(mockPoller, Mockito.timeout(1000)).poll(Mockito.anyLong());
-    }
 
     @Test
     public void testBadModulSpec() throws Exception {

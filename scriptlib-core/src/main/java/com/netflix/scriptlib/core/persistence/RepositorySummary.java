@@ -18,7 +18,7 @@
 package com.netflix.scriptlib.core.persistence;
 
 /**
- * Data object which holds summary information for a given {@link ScriptArchiveRepository}.
+ * Data object which holds summary information for a given {@link ArchiveRepository}.
  * Used for display and reporting purposes.
  *
  * @author James Kojo
