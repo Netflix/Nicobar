@@ -142,7 +142,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
         ColumnListMutation<String> columnMutation = mutationBatch.withRow(getColumnFamily(), moduleId);
         columnMutation
             .putColumn(Columns.shard_num.name(), shardNum)
-            .putColumn(Columns.last_update.name(), getConfig().getUpdateTimeClock().getCurrentTime())
+            .putColumn(Columns.last_update.name(), jarScriptArchive.getCreateTime())
             .putColumn(Columns.archive_content_hash.name(), hash)
             .putColumn(Columns.archive_content.name(), jarBytes);
 

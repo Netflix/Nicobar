@@ -22,9 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
-import com.netflix.astyanax.Clock;
 import com.netflix.astyanax.Keyspace;
-import com.netflix.astyanax.clock.MillisecondsClock;
 import com.netflix.scriptlib.core.archive.GsonScriptModuleSpecSerializer;
 import com.netflix.scriptlib.core.archive.ScriptModuleSpecSerializer;
 
@@ -47,8 +45,6 @@ public class BasicCassandraRepositoryConfig implements CassandraArchiveRepositor
     /** Default module spec serializer */
     public static final ScriptModuleSpecSerializer DEFAULT_SPEC_SERIALIZER = new GsonScriptModuleSpecSerializer();
 
-    private static final Clock DEFAULT_UPDATE_TIME_CLOCK = new MillisecondsClock();
-
     public static class Builder {
         private final Keyspace keyspace;
         private String repositoryId;
@@ -57,7 +53,6 @@ public class BasicCassandraRepositoryConfig implements CassandraArchiveRepositor
         private int fetchBatchSize = DEFAULT_FETCH_BATCH_SIZE;
         private Path archiveOutputDirectory;
         private ScriptModuleSpecSerializer specSerializer = DEFAULT_SPEC_SERIALIZER;
-        private Clock updateTimeClock = DEFAULT_UPDATE_TIME_CLOCK;
 
         public Builder(Keyspace keyspace) {
             this.keyspace = keyspace;
@@ -92,11 +87,6 @@ public class BasicCassandraRepositoryConfig implements CassandraArchiveRepositor
             this.specSerializer = specSerializer;
             return this;
         }
-        /** Set a custom clock for generating the last update time. Mostly for testing. */
-        public Builder setUpdateTimeClock(Clock clock) {
-            this.updateTimeClock = clock;
-            return this;
-        }
         /** Construct the config with defaults if necessary */
         public CassandraArchiveRepositoryConfig build() throws IOException {
             String buildRepositoryId = repositoryId;
@@ -107,7 +97,7 @@ public class BasicCassandraRepositoryConfig implements CassandraArchiveRepositor
             if (buildArchiveDir == null) {
                 buildArchiveDir = Files.createTempDirectory("ScriptArchiveOutputDir");
             }
-            return new BasicCassandraRepositoryConfig(buildRepositoryId, keyspace, columnFamilyName, shardCount, fetchBatchSize, buildArchiveDir, specSerializer, updateTimeClock);
+            return new BasicCassandraRepositoryConfig(buildRepositoryId, keyspace, columnFamilyName, shardCount, fetchBatchSize, buildArchiveDir, specSerializer);
         }
     }
 
@@ -118,11 +108,9 @@ public class BasicCassandraRepositoryConfig implements CassandraArchiveRepositor
     private final int fetchBatchSize;
     private final Path archiveOutputDirectory;
     private final ScriptModuleSpecSerializer moduleSpecSerializer;
-    private final Clock updateTimeClock;
 
     protected BasicCassandraRepositoryConfig(String repositoryId, Keyspace keyspace, String columnFamilyName, int shardCount, int fetchBatchSize, Path archiveOutputDirectory,
-            ScriptModuleSpecSerializer moduleSpecSerializer, Clock updateTimeClock) {
-        this.updateTimeClock = updateTimeClock;
+            ScriptModuleSpecSerializer moduleSpecSerializer) {
         this.repositoryId =  Objects.requireNonNull(repositoryId, "repositoryId");
         this.keyspace = Objects.requireNonNull(keyspace, "keyspace");
         this.columnFamilyName = Objects.requireNonNull(columnFamilyName, "columnFamilyName");
@@ -165,10 +153,5 @@ public class BasicCassandraRepositoryConfig implements CassandraArchiveRepositor
     @Override
     public String getRepositoryId() {
         return repositoryId;
-    }
-
-    @Override
-    public Clock getUpdateTimeClock() {
-        return updateTimeClock;
     }
 }

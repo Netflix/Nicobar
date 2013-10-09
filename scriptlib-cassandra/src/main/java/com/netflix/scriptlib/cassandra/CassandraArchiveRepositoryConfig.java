@@ -19,7 +19,6 @@ package com.netflix.scriptlib.cassandra;
 
 import java.nio.file.Path;
 
-import com.netflix.astyanax.Clock;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.scriptlib.core.archive.ScriptModuleSpec;
 import com.netflix.scriptlib.core.archive.ScriptModuleSpecSerializer;
@@ -65,9 +64,4 @@ public interface CassandraArchiveRepositoryConfig {
      * @return Descriptive string which uniquely identifies the repository. Used for display and reporting.
      */
     public String getRepositoryId();
-
-    /**
-     * @return the clock used for generating the last update timestamp column.
-     */
-    Clock getUpdateTimeClock();
 }
