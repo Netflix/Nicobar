@@ -3,15 +3,15 @@ ext.githubProjectName = "ScriptLib" // Change if github project name is not the 
 
 buildscript {
     repositories {
-        mavenLocal()
         mavenCentral() // maven { url 'http://jcenter.bintray.com' }
     }
     apply from: file('gradle/buildscript.gradle'), to: buildscript 
 }
 
 allprojects {
+    apply plugin: 'eclipse'
+    apply plugin: 'idea'
     repositories { 
-        mavenLocal()
         mavenCentral() // maven { url: 'http://jcenter.bintray.com' }
     }
 }
