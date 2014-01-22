@@ -1,5 +1,5 @@
 // Establish version and status
-ext.githubProjectName = "ScriptLib" // Change if github project name is not the same as the root project's name
+ext.githubProjectName = "Nicobar" // Change if github project name is not the same as the root project's name
 
 buildscript {
     repositories {
@@ -47,7 +47,7 @@ subprojects {
     }
 }
 
-project(':scriptlib-core') {
+project(':nicobar-core') {
     dependencies {
         compile 'com.google.code.gson:gson:2.2.4'
         compile 'com.netflix.hystrix:hystrix-core:1.3.3'
@@ -55,9 +55,9 @@ project(':scriptlib-core') {
     }
 }
 
-project(':scriptlib-groovy2') {
+project(':nicobar-groovy2') {
     dependencies {
-        compile project(':scriptlib-core')
+        compile project(':nicobar-core')
         compile 'org.codehaus.groovy:groovy-all:2.1.1'
     }
 }

@@ -1,7 +1,0 @@
-project(':scriptlib-example') {
-    dependencies {
-        compile project(':scriptlib-core')
-        compile project(':scriptlib-groovy2')
-        compile 'org.slf4j:slf4j-simple:1.7.0'
-    }
-}
