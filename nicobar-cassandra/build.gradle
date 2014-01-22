@@ -1,0 +1,9 @@
+project(':nicobar-cassandra') {
+    dependencies {
+        compile project(':nicobar-core')
+        compile 'com.google.code.gson:gson:2.2.4'
+        compile 'com.netflix.astyanax:astyanax-core:1.56.42'
+        compile 'com.netflix.astyanax:astyanax-thrift:1.56.42'
+        compile 'com.netflix.astyanax:astyanax-cassandra:1.56.42'
+    }
+}
