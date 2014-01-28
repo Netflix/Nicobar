@@ -52,7 +52,7 @@ import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
  */
 public class JBossModuleUtils {
     /** Dependency specification which allows for importing the core library classes */
-    public static final DependencySpec SCRIPTLIB_CORE_DEPENDENCY_SPEC;
+    public static final DependencySpec NICOBAR_CORE_DEPENDENCY_SPEC;
     /** Dependency specification which allows for importing the core JRE classes */
     public static final DependencySpec JRE_DEPENDENCY_SPEC;
     static {
@@ -64,7 +64,7 @@ public class JBossModuleUtils {
         pathFilter.add("com/netflix/nicobar/core/module");
         pathFilter.add("com/netflix/nicobar/core/module/jboss");
         pathFilter.add("com/netflix/nicobar/core/plugin");
-        SCRIPTLIB_CORE_DEPENDENCY_SPEC = DependencySpec.createClassLoaderDependencySpec(JBossModuleUtils.class.getClassLoader(), pathFilter);
+        NICOBAR_CORE_DEPENDENCY_SPEC = DependencySpec.createClassLoaderDependencySpec(JBossModuleUtils.class.getClassLoader(), pathFilter);
         ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
         JRE_DEPENDENCY_SPEC = DependencySpec.createClassLoaderDependencySpec(systemClassLoader, __JDKPaths.JDK);
     }
@@ -120,7 +120,7 @@ public class JBossModuleUtils {
             moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(getPluginModuleId(compilerPluginId), true, false));
         }
         moduleSpecBuilder.addDependency(JRE_DEPENDENCY_SPEC);
-        moduleSpecBuilder.addDependency(SCRIPTLIB_CORE_DEPENDENCY_SPEC);
+        moduleSpecBuilder.addDependency(NICOBAR_CORE_DEPENDENCY_SPEC);
         moduleSpecBuilder.addDependency(DependencySpec.createLocalDependencySpec());
 
         // add properties to the module spec
@@ -162,7 +162,7 @@ public class JBossModuleUtils {
             }
         }
         moduleSpecBuilder.addDependency(JRE_DEPENDENCY_SPEC);
-        moduleSpecBuilder.addDependency(SCRIPTLIB_CORE_DEPENDENCY_SPEC);
+        moduleSpecBuilder.addDependency(NICOBAR_CORE_DEPENDENCY_SPEC);
         moduleSpecBuilder.addDependency(DependencySpec.createLocalDependencySpec());
 
         Map<String, String> pluginMetadata = pluginSpec.getPluginMetadata();
