@@ -132,7 +132,21 @@ public class JBossModuleUtils {
     }
 
     /**
+     * Populates a {@link ModuleSpec} with application runtime packages specified as a set of package paths.
+     * This is the main way that a {@link ScriptModule} gains access to packages defined in the
+     * application classloader (assumed to be the same as the {@link JBossModuleUtils} classloader).
+     *
+     * @param moduleSpecBuilder builder to populate
+     * @param runtimeDependencies set of / separated package names (n
+     */
+    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ClassLoader classloader, Set<String> appPackages) throws ModuleLoadException {
+        Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
+        Objects.requireNonNull(appPackages, "appPackages");
 
+        moduleSpecBuilder.addDependency(DependencySpec.createClassLoaderDependencySpec(classloader, appPackages));
+    }
+
+    /**
      * Populates a {@link ModuleSpec} with runtime resources, dependencies and properties from the
      * {@link ScriptCompilerPluginSpec}
      * Helpful when creating a {@link ModuleSpec} from a ScriptLibPluginSpec
@@ -168,7 +182,6 @@ public class JBossModuleUtils {
         Map<String, String> pluginMetadata = pluginSpec.getPluginMetadata();
         addPropertiesToSpec(moduleSpecBuilder, pluginMetadata);
     }
-
 
     /**
      * Add properties to the {@link ModuleSpec}
