@@ -73,6 +73,8 @@ public class ScriptModuleLoader {
     public static class Builder {
         private final Set<ScriptCompilerPluginSpec> pluginSpecs=  new LinkedHashSet<ScriptCompilerPluginSpec>();
         private final Set<ScriptModuleListener> listeners = new LinkedHashSet<ScriptModuleListener>();
+        private final Set<String> paths = new LinkedHashSet<String>();
+        private ClassLoader appClassLoader = ScriptModuleLoader.class.getClassLoader();
 
         public Builder() {
         }
@@ -81,6 +83,29 @@ public class ScriptModuleLoader {
         public Builder addPluginSpec(ScriptCompilerPluginSpec pluginSpec) {
             if (pluginSpec != null) {
                 pluginSpecs.add(pluginSpec);
+            }
+            return this;
+        }
+
+        /**
+         * Use a specific classloader as the application classloader.
+         * @param loader the application classloader
+         */
+        public Builder withAppClassLoader(ClassLoader loader) {
+            Objects.requireNonNull(loader);
+            this.appClassLoader = loader;
+            return this;
+        }
+        /**
+         * Specify a set of packages to make available from the application classloader  
+         * as runtime dependencies for all scripts loaded by this script module.
+         * @param incomingPaths a set of / separated package paths. No wildcards. 
+         *        e.g. com/netflix/api/service/video. All classes under 
+         *        com.netflix.api.service.video will be available to loaded modules.
+         */
+        public Builder addAppPackages(Set<String> incomingPaths) {
+            if (incomingPaths != null) {
+                paths.addAll(incomingPaths);
             }
             return this;
         }
@@ -94,7 +119,7 @@ public class ScriptModuleLoader {
         }
 
         public ScriptModuleLoader build() throws ModuleLoadException {
-           return new ScriptModuleLoader(pluginSpecs, listeners);
+           return new ScriptModuleLoader(pluginSpecs, appClassLoader, paths, listeners);
         }
     }
 
@@ -102,6 +127,8 @@ public class ScriptModuleLoader {
     protected final Map<String, ScriptModule> loadedScriptModules = new ConcurrentHashMap<String, ScriptModule>();
 
     protected final Set<ScriptCompilerPluginSpec> pluginSpecs;
+    protected final ClassLoader appClassLoader;
+    protected final Set<String> appPackagePaths;
     protected final List<ScriptArchiveCompiler> compilers = new ArrayList<ScriptArchiveCompiler>();
 
     protected final Set<ScriptModuleListener> listeners =
@@ -110,8 +137,12 @@ public class ScriptModuleLoader {
     protected final JBossModuleLoader jbossModuleLoader;
 
     protected ScriptModuleLoader(final Set<ScriptCompilerPluginSpec> pluginSpecs,
+            final ClassLoader appClassLoader,
+            final Set<String> appPackagePaths,
             final Set<ScriptModuleListener> listeners) throws ModuleLoadException {
         this.pluginSpecs = Objects.requireNonNull(pluginSpecs);
+        this.appClassLoader = Objects.requireNonNull(appClassLoader);
+        this.appPackagePaths = Objects.requireNonNull(appPackagePaths);
         this.jbossModuleLoader = new JBossModuleLoader();
         for (ScriptCompilerPluginSpec pluginSpec : pluginSpecs) {
             addCompilerPlugin(pluginSpec);
@@ -184,7 +215,10 @@ public class ScriptModuleLoader {
                     // create the jboss module pre-cursor artifact
                     candidateRevisionId = updatedRevisionIdMap.get(scriptModuleId);
                     ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(candidateRevisionId);
+                    // Populate the modulespec with the scriptArchive dependencies
                     JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, scriptArchive, updatedRevisionIdMap);
+                    // Add to the moduleSpec application classloader dependencies
+                    JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, appClassLoader, appPackagePaths);
                     moduleSpec = moduleSpecBuilder.create();
                 } catch (ModuleLoadException e) {
                     logger.error("Exception loading archive " +
@@ -260,7 +294,7 @@ public class ScriptModuleLoader {
             }
         }
     }
-
+    
     /**
      * Add a language plugin to this module
      * @param pluginSpec
