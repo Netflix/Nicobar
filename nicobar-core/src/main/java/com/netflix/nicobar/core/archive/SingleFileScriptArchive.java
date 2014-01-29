@@ -50,7 +50,7 @@ public class SingleFileScriptArchive implements ScriptArchive {
 
         /**
          * Start a builder with required parameters.
-         * @param rootDirPath absolute path to the root directory to recursively add
+         * @param filePath absolute path to the script file
          */
         public Builder(Path filePath) {
             this.filePath = filePath;

@@ -132,18 +132,21 @@ public class JBossModuleUtils {
     }
 
     /**
-     * Populates a {@link ModuleSpec} with application runtime packages specified as a set of package paths.
-     * This is the main way that a {@link ScriptModule} gains access to packages defined in the
-     * application classloader (assumed to be the same as the {@link JBossModuleUtils} classloader).
+     * Populates a {@link ModuleSpec} with a dependency on application runtime packages
+     * specified as a set of package paths, loaded within the given classloader. This is the 
+     * primary way that a module gains access to packages defined in the application classloader
      *
      * @param moduleSpecBuilder builder to populate
-     * @param runtimeDependencies set of / separated package names (n
+     * @param classLoader a classloader
+     * @param appPackages set of / separated package names (n
      */
-    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ClassLoader classloader, Set<String> appPackages) throws ModuleLoadException {
+    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ClassLoader classLoader, Set<String> appPackages) 
+            throws ModuleLoadException {
         Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
+        Objects.requireNonNull(classLoader, "classLoader");
         Objects.requireNonNull(appPackages, "appPackages");
 
-        moduleSpecBuilder.addDependency(DependencySpec.createClassLoaderDependencySpec(classloader, appPackages));
+        moduleSpecBuilder.addDependency(DependencySpec.createClassLoaderDependencySpec(classLoader, appPackages));
     }
 
     /**
