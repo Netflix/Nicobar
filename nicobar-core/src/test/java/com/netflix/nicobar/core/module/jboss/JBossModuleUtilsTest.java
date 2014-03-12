@@ -107,7 +107,7 @@ public class JBossModuleUtilsTest {
         ModuleIdentifier revisionId = JBossModuleUtils.createRevisionId(TEST_TEXT_JAR.getModuleId(), 1);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(revisionId);
         JBossModuleLoader moduleLoader = new JBossModuleLoader();
-        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, jarScriptArchive, moduleLoader.getLatestRevisionIds());
+        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, jarScriptArchive, null, moduleLoader.getLatestRevisionIds());
 
         moduleLoader.addModuleSpec(moduleSpecBuilder.create());
         Module module = moduleLoader.loadModule(revisionId);
@@ -135,7 +135,7 @@ public class JBossModuleUtilsTest {
         ModuleIdentifier revisionId = JBossModuleUtils.createRevisionId(TEST_TEXT_PATH.getModuleId(), 1);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(revisionId);
         JBossModuleLoader moduleLoader = new JBossModuleLoader();
-        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, jarScriptArchive, moduleLoader.getLatestRevisionIds());
+        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, jarScriptArchive, null, moduleLoader.getLatestRevisionIds());
         moduleLoader.addModuleSpec(moduleSpecBuilder.create());
 
         Module module = moduleLoader.loadModule(revisionId);

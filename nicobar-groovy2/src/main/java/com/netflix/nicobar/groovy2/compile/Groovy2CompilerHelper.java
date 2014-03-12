@@ -90,6 +90,7 @@ public class Groovy2CompilerHelper {
         final CompilerConfiguration conf = compileConfig != null ? compileConfig: CompilerConfiguration.DEFAULT;
         conf.setTolerance(0);
         conf.setVerbose(true);
+        conf.setTargetDirectory("/tmp/groovy");
         final ClassLoader buildParentClassloader = parentClassLoader != null ?
             parentClassLoader : Thread.currentThread().getContextClassLoader();
         GroovyClassLoader groovyClassLoader = AccessController.doPrivileged(new PrivilegedAction<GroovyClassLoader>() {
@@ -119,7 +120,7 @@ public class Groovy2CompilerHelper {
             unit.addSource(sourceFile.toFile());
         }
         try {
-            unit.compile(Phases.CLASS_GENERATION);
+            unit.compile(Phases.OUTPUT);
         } catch (CompilationFailedException e) {
            throw new ScriptCompilationException("Exception during script compilation", e);
         }
