@@ -21,16 +21,13 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
 
-import java.io.File;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Random;
@@ -51,8 +48,7 @@ import com.netflix.nicobar.core.module.ScriptModule;
 import com.netflix.nicobar.core.module.ScriptModuleLoader;
 import com.netflix.nicobar.core.module.ScriptModuleUtils;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
-import com.netflix.nicobar.groovy2.compile.Groovy2Compiler;
-import com.netflix.nicobar.groovy2.plugin.Groovy2CompilerPlugin;
+import com.netflix.nicobar.core.utils.ClassPathUtils;
 import com.netflix.nicobar.groovy2.testutil.GroovyTestResourceUtil;
 import com.netflix.nicobar.groovy2.testutil.GroovyTestResourceUtil.TestScript;
 
@@ -262,6 +258,7 @@ public class Groovy2PluginTest {
 
     @Test
     public void testPrecompiledScript() throws Exception {
+        // create and start the loader with the plugin
         ScriptModuleLoader moduleLoader = createGroovyModuleLoader();
         // create a new script archive consisting of HellowWorld.groovy and add it the loader.
         // Declares a dependency on the Groovy2RuntimeModule.
@@ -290,11 +287,15 @@ public class Groovy2PluginTest {
             .withPluginClassName(GROOVY2_COMPILER_PLUGIN)
             .build();
 
-        // create and start the loader with the plugin
+        
+        // Create a set of app packages to allow access by the compilers, as well as the scripts.
+        Set<String> excludes = new HashSet<String>();
+        Collections.addAll(excludes, "com/netflix", "org/codehaus/groovy");
+        Set<String> pathSet = ClassPathUtils.scanClassPathWithExcludes(System.getProperty("java.class.path"), Collections.<String> emptySet(), excludes);
+        
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
             .addPluginSpec(pluginSpec)
-            // TODO: Bad! Remove this and use a classpath scanner to include app packages
-            .addAppPackages(Collections.singleton("org/apache/commons/io"))
+            .addAppPackages(pathSet)
             .build();
         return moduleLoader;
     }
