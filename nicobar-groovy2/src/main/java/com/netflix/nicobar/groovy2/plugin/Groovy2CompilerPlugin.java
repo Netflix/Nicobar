@@ -23,8 +23,8 @@ import java.util.Set;
 
 import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPlugin;
-import com.netflix.nicobar.groovy2.compile.Groovy2BytecodeCompiler;
-import com.netflix.nicobar.groovy2.compile.Groovy2Compiler;
+import com.netflix.nicobar.groovy2.internal.compile.Groovy2BytecodeCompiler;
+import com.netflix.nicobar.groovy2.internal.compile.Groovy2Compiler;
 
 /**
  * Factory class for the Groovy 2 language plug-in

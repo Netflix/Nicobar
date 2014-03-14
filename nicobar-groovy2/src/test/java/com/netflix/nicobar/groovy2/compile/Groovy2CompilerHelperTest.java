@@ -32,7 +32,7 @@ import org.codehaus.groovy.tools.GroovyClass;
 import org.testng.annotations.Test;
 
 import com.netflix.nicobar.core.archive.PathScriptArchive;
-import com.netflix.nicobar.groovy2.compile.Groovy2CompilerHelper;
+import com.netflix.nicobar.groovy2.internal.compile.Groovy2CompilerHelper;
 import com.netflix.nicobar.groovy2.testutil.GroovyTestResourceUtil;
 import com.netflix.nicobar.groovy2.testutil.GroovyTestResourceUtil.TestScript;
 

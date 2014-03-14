@@ -5,7 +5,7 @@ import java.util.Set;
 
 import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPlugin;
-import com.netflix.nicobar.java7.compile.Java7BytecodeCompiler;
+import com.netflix.nicobar.java7.internal.compile.Java7BytecodeCompiler;
 
 
 /**

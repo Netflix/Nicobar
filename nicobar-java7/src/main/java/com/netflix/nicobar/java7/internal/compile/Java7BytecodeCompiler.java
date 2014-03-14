@@ -1,4 +1,4 @@
-package com.netflix.nicobar.java7.compile;
+package com.netflix.nicobar.java7.internal.compile;
 
 import java.io.IOException;
 import java.net.URL;
