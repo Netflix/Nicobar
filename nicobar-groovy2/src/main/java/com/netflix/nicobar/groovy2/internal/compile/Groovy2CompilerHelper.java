@@ -15,7 +15,7 @@
  *     limitations under the License.
  *
  */
-package com.netflix.nicobar.groovy2.compile;
+package com.netflix.nicobar.groovy2.internal.compile;
 
 import groovy.lang.GroovyClassLoader;
 

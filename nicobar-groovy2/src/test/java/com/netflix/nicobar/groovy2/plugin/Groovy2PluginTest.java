@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Random;
@@ -37,6 +38,7 @@ import org.apache.commons.io.FileUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.netflix.nicobar.core.archive.JarScriptArchive;
 import com.netflix.nicobar.core.archive.PathScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
@@ -46,8 +48,7 @@ import com.netflix.nicobar.core.module.ScriptModule;
 import com.netflix.nicobar.core.module.ScriptModuleLoader;
 import com.netflix.nicobar.core.module.ScriptModuleUtils;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
-import com.netflix.nicobar.groovy2.compile.Groovy2Compiler;
-import com.netflix.nicobar.groovy2.plugin.Groovy2CompilerPlugin;
+import com.netflix.nicobar.core.utils.ClassPathUtils;
 import com.netflix.nicobar.groovy2.testutil.GroovyTestResourceUtil;
 import com.netflix.nicobar.groovy2.testutil.GroovyTestResourceUtil.TestScript;
 
@@ -255,13 +256,29 @@ public class Groovy2PluginTest {
         assertGetMessage(clazz, "I'm A.  Called B and got: I'm B. Called C and got: I'm C. Called D and got: I'm D.");
     }
 
+    @Test
+    public void testPrecompiledScript() throws Exception {
+        // create and start the loader with the plugin
+        ScriptModuleLoader moduleLoader = createGroovyModuleLoader();
+        // create a new script archive consisting of HellowWorld.groovy and add it the loader.
+        // Declares a dependency on the Groovy2RuntimeModule.
+        Path scriptRootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.HELLO_WORLD_BYTECODE_JAR);
+        ScriptArchive scriptArchive = new JarScriptArchive.Builder(scriptRootPath.resolve(TestScript.HELLO_WORLD_BYTECODE_JAR.getScriptPath())).build();
+        moduleLoader.updateScriptArchives(Collections.singleton(scriptArchive));
+
+        // locate the class file in the module and execute it
+        ScriptModule scriptModule = moduleLoader.getScriptModule(TestScript.HELLO_WORLD_BYTECODE_JAR.getModuleId());
+        Class<?> clazz = findClassByName(scriptModule, TestScript.HELLO_WORLD_BYTECODE_JAR);
+        assertGetMessage(clazz, "Hello, World!");
+    }
+
     /**
      * Create a module loader this is wired up with the groovy compiler plugin
      */
     private ScriptModuleLoader createGroovyModuleLoader() throws Exception {
         // create the groovy plugin spec. this plugin specified a new module and classloader called "Groovy2Runtime"
         // which contains the groovy-all-2.1.6.jar and the nicobar-groovy2 project.
-        ScriptCompilerPluginSpec pluginSpec = new ScriptCompilerPluginSpec.Builder(Groovy2Compiler.GROOVY2_COMPILER_ID)
+        ScriptCompilerPluginSpec pluginSpec = new ScriptCompilerPluginSpec.Builder("Groovy2Runtime")
             .addRuntimeResource(GroovyTestResourceUtil.getGroovyRuntime())
             .addRuntimeResource(GroovyTestResourceUtil.getGroovyPluginLocation())
             // hack to make the gradle build work. still doesn't seem to properly instrument the code
@@ -270,9 +287,15 @@ public class Groovy2PluginTest {
             .withPluginClassName(GROOVY2_COMPILER_PLUGIN)
             .build();
 
-        // create and start the loader with the plugin
+        
+        // Create a set of app packages to allow access by the compilers, as well as the scripts.
+        Set<String> excludes = new HashSet<String>();
+        Collections.addAll(excludes, "com/netflix", "org/codehaus/groovy");
+        Set<String> pathSet = ClassPathUtils.scanClassPathWithExcludes(System.getProperty("java.class.path"), Collections.<String> emptySet(), excludes);
+        
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
             .addPluginSpec(pluginSpec)
+            .addAppPackages(pathSet)
             .build();
         return moduleLoader;
     }
@@ -282,7 +305,7 @@ public class Groovy2PluginTest {
      */
     private ScriptModuleSpec.Builder createGroovyModuleSpec(String moduleId) {
         return new ScriptModuleSpec.Builder(moduleId)
-            .addCompilerDependency("groovy2");
+            .addCompilerDependency(Groovy2CompilerPlugin.GROOVY2_SOURCE_COMPILER_ID);
     }
 
     private Class<?> findClassByName(ScriptModule scriptModule, TestScript testScript) {

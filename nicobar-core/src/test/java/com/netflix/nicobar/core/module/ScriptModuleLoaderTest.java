@@ -66,6 +66,7 @@ import com.netflix.nicobar.core.testutil.CoreTestResourceUtil;
 public class ScriptModuleLoaderTest {
     // shared mock compiler. THis is needed because of the indirect construction style of the compiler plugin.
     private final static ScriptArchiveCompiler MOCK_COMPILER = mock(ScriptArchiveCompiler.class);
+    private static final String mockCompilerName = "mockCompiler";
 
     @BeforeMethod
     public void resetMocks() {
@@ -76,8 +77,9 @@ public class ScriptModuleLoaderTest {
     public void testLoadArchive() throws Exception {
         Path jarPath = CoreTestResourceUtil.getResourceAsPath(TEST_TEXT_JAR);
 
-        ScriptArchive scriptArchive = new JarScriptArchive.Builder(jarPath).build();
-        when(MOCK_COMPILER.shouldCompile(Mockito.eq(scriptArchive))).thenReturn(true);
+        ScriptModuleSpec moduleSpec = new ScriptModuleSpec.Builder(TEST_TEXT_JAR.getModuleId()).addCompilerDependency(mockCompilerName).build();
+        ScriptArchive scriptArchive = new JarScriptArchive.Builder(jarPath).setModuleSpec(moduleSpec).build();
+        when(MOCK_COMPILER.getId()).thenReturn(mockCompilerName);
         when(MOCK_COMPILER.compile(Mockito.eq(scriptArchive), Mockito.any(JBossModuleClassLoader.class))).thenReturn(Collections.<Class<?>>emptySet());
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
             .addPluginSpec(new ScriptCompilerPluginSpec.Builder("mockPlugin")
@@ -96,14 +98,14 @@ public class ScriptModuleLoaderTest {
             URL resourceUrl = moduleClassLoader.findResource(entryName, true);
             assertNotNull(resourceUrl, "couldn't find entry in the classloader: " + entryName);
         }
-        verify(MOCK_COMPILER).shouldCompile(Mockito.eq(scriptArchive));
+        
+        verify(MOCK_COMPILER, Mockito.atLeastOnce()).getId();
         verify(MOCK_COMPILER).compile(Mockito.eq(scriptArchive), Mockito.any(JBossModuleClassLoader.class));
-        verifyNoMoreInteractions(MOCK_COMPILER);
     }
 
 
     @Test
-    public void testBadModulSpec() throws Exception {
+    public void testBadModuleSpec() throws Exception {
         final URL badJarUrl = new URL("file:///somepath/myMadJarName.jar");
         ScriptArchive badScriptArchive = new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").build(), 1) {
             @Override
@@ -210,13 +212,17 @@ public class ScriptModuleLoaderTest {
         // original graph: A->B->C->D
         long originalCreateTime = 1000;
         Set<ScriptArchive> updateArchives = new HashSet<ScriptArchive>();
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addModuleDependency("B").build(), originalCreateTime));
-        ScriptArchive archiveB = new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addModuleDependency("C").build(), originalCreateTime);
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addModuleDependency("B").addCompilerDependency(mockCompilerName).build(), originalCreateTime));
+        ScriptArchive archiveB = new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addModuleDependency("C").addCompilerDependency(mockCompilerName).build(), originalCreateTime);
         updateArchives.add(archiveB);
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addModuleDependency("D").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addModuleDependency("D").addCompilerDependency(mockCompilerName).build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").addCompilerDependency(mockCompilerName).build(), originalCreateTime));
 
         ScriptModuleListener mockListener = createMockListener();
+        reset(mockListener);
+        reset(MOCK_COMPILER);
+        when(MOCK_COMPILER.getId()).thenReturn(mockCompilerName);
+        when(MOCK_COMPILER.compile(Mockito.any(ScriptArchive.class), Mockito.any(JBossModuleClassLoader.class))).thenReturn(Collections.<Class<?>>emptySet());
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
             .addListener(mockListener)
             .addPluginSpec(new ScriptCompilerPluginSpec.Builder("mockPlugin")
@@ -225,14 +231,12 @@ public class ScriptModuleLoaderTest {
             .build();
 
         moduleLoader.updateScriptArchives(updateArchives);
-        reset(mockListener);
-        reset(MOCK_COMPILER);
-        when(MOCK_COMPILER.shouldCompile(Mockito.eq(archiveB))).thenReturn(true);
-        when(MOCK_COMPILER.compile(Mockito.eq(archiveB), Mockito.any(JBossModuleClassLoader.class))).thenThrow(new ScriptCompilationException("TestCompileException", null));
+
         // update C. would normally cause C,B,A to be compiled in order, but B will fail, so A will be skipped
         updateArchives.clear();
+        when(MOCK_COMPILER.compile(Mockito.eq(archiveB), Mockito.any(JBossModuleClassLoader.class))).thenThrow(new ScriptCompilationException("TestCompileException", null));
         long updatedCreateTime = 2000;
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addModuleDependency("D").build(), updatedCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addModuleDependency("D").addCompilerDependency(mockCompilerName).build(), updatedCreateTime));
 
 
         moduleLoader.updateScriptArchives(updateArchives);
@@ -255,10 +259,13 @@ public class ScriptModuleLoaderTest {
         // original graph: A->B->C->D
         long originalCreateTime = 1000;
         Set<ScriptArchive> updateArchives = new HashSet<ScriptArchive>();
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addModuleDependency("B").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addModuleDependency("C").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addModuleDependency("D").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addModuleDependency("B").addCompilerDependency(mockCompilerName).build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addModuleDependency("C").addCompilerDependency(mockCompilerName).build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addModuleDependency("D").addCompilerDependency(mockCompilerName).build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").addCompilerDependency(mockCompilerName).build(), originalCreateTime));
+
+        when(MOCK_COMPILER.getId()).thenReturn(mockCompilerName);
+        when(MOCK_COMPILER.compile(Mockito.any(ScriptArchive.class), Mockito.any(JBossModuleClassLoader.class))).thenReturn(Collections.<Class<?>>emptySet());
 
         ScriptModuleListener mockListener = createMockListener();
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
@@ -270,14 +277,15 @@ public class ScriptModuleLoaderTest {
 
         moduleLoader.updateScriptArchives(updateArchives);
         reset(mockListener);
+        reset(MOCK_COMPILER);
+        when(MOCK_COMPILER.getId()).thenReturn(mockCompilerName);
 
         // update C, but set compilation to fail.
         updateArchives.clear();
         long updatedCreateTime = 2000;
-        TestDependecyScriptArchive updatedArchiveC = new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addModuleDependency("D").build(), updatedCreateTime);
+        TestDependecyScriptArchive updatedArchiveC = new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addModuleDependency("D").addCompilerDependency(mockCompilerName).build(), updatedCreateTime);
         updateArchives.add(updatedArchiveC);
-        reset(MOCK_COMPILER);
-        when(MOCK_COMPILER.shouldCompile(Mockito.eq(updatedArchiveC))).thenReturn(true);
+        
         ScriptCompilationException compilationException = new ScriptCompilationException("TestCompileException", null);
         when(MOCK_COMPILER.compile(Mockito.eq(updatedArchiveC), Mockito.any(JBossModuleClassLoader.class))).thenThrow(compilationException);
 

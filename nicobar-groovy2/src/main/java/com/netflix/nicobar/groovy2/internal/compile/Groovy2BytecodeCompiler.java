@@ -15,44 +15,49 @@
  *     limitations under the License.
  *
  */
-package com.netflix.nicobar.groovy2.compile;
+package com.netflix.nicobar.groovy2.internal.compile;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.codehaus.groovy.tools.GroovyClass;
+import org.apache.commons.io.IOUtils;
 
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
 import com.netflix.nicobar.core.compile.ScriptCompilationException;
 import com.netflix.nicobar.core.module.jboss.JBossModuleClassLoader;
+import com.netflix.nicobar.groovy2.plugin.Groovy2CompilerPlugin;
 
 /**
- * Groovy specific implementation of the {@link ScriptArchiveCompiler}
+ * A Groovy2 {@link ScriptArchiveCompiler} that loads compiled groovy classes, 
+ * rather than compile from source.  
  *
- * @author James Kojo
  */
-public class Groovy2Compiler implements ScriptArchiveCompiler {
-    public final static String GROOVY2_COMPILER_ID = "groovy2";
+public class Groovy2BytecodeCompiler implements ScriptArchiveCompiler {
+    
     @Override
-    public boolean shouldCompile(ScriptArchive archive) {
-       return archive.getModuleSpec().getCompilerDependencies().contains(GROOVY2_COMPILER_ID);
+    public String getId() {
+       return Groovy2CompilerPlugin.GROOVY2_BYTECODE_COMPILER_ID;
     }
 
     @Override
     public Set<Class<?>> compile(ScriptArchive archive, JBossModuleClassLoader moduleClassLoader)
         throws ScriptCompilationException, IOException {
-         Set<GroovyClass> groovyClasses = new Groovy2CompilerHelper()
-            .addScriptArchive(archive)
-            .withParentClassloader(moduleClassLoader)
-            .compile();
-         HashSet<Class<?>> addedClasses = new HashSet<Class<?>>(archive.getArchiveEntryNames().size());
-         for (GroovyClass groovyClass : groovyClasses) {
-            Class<?> addedClass = moduleClassLoader.addClassBytes(groovyClass.getName(), groovyClass.getBytes());
-            addedClasses.add(addedClass);
+        HashSet<Class<?>> addedClasses = new HashSet<Class<?>>(archive.getArchiveEntryNames().size());
+        for (String entryName : archive.getArchiveEntryNames()) {
+            if (!entryName.endsWith(".class"))
+                continue;
+            
+            URL archiveEntry = archive.getEntry(entryName);
+            byte [] classBytes = IOUtils.toByteArray(archiveEntry.openStream());
+            String classEntry = entryName.replace(".class", "").replace("/", ".");
+            Class<?> addedClass = moduleClassLoader.addClassBytes(classEntry, classBytes);
+            addedClasses.add(addedClass); 
         }
+                
         return Collections.unmodifiableSet(addedClasses);
     }
 }

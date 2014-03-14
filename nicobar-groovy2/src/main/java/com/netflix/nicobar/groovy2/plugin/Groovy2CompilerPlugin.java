@@ -18,11 +18,13 @@
 package com.netflix.nicobar.groovy2.plugin;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPlugin;
-import com.netflix.nicobar.groovy2.compile.Groovy2Compiler;
+import com.netflix.nicobar.groovy2.internal.compile.Groovy2BytecodeCompiler;
+import com.netflix.nicobar.groovy2.internal.compile.Groovy2Compiler;
 
 /**
  * Factory class for the Groovy 2 language plug-in
@@ -31,11 +33,23 @@ import com.netflix.nicobar.groovy2.compile.Groovy2Compiler;
  */
 public class Groovy2CompilerPlugin implements ScriptCompilerPlugin {
 
+    /**
+     * The compiler for groovy2 sources
+     */
+    public static final String GROOVY2_SOURCE_COMPILER_ID = "groovy2";
+
+    /**
+     * The compiler (loader) for groovy2 compiled bytecode.
+     */
+    public static final String GROOVY2_BYTECODE_COMPILER_ID = "groovy2-bytecode";
+
     public Groovy2CompilerPlugin() {
     }
 
     @Override
     public Set<? extends ScriptArchiveCompiler> getCompilers() {
-        return Collections.singleton(new Groovy2Compiler());
+        HashSet<ScriptArchiveCompiler> compilers = new HashSet<ScriptArchiveCompiler>();
+        Collections.addAll(compilers, new Groovy2Compiler(), new Groovy2BytecodeCompiler());
+        return Collections.unmodifiableSet(compilers);
     }
 }

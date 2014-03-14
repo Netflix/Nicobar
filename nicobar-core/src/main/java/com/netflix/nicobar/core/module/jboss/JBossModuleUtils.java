@@ -43,7 +43,7 @@ import org.jboss.modules.filter.PathFilters;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
-
+import com.netflix.nicobar.core.utils.ClassPathUtils;
 
 /**
  * Utility methods for working with {@link Module}s
@@ -66,7 +66,7 @@ public class JBossModuleUtils {
         pathFilter.add("com/netflix/nicobar/core/plugin");
         NICOBAR_CORE_DEPENDENCY_SPEC = DependencySpec.createClassLoaderDependencySpec(JBossModuleUtils.class.getClassLoader(), pathFilter);
         ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
-        JRE_DEPENDENCY_SPEC = DependencySpec.createClassLoaderDependencySpec(systemClassLoader, __JDKPaths.JDK);
+        JRE_DEPENDENCY_SPEC = DependencySpec.createClassLoaderDependencySpec(systemClassLoader, ClassPathUtils.getJdkPaths());
     }
 
     /**
@@ -76,7 +76,7 @@ public class JBossModuleUtils {
      * @param scriptArchive {@link ScriptArchive} to copy from
      * @param latestRevisionIds used to lookup the latest dependencies. see {@link JBossModuleLoader#getLatestRevisionIds()}
      */
-    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ScriptArchive scriptArchive, Map<String, ModuleIdentifier> latestRevisionIds) throws ModuleLoadException {
+    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ScriptArchive scriptArchive, ModuleIdentifier compilerPluginId, Map<String, ModuleIdentifier> latestRevisionIds) throws ModuleLoadException {
         Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
         Objects.requireNonNull(moduleSpecBuilder, "scriptArchive");
         Objects.requireNonNull(latestRevisionIds, "latestRevisionIds");
@@ -115,10 +115,10 @@ public class JBossModuleUtils {
             }
             moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(latestIdentifier, true, false));
         }
-        Set<String> compilerDependencies = scriptModuleSpec.getCompilerDependencies();
-        for (String compilerPluginId : compilerDependencies) {
-            moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(getPluginModuleId(compilerPluginId), true, false));
-        }
+
+        if (compilerPluginId != null)
+            moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(compilerPluginId, true, false));
+
         moduleSpecBuilder.addDependency(JRE_DEPENDENCY_SPEC);
         moduleSpecBuilder.addDependency(NICOBAR_CORE_DEPENDENCY_SPEC);
         moduleSpecBuilder.addDependency(DependencySpec.createLocalDependencySpec());

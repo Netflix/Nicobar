@@ -45,6 +45,7 @@ public class GroovyTestResourceUtil {
      */
     public static enum TestScript {
         HELLO_WORLD("helloworld", "HelloWorld.groovy", "HelloWorld"),
+        HELLO_WORLD_BYTECODE_JAR("helloworldjar", "helloworld.jar", "com.netflix.example.HelloWorld"),
         HELLO_PACKAGE("hellopackage", "package1/HelloPackage.groovy", "package1.HelloPackage"),
         LIBRARY_A("libA", "LibraryA.groovy", "LibraryA"),
         LIBRARY_AV2("libAV2", "LibraryA.groovy", "LibraryA"),

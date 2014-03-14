@@ -18,11 +18,9 @@
 package com.netflix.nicobar.core.module;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -129,8 +127,8 @@ public class ScriptModuleLoader {
     protected final Set<ScriptCompilerPluginSpec> pluginSpecs;
     protected final ClassLoader appClassLoader;
     protected final Set<String> appPackagePaths;
-    protected final List<ScriptArchiveCompiler> compilers = new ArrayList<ScriptArchiveCompiler>();
-
+    protected final Map<String, ModuleIdentifier> compilerRuntime = new HashMap<String, ModuleIdentifier>();
+    protected final Map<String, ScriptArchiveCompiler> compilers = new HashMap<String, ScriptArchiveCompiler>();
     protected final Set<ScriptModuleListener> listeners =
         Collections.newSetFromMap(new ConcurrentHashMap<ScriptModuleListener, Boolean>());
 
@@ -215,8 +213,17 @@ public class ScriptModuleLoader {
                     // create the jboss module pre-cursor artifact
                     candidateRevisionId = updatedRevisionIdMap.get(scriptModuleId);
                     ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(candidateRevisionId);
-                    // Populate the modulespec with the scriptArchive dependencies
-                    JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, scriptArchive, updatedRevisionIdMap);
+
+                    // Locate the language runtime for this archive
+                    ScriptArchiveCompiler compiler = findCompiler(scriptArchive);
+                    ModuleIdentifier compilerPluginId = null;
+                    if (compiler != null) {
+                        compilerPluginId = compilerRuntime.get(compiler.getId());
+                    }
+
+                    // Populate the modulespec with the scriptArchive dependencies, and compiler dependencies
+                    JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, scriptArchive, compilerPluginId, updatedRevisionIdMap);
+
                     // Add to the moduleSpec application classloader dependencies
                     JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, appClassLoader, appPackagePaths);
                     moduleSpec = moduleSpecBuilder.create();
@@ -288,10 +295,17 @@ public class ScriptModuleLoader {
         if (moduleClassLoader instanceof JBossModuleClassLoader) {
             JBossModuleClassLoader jBossModuleClassLoader = (JBossModuleClassLoader)moduleClassLoader;
             ScriptArchive scriptArchive = jBossModuleClassLoader.getScriptArchive();
-            ScriptArchiveCompiler compiler = findCompiler(scriptArchive);
-            if (compiler != null) {
-                compiler.compile(scriptArchive, jBossModuleClassLoader);
+            if (scriptArchive.getModuleSpec().getCompilerDependencies().size() == 0) {
+                // TODO: Should this be a compile exception? What use are modules without a compiler? 
+                // The loaded module would contain no classes.
+                return;
             }
+
+            ScriptArchiveCompiler compiler = findCompiler(scriptArchive);
+            if (compiler == null)
+                throw new ScriptCompilationException("Could not find a suitable compiler");
+
+            compiler.compile(scriptArchive, jBossModuleClassLoader);
         }
     }
     
@@ -305,6 +319,9 @@ public class ScriptModuleLoader {
         ModuleIdentifier pluginModuleId = JBossModuleUtils.getPluginModuleId(pluginSpec);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginModuleId);
         JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec);
+        // TODO: We expose the full set of app packages to the compiler too.
+        // Maybe more control over what is exposed is needed here.
+        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, appClassLoader, appPackagePaths);
         ModuleSpec moduleSpec = moduleSpecBuilder.create();
 
         // spin up the module, and get the compiled classes from it's classloader
@@ -318,7 +335,10 @@ public class ScriptModuleLoader {
                 compilerProviderClass = pluginClassLoader.loadClass(providerClassName);
                 ScriptCompilerPlugin pluginBootstrap = (ScriptCompilerPlugin) compilerProviderClass.newInstance();
                 Set<? extends ScriptArchiveCompiler> pluginCompilers = pluginBootstrap.getCompilers();
-                compilers.addAll(pluginCompilers);
+                for (ScriptArchiveCompiler compiler: pluginCompilers) {
+                    compilerRuntime.put(compiler.getId(), pluginModuleId);
+                    compilers.put(compiler.getId(), compiler);
+                }
             } catch (Exception e) {
                 throw new ModuleLoadException(e);
             }
@@ -361,17 +381,21 @@ public class ScriptModuleLoader {
     }
 
     /**
-     * Match a compiler up to the given archive
+     * Find the first named compiler dependency specified by this archive,
+     * that matches with compilers registered with this module loader.
+     * @return null if no compiler found, else a {@link ScriptArchiveCompiler}
      */
     protected ScriptArchiveCompiler findCompiler(ScriptArchive archive) {
-        for (ScriptArchiveCompiler compiler : compilers) {
-            if (compiler.shouldCompile(archive)) {
+        ScriptArchiveCompiler compiler;
+        for (String compilerName: archive.getModuleSpec().getCompilerDependencies()) {
+            compiler = compilers.get(compilerName);
+            if (compiler != null)
                 return compiler;
-            }
         }
+     
         return null;
     }
-
+        
     /**
      * Convenience method to notify the listeners that there was an update to the script module
      * @param newModule newly loaded module

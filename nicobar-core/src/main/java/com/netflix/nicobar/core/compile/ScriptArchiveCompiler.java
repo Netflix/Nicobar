@@ -31,9 +31,9 @@ import com.netflix.nicobar.core.module.jboss.JBossModuleClassLoader;
  */
 public interface ScriptArchiveCompiler {
     /**
-     * Whether or not this compiler should be used to compile the archive
+     * Get the String ID of this compiler.
      */
-    public boolean shouldCompile(ScriptArchive archive);
+    public String getId();
 
     /**
      * Compile the archive into a ScriptModule
