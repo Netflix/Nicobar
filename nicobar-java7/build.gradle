@@ -1,0 +1,5 @@
+project(':nicobar-java7') {
+    dependencies {
+        compile project(':nicobar-core')
+    }
+}
