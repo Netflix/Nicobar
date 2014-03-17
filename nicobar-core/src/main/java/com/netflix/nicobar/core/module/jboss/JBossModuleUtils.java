@@ -49,6 +49,7 @@ import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
  * Utility methods for working with {@link Module}s
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class JBossModuleUtils {
     /** Dependency specification which allows for importing the core library classes */
@@ -133,14 +134,14 @@ public class JBossModuleUtils {
 
     /**
      * Populates a {@link ModuleSpec} with a dependency on application runtime packages
-     * specified as a set of package paths, loaded within the given classloader. This is the 
+     * specified as a set of package paths, loaded within the given classloader. This is the
      * primary way that a module gains access to packages defined in the application classloader
      *
      * @param moduleSpecBuilder builder to populate
      * @param classLoader a classloader
      * @param appPackages set of / separated package names (n
      */
-    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ClassLoader classLoader, Set<String> appPackages) 
+    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ClassLoader classLoader, Set<String> appPackages)
             throws ModuleLoadException {
         Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
         Objects.requireNonNull(classLoader, "classLoader");

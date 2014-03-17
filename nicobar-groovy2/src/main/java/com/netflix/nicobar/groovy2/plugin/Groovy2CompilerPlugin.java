@@ -28,8 +28,11 @@ import com.netflix.nicobar.groovy2.compile.Groovy2Compiler;
  * Factory class for the Groovy 2 language plug-in
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class Groovy2CompilerPlugin implements ScriptCompilerPlugin {
+
+    public static final String PLUGIN_ID = "groovy2";
 
     public Groovy2CompilerPlugin() {
     }

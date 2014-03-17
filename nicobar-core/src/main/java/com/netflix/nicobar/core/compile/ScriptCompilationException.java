@@ -17,19 +17,29 @@
  */
 package com.netflix.nicobar.core.compile;
 
-
-
-/**
- * Indicates that there was a problem in the compilation step.
- * The actual exception from the compiler should be chained to this exception.
- * The type of the chained exception is compiler specific.
- *
- * @author James Kojo
- */
-public class ScriptCompilationException extends Exception {
-    private static final long serialVersionUID = 1L;
-
-    public ScriptCompilationException(String message, Throwable cause) {
-        super(message, cause);
-    }
-}
+/**                                                                                                                                                                                                                                                          
+ * Indicates that there was a problem in the compilation step.                                                                                                                                                                                               
+ *                                                                                                                                                                                                                                                           
+ * @author James Kojo                    
+ * @author Vasanth Asokan                                                                                                                                                                                                            
+ */        
+public class ScriptCompilationException extends Exception {                                                                                                                                                                                                  
+    private static final long serialVersionUID = 1L;                                                                                                                                                                                                         
+                                                                                                                                                                                                                                                             
+    /**                                                                                                                                                                                                                                                      
+     * Create a generic compilation exception.                                                                                                                                                                                                               
+     * @param message the actual message.                                                                                                                                                                                                                    
+     */                                                                                                                                                                                                                                                      
+    public ScriptCompilationException(String message) {                                                                                                                                                                                                      
+        super(message);                                                                                                                                                                                                                                      
+    }                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                             
+    /**                                                                                                                                                                                                                                                      
+     * A compilation exception with a specific underlying exception                                                                                                                                                                                          
+     * that is compiler specific.                                                                                                                                                                                                                            
+     */                                                                                                                                                                                                                                                      
+    public ScriptCompilationException(String message, Throwable cause) {                                                                                                                                                                                     
+        super(message, cause);                                                                                                                                                                                                                               
+    }                                                                                                                                                                                                                                                        
+}                                                                                                                                                                                                                                                            
+   

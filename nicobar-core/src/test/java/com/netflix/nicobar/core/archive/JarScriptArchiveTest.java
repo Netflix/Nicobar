@@ -17,6 +17,7 @@
  */
 package com.netflix.nicobar.core.archive;
 
+import static com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource.TEST_DEFAULT_MODULE_SPEC_JAR;
 import static com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource.TEST_MODULE_SPEC_JAR;
 import static com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource.TEST_TEXT_JAR;
 import static org.testng.Assert.assertEquals;
@@ -42,6 +43,7 @@ import com.netflix.nicobar.core.archive.ScriptModuleSpec;
  * Unit Tests for {@link JarScriptArchive}
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class JarScriptArchiveTest {
     @Test
@@ -66,10 +68,10 @@ public class JarScriptArchiveTest {
 
     @Test
     public void testDefaultModuleId() throws Exception {
-        URL rootPathUrl = getClass().getClassLoader().getResource(TEST_TEXT_JAR.getResourcePath());
+        URL rootPathUrl = getClass().getClassLoader().getResource(TEST_DEFAULT_MODULE_SPEC_JAR.getResourcePath());
         Path rootPath = Paths.get(rootPathUrl.toURI()).toAbsolutePath();
         JarScriptArchive scriptArchive = new JarScriptArchive.Builder(rootPath).build();
-        assertEquals(scriptArchive.getModuleSpec().getModuleId(), TEST_TEXT_JAR.getModuleId());
+        assertEquals(scriptArchive.getModuleSpec().getModuleId(), TEST_DEFAULT_MODULE_SPEC_JAR.getModuleId());
     }
 
     @Test

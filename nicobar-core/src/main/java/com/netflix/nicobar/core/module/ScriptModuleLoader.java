@@ -63,6 +63,7 @@ import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
  * Support pluggable compilers via the {@link ScriptCompilerPluginSpec}.
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class ScriptModuleLoader {
     private final static Logger logger = LoggerFactory.getLogger(ScriptModuleLoader.class);
@@ -288,8 +289,13 @@ public class ScriptModuleLoader {
         if (moduleClassLoader instanceof JBossModuleClassLoader) {
             JBossModuleClassLoader jBossModuleClassLoader = (JBossModuleClassLoader)moduleClassLoader;
             ScriptArchive scriptArchive = jBossModuleClassLoader.getScriptArchive();
-            ScriptArchiveCompiler compiler = findCompiler(scriptArchive);
-            if (compiler != null) {
+            List<ScriptArchiveCompiler> candidateCompilers = findCompiler(scriptArchive);
+            if (candidateCompilers.size() == 0) {
+                throw new ScriptCompilationException("Could not find a suitable compiler for this archive.");
+            }
+
+            // Compile iteratively
+            for (ScriptArchiveCompiler compiler: candidateCompilers) { 
                 compiler.compile(scriptArchive, jBossModuleClassLoader);
             }
         }
@@ -361,15 +367,16 @@ public class ScriptModuleLoader {
     }
 
     /**
-     * Match a compiler up to the given archive
+     * Select a set of compilers to compile this archive.
      */
-    protected ScriptArchiveCompiler findCompiler(ScriptArchive archive) {
+    protected List<ScriptArchiveCompiler> findCompiler(ScriptArchive archive) {
+        List<ScriptArchiveCompiler> candidateCompilers = new ArrayList<ScriptArchiveCompiler>();
         for (ScriptArchiveCompiler compiler : compilers) {
             if (compiler.shouldCompile(archive)) {
-                return compiler;
+                candidateCompilers.add(compiler);
             }
         }
-        return null;
+        return candidateCompilers;
     }
 
     /**

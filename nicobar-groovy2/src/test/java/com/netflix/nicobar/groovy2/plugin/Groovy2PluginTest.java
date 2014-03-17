@@ -55,6 +55,7 @@ import com.netflix.nicobar.groovy2.testutil.GroovyTestResourceUtil.TestScript;
  * Integration tests for the Groovy2 language plugin
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class Groovy2PluginTest {
 
@@ -282,7 +283,7 @@ public class Groovy2PluginTest {
      */
     private ScriptModuleSpec.Builder createGroovyModuleSpec(String moduleId) {
         return new ScriptModuleSpec.Builder(moduleId)
-            .addCompilerDependency("groovy2");
+            .addCompilerDependency(Groovy2CompilerPlugin.PLUGIN_ID);
     }
 
     private Class<?> findClassByName(ScriptModule scriptModule, TestScript testScript) {
