@@ -13,7 +13,7 @@ import com.netflix.nicobar.core.module.jboss.JBossModuleClassLoader;
 
 /**
  * A {@link ScriptArchiveCompiler} that loads java bytecode from .class files in a {@link ScriptArchive}.
- * 
+ *
  * @author Vasanth Asokan
  */
 public class BytecodeLoader implements ScriptArchiveCompiler {
@@ -23,7 +23,7 @@ public class BytecodeLoader implements ScriptArchiveCompiler {
      */
     @Override
     public boolean shouldCompile(ScriptArchive archive) {
-        
+
         Set<String> entries = archive.getArchiveEntryNames();
         boolean shouldCompile = false;
         for (String entry: entries) {
@@ -31,26 +31,26 @@ public class BytecodeLoader implements ScriptArchiveCompiler {
                 shouldCompile = true;
             }
         }
-        
+
         return shouldCompile;
     }
 
     @Override
     public Set<Class<?>> compile(ScriptArchive archive, JBossModuleClassLoader moduleClassLoader)
             throws ScriptCompilationException, IOException {
-        HashSet<Class<?>> addedClasses = new HashSet<Class<?>>(archive.getArchiveEntryNames().size());                                                                                                                                                       
-        for (String entry : archive.getArchiveEntryNames()) {                                                                                                                                                                                            
-            if (!entry.endsWith(".class")) {                                                                                                                                                                                                               
-                continue;                   
+        HashSet<Class<?>> addedClasses = new HashSet<Class<?>>(archive.getArchiveEntryNames().size());
+        for (String entry : archive.getArchiveEntryNames()) {
+            if (!entry.endsWith(".class")) {
+                continue;
             }
-                                                                                                                                                                                                                                                             
-            URL archiveEntry = archive.getEntry(entry);                                                                                                                                                                                                  
-            byte [] classBytes = IOUtils.toByteArray(archiveEntry.openStream());                                                                                                                                                                             
-            String classEntry = entry.replace(".class", "").replace("/", ".");                                                                                                                                                                           
-            Class<?> addedClass = moduleClassLoader.addClassBytes(classEntry, classBytes);                                                                                                                                                                   
-            addedClasses.add(addedClass);                                                                                                                                                                                                                    
-        }            
 
-        return Collections.unmodifiableSet(addedClasses);                                                                                                                                                                                                    
+            URL archiveEntry = archive.getEntry(entry);
+            byte [] classBytes = IOUtils.toByteArray(archiveEntry.openStream());
+            String classEntry = entry.replace(".class", "").replace("/", ".");
+            Class<?> addedClass = moduleClassLoader.addClassBytes(classEntry, classBytes);
+            addedClasses.add(addedClass);
+        }
+
+        return Collections.unmodifiableSet(addedClasses);
     }
 }

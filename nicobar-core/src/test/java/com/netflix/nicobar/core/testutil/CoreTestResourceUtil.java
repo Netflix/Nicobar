@@ -43,7 +43,8 @@ public class CoreTestResourceUtil {
         TEST_MODULE_SPEC_PATH("test-modulespec-moduleId", "paths/test-modulespec", "root.txt", "META-INF/MANIFEST.MF"),
         TEST_DEFAULT_MODULE_SPEC_JAR("test-default-modulespec", "jars/test-default-modulespec.jar", "root.txt", "META-INF/MANIFEST.MF"),
         TEST_MODULE_SPEC_JAR("test-modulespec-moduleId", "jars/test-modulespec.jar", "root.txt", "META-INF/MANIFEST.MF"),
-        TEST_SCRIPTS_PATH("test-scripts-moduleId", "scripts", "script1.txt", "script2.txt", "script3.txt");
+        TEST_SCRIPTS_PATH("test-scripts-moduleId", "scripts", "script1.txt", "script2.txt", "script3.txt"),
+        TEST_CLASSPATHDIR_PATH("test-classpath", "classpathdir");
 
         private final String moduleId;
         private final String resourcePath;

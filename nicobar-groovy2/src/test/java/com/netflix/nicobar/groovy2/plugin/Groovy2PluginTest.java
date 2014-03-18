@@ -37,6 +37,7 @@ import org.apache.commons.io.FileUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.netflix.nicobar.core.archive.JarScriptArchive;
 import com.netflix.nicobar.core.archive.PathScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
@@ -45,9 +46,9 @@ import com.netflix.nicobar.core.execution.ScriptModuleExecutable;
 import com.netflix.nicobar.core.module.ScriptModule;
 import com.netflix.nicobar.core.module.ScriptModuleLoader;
 import com.netflix.nicobar.core.module.ScriptModuleUtils;
+import com.netflix.nicobar.core.plugin.BytecodeLoadingPlugin;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
 import com.netflix.nicobar.groovy2.compile.Groovy2Compiler;
-import com.netflix.nicobar.groovy2.plugin.Groovy2CompilerPlugin;
 import com.netflix.nicobar.groovy2.testutil.GroovyTestResourceUtil;
 import com.netflix.nicobar.groovy2.testutil.GroovyTestResourceUtil.TestScript;
 
@@ -77,7 +78,7 @@ public class Groovy2PluginTest {
 
     @Test
     public void testLoadSimpleScript() throws Exception {
-        ScriptModuleLoader moduleLoader = createGroovyModuleLoader();
+        ScriptModuleLoader moduleLoader = createGroovyModuleLoader().build();
         // create a new script archive consisting of HellowWorld.groovy and add it the loader.
         // Declares a dependency on the Groovy2RuntimeModule.
         Path scriptRootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.HELLO_WORLD);
@@ -96,7 +97,7 @@ public class Groovy2PluginTest {
 
     @Test
     public void testLoadScriptWithInterface() throws Exception {
-        ScriptModuleLoader moduleLoader = createGroovyModuleLoader();
+        ScriptModuleLoader moduleLoader = createGroovyModuleLoader().build();
         Path scriptRootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.IMPLEMENTS_INTERFACE);
         ScriptArchive scriptArchive = new PathScriptArchive.Builder(scriptRootPath)
             .setRecurseRoot(false)
@@ -127,7 +128,7 @@ public class Groovy2PluginTest {
      */
     @Test
     public void testLoadScriptWithLibrary() throws Exception {
-        ScriptModuleLoader moduleLoader = createGroovyModuleLoader();
+        ScriptModuleLoader moduleLoader = createGroovyModuleLoader().build();
         Path dependsOnARootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.DEPENDS_ON_A);
 
         ScriptArchive dependsOnAArchive = new PathScriptArchive.Builder(dependsOnARootPath)
@@ -157,7 +158,7 @@ public class Groovy2PluginTest {
      */
     @Test
     public void testReloadLibrary() throws Exception {
-        ScriptModuleLoader moduleLoader = createGroovyModuleLoader();
+        ScriptModuleLoader moduleLoader = createGroovyModuleLoader().build();
         Path dependsOnARootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.DEPENDS_ON_A);
         ScriptArchive dependsOnAArchive = new PathScriptArchive.Builder(dependsOnARootPath)
             .setRecurseRoot(false)
@@ -196,7 +197,7 @@ public class Groovy2PluginTest {
      */
     @Test
     public void testDeployBadDependency() throws Exception {
-        ScriptModuleLoader moduleLoader = createGroovyModuleLoader();
+        ScriptModuleLoader moduleLoader = createGroovyModuleLoader().build();
         Path dependsOnARootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.DEPENDS_ON_A);
 
         ScriptArchive dependsOnAArchive = new PathScriptArchive.Builder(dependsOnARootPath)
@@ -237,7 +238,7 @@ public class Groovy2PluginTest {
      */
     @Test
     public void testLoadScriptWithInternalDependencies() throws Exception {
-        ScriptModuleLoader moduleLoader = createGroovyModuleLoader();
+        ScriptModuleLoader moduleLoader = createGroovyModuleLoader().build();
 
         Path scriptRootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.INTERNAL_DEPENDENCY_A);
         ScriptArchive scriptArchive = new PathScriptArchive.Builder(scriptRootPath)
@@ -256,10 +257,34 @@ public class Groovy2PluginTest {
         assertGetMessage(clazz, "I'm A.  Called B and got: I'm B. Called C and got: I'm C. Called D and got: I'm D.");
     }
 
+    @Test
+    public void testMixedModule() throws Exception {
+        ScriptModuleLoader.Builder moduleLoaderBuilder = createGroovyModuleLoader();
+        ScriptModuleLoader loader = moduleLoaderBuilder.addPluginSpec(
+                new ScriptCompilerPluginSpec.Builder(BytecodeLoadingPlugin.PLUGIN_ID)
+                    .withPluginClassName(BytecodeLoadingPlugin.class.getName()).build())
+               .build();
+        Path jarPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.MIXED_MODULE).resolve(TestScript.MIXED_MODULE.getScriptPath());
+        ScriptArchive archive = new JarScriptArchive.Builder(jarPath).build();
+        loader.updateScriptArchives(Collections.singleton(archive));
+        ScriptModule scriptModule = loader.getScriptModule(TestScript.MIXED_MODULE.getModuleId());
+        Class<?> clazz = findClassByName(scriptModule, TestScript.MIXED_MODULE);
+        Object instance = clazz.newInstance();
+        Method method = clazz.getMethod("execute");
+        String message = (String)method.invoke(instance);
+        assertEquals(message, "Hello Mixed Module!");
+
+        // Verify groovy class
+        clazz = findClassByName(scriptModule, "com.netflix.nicobar.test.HelloBytecode");
+        method = clazz.getMethod("execute");
+        message = (String)method.invoke(clazz.newInstance());
+        assertEquals(message, "Hello Bytecode!");
+    }
+
     /**
      * Create a module loader this is wired up with the groovy compiler plugin
      */
-    private ScriptModuleLoader createGroovyModuleLoader() throws Exception {
+    private ScriptModuleLoader.Builder createGroovyModuleLoader() throws Exception {
         // create the groovy plugin spec. this plugin specified a new module and classloader called "Groovy2Runtime"
         // which contains the groovy-all-2.1.6.jar and the nicobar-groovy2 project.
         ScriptCompilerPluginSpec pluginSpec = new ScriptCompilerPluginSpec.Builder(Groovy2Compiler.GROOVY2_COMPILER_ID)
@@ -271,11 +296,8 @@ public class Groovy2PluginTest {
             .withPluginClassName(GROOVY2_COMPILER_PLUGIN)
             .build();
 
-        // create and start the loader with the plugin
-        ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
-            .addPluginSpec(pluginSpec)
-            .build();
-        return moduleLoader;
+        // create and start the builder with the plugin
+        return new ScriptModuleLoader.Builder().addPluginSpec(pluginSpec);
     }
 
     /**
@@ -288,7 +310,10 @@ public class Groovy2PluginTest {
 
     private Class<?> findClassByName(ScriptModule scriptModule, TestScript testScript) {
         assertNotNull(scriptModule, "Missing scriptModule for  " + testScript);
-        String className = testScript.getClassName();
+        return findClassByName(scriptModule, testScript.getClassName());
+    }
+
+    private Class<?> findClassByName(ScriptModule scriptModule, String className) {
         Set<Class<?>> classes = scriptModule.getLoadedClasses();
         for (Class<?> clazz : classes) {
             if (clazz.getName().equals(className)) {

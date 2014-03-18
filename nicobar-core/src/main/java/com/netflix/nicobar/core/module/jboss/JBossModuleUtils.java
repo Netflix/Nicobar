@@ -43,6 +43,7 @@ import org.jboss.modules.filter.PathFilters;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
+import com.netflix.nicobar.core.utils.ClassPathUtils;
 
 
 /**
@@ -67,7 +68,7 @@ public class JBossModuleUtils {
         pathFilter.add("com/netflix/nicobar/core/plugin");
         NICOBAR_CORE_DEPENDENCY_SPEC = DependencySpec.createClassLoaderDependencySpec(JBossModuleUtils.class.getClassLoader(), pathFilter);
         ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
-        JRE_DEPENDENCY_SPEC = DependencySpec.createClassLoaderDependencySpec(systemClassLoader, __JDKPaths.JDK);
+        JRE_DEPENDENCY_SPEC = DependencySpec.createClassLoaderDependencySpec(systemClassLoader, ClassPathUtils.getJdkPaths());
     }
 
     /**

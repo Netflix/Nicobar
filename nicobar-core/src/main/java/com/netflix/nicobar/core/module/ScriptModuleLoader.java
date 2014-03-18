@@ -98,10 +98,10 @@ public class ScriptModuleLoader {
             return this;
         }
         /**
-         * Specify a set of packages to make available from the application classloader  
+         * Specify a set of packages to make available from the application classloader
          * as runtime dependencies for all scripts loaded by this script module.
-         * @param incomingPaths a set of / separated package paths. No wildcards. 
-         *        e.g. com/netflix/api/service/video. All classes under 
+         * @param incomingPaths a set of / separated package paths. No wildcards.
+         *        e.g. com/netflix/api/service/video. All classes under
          *        com.netflix.api.service.video will be available to loaded modules.
          */
         public Builder addAppPackages(Set<String> incomingPaths) {
@@ -295,12 +295,12 @@ public class ScriptModuleLoader {
             }
 
             // Compile iteratively
-            for (ScriptArchiveCompiler compiler: candidateCompilers) { 
+            for (ScriptArchiveCompiler compiler: candidateCompilers) {
                 compiler.compile(scriptArchive, jBossModuleClassLoader);
             }
         }
     }
-    
+
     /**
      * Add a language plugin to this module
      * @param pluginSpec
@@ -311,6 +311,9 @@ public class ScriptModuleLoader {
         ModuleIdentifier pluginModuleId = JBossModuleUtils.getPluginModuleId(pluginSpec);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginModuleId);
         JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec);
+        // TODO: We expose the full set of app packages to the compiler too.
+        // Maybe more control over what is exposed is needed here.
+        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, appClassLoader, appPackagePaths);
         ModuleSpec moduleSpec = moduleSpecBuilder.create();
 
         // spin up the module, and get the compiled classes from it's classloader
