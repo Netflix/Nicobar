@@ -33,12 +33,13 @@ import com.netflix.nicobar.core.module.jboss.JBossModuleClassLoader;
  * Groovy specific implementation of the {@link ScriptArchiveCompiler}
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class Groovy2Compiler implements ScriptArchiveCompiler {
     public final static String GROOVY2_COMPILER_ID = "groovy2";
     @Override
     public boolean shouldCompile(ScriptArchive archive) {
-       return archive.getModuleSpec().getCompilerDependencies().contains(GROOVY2_COMPILER_ID);
+       return archive.getModuleSpec().getCompilerPluginIds().contains(GROOVY2_COMPILER_ID);
     }
 
     @Override

@@ -31,6 +31,7 @@ import org.apache.commons.lang.builder.ToStringStyle;
 /**
  * Common configuration elements for converting a {@link ScriptArchive} to a module.
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class ScriptModuleSpec {
     /**
@@ -38,17 +39,17 @@ public class ScriptModuleSpec {
      */
     public static class Builder {
         private final String moduleId;
-        private final Set<String> compilerDependencies = new LinkedHashSet<String>();
+        private final Set<String> compilerPluginIds = new LinkedHashSet<String>();
         private final Map<String, String> archiveMetadata = new LinkedHashMap<String, String>();
         private final Set<String> moduleDependencies = new LinkedHashSet<String>();
 
         public Builder(String moduleId) {
             this.moduleId = moduleId;
         }
-        /** Add a dependency on the named compiler */
-        public Builder addCompilerDependency(String compilerName) {
-            if (compilerName != null) {
-                compilerDependencies.add(compilerName);
+        /** Add a dependency on the named compiler plugin */
+        public Builder addCompilerPluginId(String pluginId) {
+            if (pluginId != null) {
+                compilerPluginIds.add(pluginId);
             }
             return this;
         }
@@ -85,18 +86,18 @@ public class ScriptModuleSpec {
             return new ScriptModuleSpec(moduleId,
                Collections.unmodifiableMap(new HashMap<String, String>(archiveMetadata)),
                Collections.unmodifiableSet(new LinkedHashSet<String>(moduleDependencies)),
-               Collections.unmodifiableSet(new LinkedHashSet<String>(compilerDependencies)));
+               Collections.unmodifiableSet(new LinkedHashSet<String>(compilerPluginIds)));
         }
     }
 
     private final String moduleId;
     private final Map<String, String> archiveMetadata;
     private final Set<String> moduleDependencies;
-    private final Set<String> compilerDependencies;
+    private final Set<String> compilerPluginIds;
 
-    protected ScriptModuleSpec(String moduleId, Map<String, String> archiveMetadata, Set<String> moduleDependencies, Set<String> compilerDependencies) {
+    protected ScriptModuleSpec(String moduleId, Map<String, String> archiveMetadata, Set<String> moduleDependencies, Set<String> pluginIds) {
         this.moduleId = Objects.requireNonNull(moduleId, "moduleId");
-        this.compilerDependencies = Objects.requireNonNull(compilerDependencies, "compilerDependencies");
+        this.compilerPluginIds = Objects.requireNonNull(pluginIds, "compilerPluginIds");
         this.archiveMetadata = Objects.requireNonNull(archiveMetadata, "archiveMetadata");
         this.moduleDependencies = Objects.requireNonNull(moduleDependencies, "dependencies");
     }
@@ -124,10 +125,10 @@ public class ScriptModuleSpec {
     }
 
     /**
-     * @return the names of the compilers that should process this archive
+     * @return the string IDs of the compiler plugins that should process this archive
      */
-    public Set<String> getCompilerDependencies() {
-        return compilerDependencies;
+    public Set<String> getCompilerPluginIds() {
+        return compilerPluginIds;
     }
 
     @Override
@@ -137,12 +138,13 @@ public class ScriptModuleSpec {
         ScriptModuleSpec other = (ScriptModuleSpec) o;
         return Objects.equals(this.moduleId, other.moduleId) &&
             Objects.equals(this.archiveMetadata, other.archiveMetadata) &&
+            Objects.equals(this.compilerPluginIds, other.compilerPluginIds) &&
             Objects.equals(this.moduleDependencies, other.moduleDependencies);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(moduleId, moduleId, moduleDependencies);
+        return Objects.hash(moduleId, moduleId, compilerPluginIds, moduleDependencies);
     }
 
     @Override
@@ -150,6 +152,7 @@ public class ScriptModuleSpec {
         return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
             .append("moduleId", moduleId)
             .append("archiveMetadata", archiveMetadata)
+            .append("compilerPlugins", compilerPluginIds)
             .append("dependencies", moduleDependencies)
             .toString();
     }

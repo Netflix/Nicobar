@@ -1,6 +1,6 @@
 {
     "moduleId": "test-modulespec-moduleId",
-    "compilerDependencies": ["nolang"],
+    "compilerPluginIds": ["nolang"],
     "moduleDependencies": [
     ], 
     "archiveMetadata": {

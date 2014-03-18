@@ -53,6 +53,7 @@ import com.sun.jersey.multipart.FormDataParam;
  * REST sub-resource for a single {@link ArchiveRepository}
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -136,7 +137,7 @@ public class ArchiveRepositoryResource {
         if (moduleSpec == null) {
             missing.add("moduleSpec");
         } else {
-            if (moduleSpec.getCompilerDependencies() == null) missing.add("compilerDependencies");
+            if (moduleSpec.getCompilerPluginIds() == null) missing.add("compilerPluginIds");
             if (moduleSpec.getMetadata() == null) missing.add("metadata");
             if (moduleSpec.getModuleDependencies() == null) missing.add("moduleDependencies");
             if (moduleSpec.getModuleId() == null) missing.add("moduleId");

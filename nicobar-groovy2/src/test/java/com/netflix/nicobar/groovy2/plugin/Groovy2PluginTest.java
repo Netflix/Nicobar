@@ -305,7 +305,7 @@ public class Groovy2PluginTest {
      */
     private ScriptModuleSpec.Builder createGroovyModuleSpec(String moduleId) {
         return new ScriptModuleSpec.Builder(moduleId)
-            .addCompilerDependency(Groovy2CompilerPlugin.PLUGIN_ID);
+            .addCompilerPluginId(Groovy2CompilerPlugin.PLUGIN_ID);
     }
 
     private Class<?> findClassByName(ScriptModule scriptModule, TestScript testScript) {
