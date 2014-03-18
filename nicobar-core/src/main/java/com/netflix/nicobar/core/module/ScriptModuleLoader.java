@@ -289,7 +289,7 @@ public class ScriptModuleLoader {
         if (moduleClassLoader instanceof JBossModuleClassLoader) {
             JBossModuleClassLoader jBossModuleClassLoader = (JBossModuleClassLoader)moduleClassLoader;
             ScriptArchive scriptArchive = jBossModuleClassLoader.getScriptArchive();
-            List<ScriptArchiveCompiler> candidateCompilers = findCompiler(scriptArchive);
+            List<ScriptArchiveCompiler> candidateCompilers = findCompilers(scriptArchive);
             if (candidateCompilers.size() == 0) {
                 throw new ScriptCompilationException("Could not find a suitable compiler for this archive.");
             }
@@ -372,7 +372,7 @@ public class ScriptModuleLoader {
     /**
      * Select a set of compilers to compile this archive.
      */
-    protected List<ScriptArchiveCompiler> findCompiler(ScriptArchive archive) {
+    protected List<ScriptArchiveCompiler> findCompilers(ScriptArchive archive) {
         List<ScriptArchiveCompiler> candidateCompilers = new ArrayList<ScriptArchiveCompiler>();
         for (ScriptArchiveCompiler compiler : compilers) {
             if (compiler.shouldCompile(archive)) {
