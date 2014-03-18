@@ -46,18 +46,3 @@ subprojects {
         testCompile 'org.slf4j:slf4j-simple:1.7.0'   
     }
 }
-
-project(':nicobar-core') {
-    dependencies {
-        compile 'com.google.code.gson:gson:2.2.4'
-        compile 'com.netflix.hystrix:hystrix-core:1.3.3'
-        compile 'org.jboss.modules:jboss-modules:1.3.0.Final'
-    }
-}
-
-project(':nicobar-groovy2') {
-    dependencies {
-        compile project(':nicobar-core')
-        compile 'org.codehaus.groovy:groovy-all:2.1.1'
-    }
-}
