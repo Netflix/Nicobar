@@ -1,4 +1,4 @@
-package com.netflix.nicobar.core.compile;
+package com.netflix.nicobar.core.internal.compile;
 
 import java.io.IOException;
 import java.net.URL;
@@ -9,6 +9,8 @@ import java.util.Set;
 import org.apache.commons.io.IOUtils;
 
 import com.netflix.nicobar.core.archive.ScriptArchive;
+import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
+import com.netflix.nicobar.core.compile.ScriptCompilationException;
 import com.netflix.nicobar.core.module.jboss.JBossModuleClassLoader;
 
 /**

@@ -3,7 +3,7 @@ package com.netflix.nicobar.core.plugin;
 import java.util.Collections;
 import java.util.Set;
 
-import com.netflix.nicobar.core.compile.NoOpCompiler;
+import com.netflix.nicobar.core.internal.compile.NoOpCompiler;
 import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
 
 /**

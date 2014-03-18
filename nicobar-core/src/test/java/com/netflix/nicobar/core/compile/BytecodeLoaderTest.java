@@ -15,6 +15,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.netflix.nicobar.core.archive.JarScriptArchive;
+import com.netflix.nicobar.core.internal.compile.BytecodeLoader;
 import com.netflix.nicobar.core.module.jboss.JBossModuleClassLoader;
 
 /**
@@ -33,14 +34,12 @@ public class BytecodeLoaderTest {
     @Test
     public void testHelloworldArchive() throws Exception {
         URL jarPath = getClass().getClassLoader().getResource("testmodules/testmodule.jar");
-
         JarScriptArchive scriptArchive = new JarScriptArchive.Builder(Paths.get(jarPath.getFile()))
             .build();
-
         JBossModuleClassLoader moduleClassLoader = mock(JBossModuleClassLoader.class);
         BytecodeLoader loader = new BytecodeLoader();
-        Mockito.doReturn(compiledClass).when(moduleClassLoader).addClassBytes(Mockito.anyString(), Mockito.any(byte[].class));
 
+        Mockito.doReturn(compiledClass).when(moduleClassLoader).addClassBytes(Mockito.anyString(), Mockito.any(byte[].class));
         Set<Class<?>> compiledClasses = loader.compile(scriptArchive, moduleClassLoader);
 
         verify(moduleClassLoader).addClassBytes("com.netflix.nicobar.test.Fake", "fake bytes".getBytes(Charset.forName("UTF-8")));

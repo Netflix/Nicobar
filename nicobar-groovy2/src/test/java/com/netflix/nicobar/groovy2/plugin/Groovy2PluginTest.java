@@ -48,7 +48,7 @@ import com.netflix.nicobar.core.module.ScriptModuleLoader;
 import com.netflix.nicobar.core.module.ScriptModuleUtils;
 import com.netflix.nicobar.core.plugin.BytecodeLoadingPlugin;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
-import com.netflix.nicobar.groovy2.compile.Groovy2Compiler;
+import com.netflix.nicobar.groovy2.internal.compile.Groovy2Compiler;
 import com.netflix.nicobar.groovy2.testutil.GroovyTestResourceUtil;
 import com.netflix.nicobar.groovy2.testutil.GroovyTestResourceUtil.TestScript;
 

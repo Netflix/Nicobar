@@ -1,9 +1,10 @@
-package com.netflix.nicobar.core.compile;
+package com.netflix.nicobar.core.internal.compile;
 
 import java.util.Collections;
 import java.util.Set;
 
 import com.netflix.nicobar.core.archive.ScriptArchive;
+import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
 import com.netflix.nicobar.core.module.jboss.JBossModuleClassLoader;
 
 /**
