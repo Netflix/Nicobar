@@ -124,10 +124,10 @@ public class ScriptModuleLoaderTest {
         // original graph: A->B->C->D
         long originalCreateTime = 1000;
         Set<ScriptArchive> updateArchives = new HashSet<ScriptArchive>();
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addCompilerDependency("mockPlugin").addModuleDependency("B").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addCompilerDependency("mockPlugin").addModuleDependency("C").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addCompilerDependency("mockPlugin").addModuleDependency("D").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").addCompilerDependency("mockPlugin").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addCompilerPluginId("mockPlugin").addModuleDependency("B").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addCompilerPluginId("mockPlugin").addModuleDependency("C").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addCompilerPluginId("mockPlugin").addModuleDependency("D").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").addCompilerPluginId("mockPlugin").build(), originalCreateTime));
 
         ScriptModuleListener mockListener = createMockListener();
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
@@ -151,10 +151,10 @@ public class ScriptModuleLoaderTest {
         // updated graph: D->C->B->A
         updateArchives.clear();
         long updatedCreateTime = 2000;
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").addCompilerDependency("mockPlugin").addModuleDependency("C").build(), updatedCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addCompilerDependency("mockPlugin").addModuleDependency("B").build(), updatedCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addCompilerDependency("mockPlugin").addModuleDependency("A").build(), updatedCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addCompilerDependency("mockPlugin").build(), updatedCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").addCompilerPluginId("mockPlugin").addModuleDependency("C").build(), updatedCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addCompilerPluginId("mockPlugin").addModuleDependency("B").build(), updatedCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addCompilerPluginId("mockPlugin").addModuleDependency("A").build(), updatedCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addCompilerPluginId("mockPlugin").build(), updatedCreateTime));
 
         moduleLoader.updateScriptArchives(updateArchives);
 
@@ -179,10 +179,10 @@ public class ScriptModuleLoaderTest {
         // original graph: A->B->C->D
         long originalCreateTime = 1000;
         Set<ScriptArchive> updateArchives = new HashSet<ScriptArchive>();
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addCompilerDependency("mockPlugin").addModuleDependency("B").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addCompilerDependency("mockPlugin").addModuleDependency("C").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addCompilerDependency("mockPlugin").addModuleDependency("D").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").addCompilerDependency("mockPlugin").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addCompilerPluginId("mockPlugin").addModuleDependency("B").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addCompilerPluginId("mockPlugin").addModuleDependency("C").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addCompilerPluginId("mockPlugin").addModuleDependency("D").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").addCompilerPluginId("mockPlugin").build(), originalCreateTime));
 
         ScriptModuleListener mockListener = createMockListener();
         when(MOCK_COMPILER.shouldCompile(Mockito.any(ScriptArchive.class))).thenReturn(true);
@@ -200,7 +200,7 @@ public class ScriptModuleLoaderTest {
         // update C. should cause C,B,A to be compiled in order
         updateArchives.clear();
         long updatedCreateTime = 2000;
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addCompilerDependency("mockPlugin").addModuleDependency("D").build(), updatedCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addCompilerPluginId("mockPlugin").addModuleDependency("D").build(), updatedCreateTime));
 
         moduleLoader.updateScriptArchives(updateArchives);
 
@@ -224,11 +224,11 @@ public class ScriptModuleLoaderTest {
         // original graph: A->B->C->D
         long originalCreateTime = 1000;
         Set<ScriptArchive> updateArchives = new HashSet<ScriptArchive>();
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addCompilerDependency("mockPlugin").addModuleDependency("B").build(), originalCreateTime));
-        ScriptArchive archiveB = new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addCompilerDependency("mockPlugin").addModuleDependency("C").build(), originalCreateTime);
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addCompilerPluginId("mockPlugin").addModuleDependency("B").build(), originalCreateTime));
+        ScriptArchive archiveB = new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addCompilerPluginId("mockPlugin").addModuleDependency("C").build(), originalCreateTime);
         updateArchives.add(archiveB);
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addCompilerDependency("mockPlugin").addModuleDependency("D").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").addCompilerDependency("mockPlugin").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addCompilerPluginId("mockPlugin").addModuleDependency("D").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").addCompilerPluginId("mockPlugin").build(), originalCreateTime));
 
         when(MOCK_COMPILER.shouldCompile(Mockito.any(ScriptArchive.class))).thenReturn(true);
         when(MOCK_COMPILER.compile(Mockito.any(ScriptArchive.class), Mockito.any(JBossModuleClassLoader.class))).thenReturn(Collections.<Class<?>>emptySet());
@@ -249,7 +249,7 @@ public class ScriptModuleLoaderTest {
         // update C. would normally cause C,B,A to be compiled in order, but B will fail, so A will be skipped
         updateArchives.clear();
         long updatedCreateTime = 2000;
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addCompilerDependency("mockPlugin").addModuleDependency("D").build(), updatedCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addCompilerPluginId("mockPlugin").addModuleDependency("D").build(), updatedCreateTime));
 
         moduleLoader.updateScriptArchives(updateArchives);
 
@@ -271,10 +271,10 @@ public class ScriptModuleLoaderTest {
         // original graph: A->B->C->D
         long originalCreateTime = 1000;
         Set<ScriptArchive> updateArchives = new HashSet<ScriptArchive>();
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addCompilerDependency("mockPlugin").addModuleDependency("B").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addCompilerDependency("mockPlugin").addModuleDependency("C").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addCompilerDependency("mockPlugin").addModuleDependency("D").build(), originalCreateTime));
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").addCompilerDependency("mockPlugin").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addCompilerPluginId("mockPlugin").addModuleDependency("B").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("B").addCompilerPluginId("mockPlugin").addModuleDependency("C").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addCompilerPluginId("mockPlugin").addModuleDependency("D").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").addCompilerPluginId("mockPlugin").build(), originalCreateTime));
 
         ScriptModuleListener mockListener = createMockListener();
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
@@ -292,7 +292,7 @@ public class ScriptModuleLoaderTest {
         // update C, but set compilation to fail.
         updateArchives.clear();
         long updatedCreateTime = 2000;
-        TestDependecyScriptArchive updatedArchiveC = new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addCompilerDependency("mockPlugin").addModuleDependency("D").build(), updatedCreateTime);
+        TestDependecyScriptArchive updatedArchiveC = new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("C").addCompilerPluginId("mockPlugin").addModuleDependency("D").build(), updatedCreateTime);
         updateArchives.add(updatedArchiveC);
         reset(MOCK_COMPILER);
         when(MOCK_COMPILER.shouldCompile(Mockito.eq(updatedArchiveC))).thenReturn(true);
@@ -317,7 +317,7 @@ public class ScriptModuleLoaderTest {
     public void testOldArchiveRejected() throws Exception {
         long originalCreateTime = 2000;
         Set<ScriptArchive> updateArchives = new HashSet<ScriptArchive>();
-        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addCompilerDependency("mockPlugin").build(), originalCreateTime));
+        updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addCompilerPluginId("mockPlugin").build(), originalCreateTime));
 
         when(MOCK_COMPILER.shouldCompile(Mockito.any(ScriptArchive.class))).thenReturn(true);
         when(MOCK_COMPILER.compile(Mockito.any(ScriptArchive.class), Mockito.any(JBossModuleClassLoader.class))).thenReturn(Collections.<Class<?>>emptySet());
@@ -333,7 +333,7 @@ public class ScriptModuleLoaderTest {
         // updated graph: D->C->B->A
         updateArchives.clear();
         long updatedCreateTime = 1000;
-        TestDependecyScriptArchive updatedArchive = new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addCompilerDependency("mockPlugin").build(), updatedCreateTime);
+        TestDependecyScriptArchive updatedArchive = new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addCompilerPluginId("mockPlugin").build(), updatedCreateTime);
         updateArchives.add(updatedArchive);
 
         moduleLoader.updateScriptArchives(updateArchives);

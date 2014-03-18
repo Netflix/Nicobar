@@ -117,8 +117,8 @@ public class JBossModuleUtils {
             }
             moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(latestIdentifier, true, false));
         }
-        Set<String> compilerDependencies = scriptModuleSpec.getCompilerDependencies();
-        for (String compilerPluginId : compilerDependencies) {
+        Set<String> compilerPlugins = scriptModuleSpec.getCompilerPluginIds();
+        for (String compilerPluginId : compilerPlugins) {
             moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(getPluginModuleId(compilerPluginId), true, false));
         }
         moduleSpecBuilder.addDependency(JRE_DEPENDENCY_SPEC);
