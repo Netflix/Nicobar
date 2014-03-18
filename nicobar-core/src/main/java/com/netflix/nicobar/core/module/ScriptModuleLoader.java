@@ -101,8 +101,8 @@ public class ScriptModuleLoader {
          * Specify a set of packages to make available from the application classloader
          * as runtime dependencies for all scripts loaded by this script module.
          * @param incomingPaths a set of / separated package paths. No wildcards.
-         *        e.g. com/netflix/api/service/video. All classes under
-         *        com.netflix.api.service.video will be available to loaded modules.
+         *        e.g. Specifying com/foo/bar/baz implies that all classes in packages
+         *        named com.foo.bar.baz.* will be visible to loaded modules.
          */
         public Builder addAppPackages(Set<String> incomingPaths) {
             if (incomingPaths != null) {

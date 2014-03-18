@@ -259,8 +259,9 @@ public class ClassPathUtils {
             }
 
             // Remove if none of the includes specify this package path
-            if (!shouldInclude)
+            if (!shouldInclude) {
                 setIterator.remove();
+            }
         }
 
         return filteredSet;

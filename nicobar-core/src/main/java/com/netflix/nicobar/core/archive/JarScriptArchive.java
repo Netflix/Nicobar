@@ -160,8 +160,9 @@ public class JarScriptArchive implements ScriptArchive {
             while (jarEntries.hasMoreElements()) {
                 JarEntry jarEntry = jarEntries.nextElement();
                 // Skip adding moduleSpec to archive entries
-                if (jarEntry.getName().equals(moduleSpecEntry))
+                if (jarEntry.getName().equals(moduleSpecEntry)) {
                     continue;
+                }
 
                 if (!jarEntry.isDirectory()) {
                     indexBuilder.add(jarEntry.getName());
