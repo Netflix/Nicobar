@@ -34,6 +34,7 @@ import com.netflix.nicobar.groovy2.plugin.Groovy2CompilerPlugin;
  * utility class for finding test resources such as scripts
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class GroovyTestResourceUtil {
 
@@ -50,7 +51,8 @@ public class GroovyTestResourceUtil {
         LIBRARY_AV2("libAV2", "LibraryA.groovy", "LibraryA"),
         DEPENDS_ON_A("dependsonA", "DependsOnA.groovy", "DependsOnA"),
         INTERNAL_DEPENDENCY_A("internaldependencies", "InternalDependencyA.groovy", "InternalDependencyA"),
-        IMPLEMENTS_INTERFACE("implementsinterface", "MyCallable.groovy", "MyCallable");
+        IMPLEMENTS_INTERFACE("implementsinterface", "MyCallable.groovy", "MyCallable"),
+        MIXED_MODULE("mixedmodule", "mixedmodule.jar", "com.netflix.nicobar.test.MixedModule");
 
         private String moduleId;
         private final Path scriptPath;

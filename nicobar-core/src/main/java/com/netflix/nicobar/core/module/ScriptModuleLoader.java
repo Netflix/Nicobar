@@ -63,6 +63,7 @@ import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
  * Support pluggable compilers via the {@link ScriptCompilerPluginSpec}.
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class ScriptModuleLoader {
     private final static Logger logger = LoggerFactory.getLogger(ScriptModuleLoader.class);
@@ -97,11 +98,11 @@ public class ScriptModuleLoader {
             return this;
         }
         /**
-         * Specify a set of packages to make available from the application classloader  
+         * Specify a set of packages to make available from the application classloader
          * as runtime dependencies for all scripts loaded by this script module.
-         * @param incomingPaths a set of / separated package paths. No wildcards. 
-         *        e.g. com/netflix/api/service/video. All classes under 
-         *        com.netflix.api.service.video will be available to loaded modules.
+         * @param incomingPaths a set of / separated package paths. No wildcards.
+         *        e.g. Specifying com/foo/bar/baz implies that all classes in packages
+         *        named com.foo.bar.baz.* will be visible to loaded modules.
          */
         public Builder addAppPackages(Set<String> incomingPaths) {
             if (incomingPaths != null) {
@@ -288,13 +289,18 @@ public class ScriptModuleLoader {
         if (moduleClassLoader instanceof JBossModuleClassLoader) {
             JBossModuleClassLoader jBossModuleClassLoader = (JBossModuleClassLoader)moduleClassLoader;
             ScriptArchive scriptArchive = jBossModuleClassLoader.getScriptArchive();
-            ScriptArchiveCompiler compiler = findCompiler(scriptArchive);
-            if (compiler != null) {
+            List<ScriptArchiveCompiler> candidateCompilers = findCompilers(scriptArchive);
+            if (candidateCompilers.size() == 0) {
+                throw new ScriptCompilationException("Could not find a suitable compiler for this archive.");
+            }
+
+            // Compile iteratively
+            for (ScriptArchiveCompiler compiler: candidateCompilers) {
                 compiler.compile(scriptArchive, jBossModuleClassLoader);
             }
         }
     }
-    
+
     /**
      * Add a language plugin to this module
      * @param pluginSpec
@@ -305,6 +311,9 @@ public class ScriptModuleLoader {
         ModuleIdentifier pluginModuleId = JBossModuleUtils.getPluginModuleId(pluginSpec);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginModuleId);
         JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec);
+        // TODO: We expose the full set of app packages to the compiler too.
+        // Maybe more control over what is exposed is needed here.
+        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, appClassLoader, appPackagePaths);
         ModuleSpec moduleSpec = moduleSpecBuilder.create();
 
         // spin up the module, and get the compiled classes from it's classloader
@@ -361,15 +370,16 @@ public class ScriptModuleLoader {
     }
 
     /**
-     * Match a compiler up to the given archive
+     * Select a set of compilers to compile this archive.
      */
-    protected ScriptArchiveCompiler findCompiler(ScriptArchive archive) {
+    protected List<ScriptArchiveCompiler> findCompilers(ScriptArchive archive) {
+        List<ScriptArchiveCompiler> candidateCompilers = new ArrayList<ScriptArchiveCompiler>();
         for (ScriptArchiveCompiler compiler : compilers) {
             if (compiler.shouldCompile(archive)) {
-                return compiler;
+                candidateCompilers.add(compiler);
             }
         }
-        return null;
+        return candidateCompilers;
     }
 
     /**

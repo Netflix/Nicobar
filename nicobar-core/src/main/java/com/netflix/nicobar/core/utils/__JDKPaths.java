@@ -19,7 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package com.netflix.nicobar.core.module.jboss;
+package com.netflix.nicobar.core.utils;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,7 +58,7 @@ final class __JDKPaths {
     private __JDKPaths() {
     }
 
-    private static void processClassPathItem(final String classPath, final Set<String> jarSet, final Set<String> pathSet) {
+    static void processClassPathItem(final String classPath, final Set<String> jarSet, final Set<String> pathSet) {
         if (classPath == null) return;
         int s = 0, e;
         do {

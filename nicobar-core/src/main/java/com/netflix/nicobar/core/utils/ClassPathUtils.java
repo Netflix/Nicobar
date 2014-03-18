@@ -21,8 +21,10 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.zip.ZipEntry;
@@ -38,6 +40,14 @@ import org.apache.commons.io.IOUtils;
  * @author James Kojo
  */
 public class ClassPathUtils {
+
+    /**
+     * Get a list of JDK packages in the classpath, by scanning the bootstrap classpath.
+     * @return a set of package path strings (package paths separated by '/' and not '.').
+     */
+    public static Set<String> getJdkPaths() {
+        return __JDKPaths.JDK;
+    }
 
     /**
      * Find the root path for the given resource. If the resource is found in a Jar file, then the
@@ -148,4 +158,112 @@ public class ClassPathUtils {
     }
 
 
+    /**
+     * Scan the classpath string provided, and collect a set of package paths found in jars and classes on the path.
+     *
+     * @param classPath the classpath string
+     * @param excludeJarSet a set of jars to exclude from scanning
+     * @return the results of the scan, as a set of package paths (separated by '/').
+     */
+    public static Set<String> scanClassPath(final String classPath, final Set<String> excludeJarSet) {
+        final Set<String> pathSet = new HashSet<String>();
+        // Defer to JDKPaths to do the actual classpath scanning.
+        __JDKPaths.processClassPathItem(classPath, excludeJarSet, pathSet);
+        return pathSet;
+    }
+
+    /**
+     * Scan the classpath string provided, and collect a set of package paths found in jars and classes on the path.
+     * On the resulting path set, first exclude those that match any exclude prefixes, and then include
+     * those that match a set of include prefixes.
+     *
+     * @param classPath the classpath string
+     * @param excludeJarSet a set of jars to exclude from scanning
+     * @param excludePrefixes a set of path prefixes that determine what is excluded
+     * @param includePrefixes a set of path prefixes that determine what is included
+     * @return the results of the scan, as a set of package paths (separated by '/').
+     */
+    public static Set<String> scanClassPath(final String classPath, final Set<String> excludeJarSet, final Set<String> excludePrefixes, final Set<String> includePrefixes) {
+        final Set<String> pathSet = new HashSet<String>();
+        // Defer to JDKPaths to do the actual classpath scanning.
+        __JDKPaths.processClassPathItem(classPath, excludeJarSet, pathSet);
+
+        return filterPathSet(pathSet, excludePrefixes, includePrefixes);
+    }
+
+    /**
+     * Scan the classpath string provided, and collect a set of package paths found in jars and classes on the path,
+     * excluding any that match a set of exclude prefixes.
+     *
+     * @param classPath the classpath string
+     * @param excludeJarSet a set of jars to exclude from scanning
+     * @param excludePrefixes a set of path prefixes that determine what is excluded
+     * @return the results of the scan, as a set of package paths (separated by '/').
+     */
+    public static Set<String> scanClassPathWithExcludes(final String classPath, final Set<String> excludeJarSet, final Set<String> excludePrefixes) {
+        final Set<String> pathSet = new HashSet<String>();
+        // Defer to JDKPaths to do the actual classpath scanning.
+        __JDKPaths.processClassPathItem(classPath, excludeJarSet, pathSet);
+
+        return filterPathSet(pathSet, excludePrefixes, Collections.<String>emptySet());
+    }
+
+    /**
+     * Scan the classpath string provided, and collect a set of package paths found in jars and classes on the path,
+     * including only those that match a set of include prefixes.
+     *
+     * @param classPath the classpath string
+     * @param excludeJarSet a set of jars to exclude from scanning
+     * @param includePrefixes a set of path prefixes that determine what is included
+     * @return the results of the scan, as a set of package paths (separated by '/').
+     */
+    public static Set<String> scanClassPathWithIncludes(final String classPath, final Set<String> excludeJarSet, final Set<String> includePrefixes) {
+        final Set<String> pathSet = new HashSet<String>();
+        // Defer to JDKPaths to do the actual classpath scanning.
+        __JDKPaths.processClassPathItem(classPath, excludeJarSet, pathSet);
+
+        return filterPathSet(pathSet, Collections.<String>emptySet(), includePrefixes);
+    }
+
+    private static Set<String> filterPathSet(Set<String> pathSet, Set<String> excludePrefixes, Set<String> includePrefixes) {
+        Set<String> filteredSet = new HashSet<String>(pathSet);
+
+        // Ideally, we would use a trie, but we are talking ~100s of paths and a few excludes and includes,
+        // not to mention these are throw away scans and not reused typically.
+
+        // First process the excludes
+        for (String exclude: excludePrefixes) {
+            Iterator<String> setIterator = filteredSet.iterator();
+            while(setIterator.hasNext()) {
+                String path = setIterator.next();
+                if (path.startsWith(exclude))
+                    setIterator.remove();
+            }
+        }
+
+        // An empty set of includes indicates include everything
+        if (includePrefixes.size() == 0) {
+            return filteredSet;
+        }
+
+        // Now, create a filtered set based on the includes
+        Iterator<String> setIterator = filteredSet.iterator();
+        while(setIterator.hasNext()) {
+            String path = setIterator.next();
+            boolean shouldInclude = false;
+            for (String include: includePrefixes) {
+                if (path.startsWith(include)) {
+                    shouldInclude = true;
+                    break;
+                }
+            }
+
+            // Remove if none of the includes specify this package path
+            if (!shouldInclude) {
+                setIterator.remove();
+            }
+        }
+
+        return filteredSet;
+    }
 }

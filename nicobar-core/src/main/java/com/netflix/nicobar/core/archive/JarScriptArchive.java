@@ -47,6 +47,7 @@ import org.apache.commons.lang.builder.ToStringStyle;
  * is created.
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class JarScriptArchive implements ScriptArchive {
     /** Default file name of the optional {@link ScriptModuleSpec} in the archive */
@@ -94,6 +95,8 @@ public class JarScriptArchive implements ScriptArchive {
         /** Build the {@link JarScriptArchive}. */
         public JarScriptArchive build() throws IOException {
             ScriptModuleSpec buildModuleSpec = moduleSpec;
+            String moduleSpecEntry = null;
+
             if (buildModuleSpec == null){
                 String buildSpecFileName = specFileName != null ? specFileName : DEFAULT_MODULE_SPEC_FILE_NAME;
                 // attempt to find a module spec in the jar file
@@ -101,6 +104,7 @@ public class JarScriptArchive implements ScriptArchive {
                 try {
                     ZipEntry zipEntry = jarFile.getEntry(buildSpecFileName);
                     if (zipEntry != null) {
+                        moduleSpecEntry = buildSpecFileName;
                         InputStream inputStream = jarFile.getInputStream(zipEntry);
                         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                         IOUtils.copy(inputStream, outputStream);
@@ -128,7 +132,7 @@ public class JarScriptArchive implements ScriptArchive {
             if (buildCreateTime <= 0) {
                 buildCreateTime = Files.getLastModifiedTime(jarPath).toMillis();
             }
-            return new JarScriptArchive(buildModuleSpec,jarPath, buildCreateTime);
+            return new JarScriptArchive(buildModuleSpec, jarPath, moduleSpecEntry, buildCreateTime);
         }
     }
 
@@ -138,6 +142,10 @@ public class JarScriptArchive implements ScriptArchive {
     private final long createTime;
 
     protected JarScriptArchive(ScriptModuleSpec moduleSpec, Path jarPath, long createTime) throws IOException {
+        this(moduleSpec, jarPath, null, createTime);
+    }
+
+    protected JarScriptArchive(ScriptModuleSpec moduleSpec, Path jarPath, String moduleSpecEntry, long createTime) throws IOException {
         this.createTime = createTime;
         this.moduleSpec = Objects.requireNonNull(moduleSpec, "moduleSpec");
         Objects.requireNonNull(jarPath, "jarFile");
@@ -151,14 +159,21 @@ public class JarScriptArchive implements ScriptArchive {
             indexBuilder = new HashSet<String>();
             while (jarEntries.hasMoreElements()) {
                 JarEntry jarEntry = jarEntries.nextElement();
+                // Skip adding moduleSpec to archive entries
+                if (jarEntry.getName().equals(moduleSpecEntry)) {
+                    continue;
+                }
+
                 if (!jarEntry.isDirectory()) {
                     indexBuilder.add(jarEntry.getName());
                 }
             }
         } finally {
-           jarFile.close();
+            jarFile.close();
         }
+
         entryNames = Collections.unmodifiableSet(indexBuilder);
+
         rootUrl = jarPath.toUri().toURL();
     }
 

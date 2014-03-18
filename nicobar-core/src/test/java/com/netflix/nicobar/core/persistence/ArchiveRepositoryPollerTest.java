@@ -34,6 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -44,26 +45,27 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.netflix.nicobar.core.archive.JarScriptArchive;
 import com.netflix.nicobar.core.module.ScriptModule;
 import com.netflix.nicobar.core.module.ScriptModuleListener;
 import com.netflix.nicobar.core.module.ScriptModuleLoader;
-import com.netflix.nicobar.core.persistence.ArchiveRepository;
-import com.netflix.nicobar.core.persistence.ArchiveRepositoryPoller;
-import com.netflix.nicobar.core.persistence.ArchiveSummary;
-import com.netflix.nicobar.core.persistence.PathArchiveRepository;
+import com.netflix.nicobar.core.plugin.NoOpCompilerPlugin;
+import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
 import com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource;
 
 /**
  * Base integration tests for {@link PathArchiveRepository}
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public abstract class ArchiveRepositoryPollerTest {
     private final static Logger logger = LoggerFactory.getLogger(ScriptModuleLoader.class);
     protected ArchiveRepository archiveRepository;
+    protected ScriptModuleLoader moduleLoader;
 
     /**
      * Create the repository to plug in to the integration gets
@@ -72,7 +74,7 @@ public abstract class ArchiveRepositoryPollerTest {
     public abstract ArchiveRepository createArchiveRepository(Path rootArchiveDirectory);
 
     @BeforeClass
-    public void setup() throws Exception {
+    public void suiteSetup() throws Exception {
         Path rootArchiveDirectory = Files.createTempDirectory(ArchiveRepositoryPollerTest.class.getSimpleName()+"_");
         logger.info("rootArchiveDirectory: {}", rootArchiveDirectory);
         FileUtils.forceDeleteOnExit(rootArchiveDirectory.toFile());
@@ -83,12 +85,19 @@ public abstract class ArchiveRepositoryPollerTest {
         deployJarArchive(TEST_MODULE_SPEC_JAR, now);
     }
 
+    @BeforeMethod 
+    public void testSetup() throws Exception {
+        ScriptCompilerPluginSpec pluginSpec = new ScriptCompilerPluginSpec.Builder(NoOpCompilerPlugin.PLUGIN_ID)
+            .withPluginClassName(NoOpCompilerPlugin.class.getName())
+            .build();
+        moduleLoader = new ScriptModuleLoader.Builder().addPluginSpec(pluginSpec).build();
+    }
+
     /**
      * Simulate what a client might do at startup
      */
     @Test
     public void testInitialLoad() throws Exception {
-        ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder().build();
         ArchiveRepositoryPoller poller = new ArchiveRepositoryPoller.Builder(moduleLoader).build();
         poller.addRepository(archiveRepository, 10, TimeUnit.SECONDS, true);
         Map<String, ScriptModule> scriptModules = moduleLoader.getAllScriptModules();
@@ -109,9 +118,9 @@ public abstract class ArchiveRepositoryPollerTest {
     @Test
     public void testPolling() throws Exception {
         ScriptModuleListener mockListener = mock(ScriptModuleListener.class);
+        moduleLoader.addListeners(Collections.singleton(mockListener));
 
         // initial startup phase
-        ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder().addListener(mockListener).build();
         ArchiveRepositoryPoller poller = new ArchiveRepositoryPoller.Builder(moduleLoader).build();
         poller.addRepository(archiveRepository, Integer.MAX_VALUE, TimeUnit.MILLISECONDS, true);
         Map<String, Long> origUpdateTimes = archiveRepository.getArchiveUpdateTimes();
@@ -140,9 +149,9 @@ public abstract class ArchiveRepositoryPollerTest {
     @Test(priority=Integer.MAX_VALUE) // run this last
     public void testDelete() throws Exception {
         ScriptModuleListener mockListener = mock(ScriptModuleListener.class);
+        moduleLoader.addListeners(Collections.singleton(mockListener));
 
         // initial startup phase
-        ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder().addListener(mockListener).build();
         ArchiveRepositoryPoller poller = new ArchiveRepositoryPoller.Builder(moduleLoader).build();
         poller.addRepository(archiveRepository, Integer.MAX_VALUE, TimeUnit.MILLISECONDS, true);
         verify(mockListener, times(2)).moduleUpdated(any(ScriptModule.class), eq((ScriptModule)null));
