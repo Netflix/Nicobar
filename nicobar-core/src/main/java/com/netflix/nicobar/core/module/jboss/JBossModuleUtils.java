@@ -158,10 +158,12 @@ public class JBossModuleUtils {
      *
      * @param moduleSpecBuilder builder to populate
      * @param pluginSpec {@link ScriptCompilerPluginSpec} to copy from
+     * @param latestRevisionIds used to lookup the latest dependencies. see {@link JBossModuleLoader#getLatestRevisionIds()}
      */
-    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ScriptCompilerPluginSpec pluginSpec) throws ModuleLoadException {
+    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ScriptCompilerPluginSpec pluginSpec, Map<String, ModuleIdentifier> latestRevisionIds) throws ModuleLoadException {
         Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
         Objects.requireNonNull(pluginSpec, "pluginSpec");
+        Objects.requireNonNull(latestRevisionIds, "latestRevisionIds");
         Set<Path> pluginRuntime = pluginSpec.getRuntimeResources();
         for (Path resourcePath : pluginRuntime) {
             File file = resourcePath.toFile();
@@ -183,6 +185,16 @@ public class JBossModuleUtils {
         moduleSpecBuilder.addDependency(JRE_DEPENDENCY_SPEC);
         moduleSpecBuilder.addDependency(NICOBAR_CORE_DEPENDENCY_SPEC);
         moduleSpecBuilder.addDependency(DependencySpec.createLocalDependencySpec());
+        // add dependencies to the module spec
+        Set<String> dependencies = pluginSpec.getModuleDependencies();
+        for (String scriptModuleId : dependencies) {
+            ModuleIdentifier latestIdentifier = latestRevisionIds.get(scriptModuleId);
+            if (latestIdentifier == null) {
+                throw new ModuleLoadException("Cannot find dependent module: " + scriptModuleId);
+            }
+
+            moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(latestIdentifier, true, false));
+        }
 
         Map<String, String> pluginMetadata = pluginSpec.getPluginMetadata();
         addPropertiesToSpec(moduleSpecBuilder, pluginMetadata);

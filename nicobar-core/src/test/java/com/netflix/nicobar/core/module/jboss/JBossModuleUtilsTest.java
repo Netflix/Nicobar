@@ -24,6 +24,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -71,7 +72,7 @@ public class JBossModuleUtilsTest {
             .build();
         ModuleIdentifier pluginId = JBossModuleUtils.getPluginModuleId(pluginSpec);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginId);
-        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec);
+        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec, Collections.<String, ModuleIdentifier>emptyMap());
 
         JBossModuleLoader moduleLoader = new JBossModuleLoader();
         moduleLoader.addModuleSpec(moduleSpecBuilder.create());

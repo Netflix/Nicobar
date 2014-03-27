@@ -310,7 +310,8 @@ public class ScriptModuleLoader {
         Objects.requireNonNull(pluginSpec, "pluginSpec");
         ModuleIdentifier pluginModuleId = JBossModuleUtils.getPluginModuleId(pluginSpec);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginModuleId);
-        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec);
+        Map<String, ModuleIdentifier> latestRevisionIds = jbossModuleLoader.getLatestRevisionIds();
+        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec, latestRevisionIds);
         // TODO: We expose the full set of app packages to the compiler too.
         // Maybe more control over what is exposed is needed here.
         JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, appClassLoader, appPackagePaths);

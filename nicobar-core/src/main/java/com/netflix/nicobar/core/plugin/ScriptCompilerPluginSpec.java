@@ -43,6 +43,7 @@ public class ScriptCompilerPluginSpec {
         private Set<Path> runtimeResources = new LinkedHashSet<Path>();
         private String providerClassName;
         private Map<String, String> pluginMetadata = new LinkedHashMap<String, String>();
+        private final Set<String> moduleDependencies = new LinkedHashSet<String>();
 
         /**
          * Start a builder with the required parameters
@@ -85,15 +86,17 @@ public class ScriptCompilerPluginSpec {
         /** Build the instance. */
         public ScriptCompilerPluginSpec build() {
             return new ScriptCompilerPluginSpec(pluginId,
-                new LinkedHashSet<Path>(runtimeResources),
-                providerClassName,
-                new LinkedHashMap<String, String>(pluginMetadata));
+                    moduleDependencies,
+                    runtimeResources,
+                    providerClassName,
+                    pluginMetadata);
         }
     }
     private final String pluginId;
     private final Set<Path> runtimeResources;
     private final String pluginClassName;
     private final Map<String, String> pluginMetadata;
+    private final Set<String> moduleDependencies;
 
     /**
      * @param pluginId language plugin id. will be used to create a module identifier.
@@ -101,8 +104,9 @@ public class ScriptCompilerPluginSpec {
      *  includes the language runtime as well as the jar/path to the provider class project.
      * @param pluginClassName fully qualified classname of the implementation of the {@link ScriptCompilerPlugin} class
      */
-    protected ScriptCompilerPluginSpec(String pluginId, Set<Path> runtimeResources, String pluginClassName, Map<String, String> pluginMetadata) {
+    protected ScriptCompilerPluginSpec(String pluginId, Set<String> moduleDependencies, Set<Path> runtimeResources, String pluginClassName, Map<String, String> pluginMetadata) {
         this.pluginId =  Objects.requireNonNull(pluginId, "pluginName");
+        this.moduleDependencies =  Collections.unmodifiableSet(Objects.requireNonNull(moduleDependencies, "moduleDependencies"));
         this.runtimeResources =  Collections.unmodifiableSet(Objects.requireNonNull(runtimeResources, "runtimeResources"));
         this.pluginClassName = pluginClassName;
         this.pluginMetadata = Collections.unmodifiableMap(Objects.requireNonNull(pluginMetadata, "pluginMetadata"));
@@ -117,6 +121,13 @@ public class ScriptCompilerPluginSpec {
      */
     public Set<Path> getRuntimeResources() {
         return runtimeResources;
+    }
+
+    /**
+     * @return the names of the modules that this compiler plugin depends on
+     */
+    public Set<String> getModuleDependencies() {
+        return moduleDependencies;
     }
 
     /**
