@@ -337,6 +337,11 @@ public class CassandraArchiveRepository implements ArchiveRepository {
 
     }
 
+    @Override
+    public void addDeploySpecs(ModuleId moduleId, Map<String, Object> deploySpecs) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Generate the CQL to select specific columns by shard number.
      *  SELECT <columns>... FROM script_repo WHERE shard_num = ?

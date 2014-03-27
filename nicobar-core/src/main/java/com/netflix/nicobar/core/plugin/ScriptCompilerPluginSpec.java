@@ -62,8 +62,8 @@ public class ScriptCompilerPluginSpec {
             return this;
         }
         /**
-         * @param resourcePath Paths to jars and resources needed to create the language runtime module. This
-         *  includes the language runtime as well as the jar/path to the provider class project.
+         * @param resourcePath Paths to jars and resources needed to create the language deploy module. This
+         *  includes the language deploy as well as the jar/path to the provider class project.
          */
         public Builder addRuntimeResource(Path resourcePath) {
             if (resourcePath != null) {
@@ -119,7 +119,7 @@ public class ScriptCompilerPluginSpec {
     /**
      * @param pluginId language plugin id. will be used to create a module identifier.
      * @param runtimeResources Paths to jars and resources needed to create the language runtime module. This
-     *  includes the language runtime as well as the jar/path to the provider class project.
+     *        includes the language runtime as well as the jar/path to the provider class project.
      * @param pluginClassName fully qualified classname of the implementation of the {@link ScriptCompilerPlugin} class
      */
     protected ScriptCompilerPluginSpec(String pluginId, Set<ModuleId> moduleDependencies, Set<Path> runtimeResources, String pluginClassName, Map<String, String> pluginMetadata) {
@@ -135,7 +135,7 @@ public class ScriptCompilerPluginSpec {
     }
 
     /**
-     * Get the language runtime resources (jars or directories.)
+     * Get the language deploy resources (jars or directories.)
      */
     public Set<Path> getRuntimeResources() {
         return runtimeResources;

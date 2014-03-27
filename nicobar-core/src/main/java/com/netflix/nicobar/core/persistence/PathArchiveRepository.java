@@ -220,4 +220,9 @@ public class PathArchiveRepository implements ArchiveRepository {
             FileUtils.deleteDirectory(moduleDir.toFile());
         }
     }
+
+    @Override
+    public void addDeploySpecs(ModuleId moduleId, Map<String, Object> deploySpecs) {
+        throw new UnsupportedOperationException();
+    }
 }

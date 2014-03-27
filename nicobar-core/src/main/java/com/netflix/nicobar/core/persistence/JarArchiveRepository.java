@@ -229,6 +229,11 @@ public class JarArchiveRepository implements ArchiveRepository {
         }
     }
 
+    @Override
+    public void addDeploySpecs(ModuleId moduleId, Map<String, Object> deploySpecs) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Translated a module id to an absolute path of the module jar
      */
@@ -236,4 +241,6 @@ public class JarArchiveRepository implements ArchiveRepository {
         Path moduleJarPath = rootDir.resolve(moduleId + ".jar");
         return moduleJarPath;
     }
+
+
 }

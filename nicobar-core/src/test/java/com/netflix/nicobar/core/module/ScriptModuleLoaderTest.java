@@ -32,6 +32,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -381,6 +382,11 @@ public class ScriptModuleLoaderTest {
         @Override
         public ScriptModuleSpec getModuleSpec() {
             return scriptModuleSpec;
+        }
+
+        @Override
+        public Map<String, Object> getDeploySpecs() {
+            return Collections.<String, Object>emptyMap();
         }
 
         @Override
