@@ -15,6 +15,7 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import com.netflix.nicobar.core.archive.JarScriptArchive;
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.module.ScriptModule;
 import com.netflix.nicobar.core.module.ScriptModuleLoader;
@@ -61,7 +62,7 @@ public class BytecodeLoadingPluginTest {
         JarScriptArchive jarArchive = new JarScriptArchive.Builder(Paths.get(jarPath.getFile()))
             .build();
         moduleLoader.updateScriptArchives(Collections.singleton((ScriptArchive)jarArchive));
-        ScriptModule module = moduleLoader.getScriptModule("hellohelper");
+        ScriptModule module = moduleLoader.getScriptModule(ModuleId.create("hellohelper"));
         assertNotNull(module);
 
         Class<?> targetClass = findClass(module, "com.netflix.nicobar.test.HelloHelper");
@@ -87,7 +88,7 @@ public class BytecodeLoadingPluginTest {
         Set<ScriptArchive> archives = new HashSet<ScriptArchive>();
         Collections.<ScriptArchive>addAll(archives, depArchive, jarArchive);
         moduleLoader.updateScriptArchives(archives);
-        ScriptModule module = moduleLoader.getScriptModule("helloworld");
+        ScriptModule module = moduleLoader.getScriptModule(ModuleId.create("helloworld"));
         assertNotNull(module);
 
         Class<?> targetClass = findClass(module, "com.netflix.nicobar.test.Helloworld");

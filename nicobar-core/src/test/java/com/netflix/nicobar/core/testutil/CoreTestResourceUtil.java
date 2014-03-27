@@ -26,6 +26,8 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import com.netflix.nicobar.core.archive.ModuleId;
+
 /**
  * Utility class to locate test resources
  *
@@ -46,18 +48,18 @@ public class CoreTestResourceUtil {
         TEST_SCRIPTS_PATH("test-scripts-moduleId", "scripts", "script1.txt", "script2.txt", "script3.txt"),
         TEST_CLASSPATHDIR_PATH("test-classpath", "classpathdir");
 
-        private final String moduleId;
+        private final ModuleId moduleId;
         private final String resourcePath;
         private final Set<String> contentPaths;
         private TestResource(String moduleId, String resourcePath, String... contentPaths) {
-            this.moduleId = moduleId;
+            this.moduleId = ModuleId.create(moduleId);
             this.resourcePath = resourcePath;
             this.contentPaths = new LinkedHashSet<String>(Arrays.asList(contentPaths));
         }
         /**
          * @return the expected moduleId after this is converted to a archive
          */
-        public String getModuleId() {
+        public ModuleId getModuleId() {
             return moduleId;
         }
         /**

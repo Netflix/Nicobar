@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import com.netflix.nicobar.core.archive.ModuleId;
+
 /**
  * This library supports pluggable language compilers. Compiler plugins will be loaded
  * into a separate class loader to provider extra isolation in case there are multiple
@@ -43,7 +45,7 @@ public class ScriptCompilerPluginSpec {
         private Set<Path> runtimeResources = new LinkedHashSet<Path>();
         private String providerClassName;
         private Map<String, String> pluginMetadata = new LinkedHashMap<String, String>();
-        private final Set<String> moduleDependencies = new LinkedHashSet<String>();
+        private final Set<ModuleId> moduleDependencies = new LinkedHashSet<ModuleId>();
 
         /**
          * Start a builder with the required parameters
@@ -86,14 +88,16 @@ public class ScriptCompilerPluginSpec {
         /** Add Module dependency. */
         public Builder addModuleDependency(String dependencyName) {
             if (dependencyName != null) {
-                moduleDependencies.add(dependencyName);
+                moduleDependencies.add(ModuleId.fromString(dependencyName));
             }
             return this;
         }
         /** Add Module dependencies. */
         public Builder addModuleDependencies(Set<String> dependencies) {
             if (dependencies != null) {
-                dependencies.addAll(dependencies);
+                for (String dependency: dependencies) {
+                    addModuleDependency(dependency);
+                }
             }
             return this;
         }
@@ -110,7 +114,7 @@ public class ScriptCompilerPluginSpec {
     private final Set<Path> runtimeResources;
     private final String pluginClassName;
     private final Map<String, String> pluginMetadata;
-    private final Set<String> moduleDependencies;
+    private final Set<ModuleId> moduleDependencies;
 
     /**
      * @param pluginId language plugin id. will be used to create a module identifier.
@@ -118,7 +122,7 @@ public class ScriptCompilerPluginSpec {
      *  includes the language runtime as well as the jar/path to the provider class project.
      * @param pluginClassName fully qualified classname of the implementation of the {@link ScriptCompilerPlugin} class
      */
-    protected ScriptCompilerPluginSpec(String pluginId, Set<String> moduleDependencies, Set<Path> runtimeResources, String pluginClassName, Map<String, String> pluginMetadata) {
+    protected ScriptCompilerPluginSpec(String pluginId, Set<ModuleId> moduleDependencies, Set<Path> runtimeResources, String pluginClassName, Map<String, String> pluginMetadata) {
         this.pluginId =  Objects.requireNonNull(pluginId, "pluginName");
         this.moduleDependencies =  Collections.unmodifiableSet(Objects.requireNonNull(moduleDependencies, "moduleDependencies"));
         this.runtimeResources =  Collections.unmodifiableSet(Objects.requireNonNull(runtimeResources, "runtimeResources"));
@@ -140,7 +144,7 @@ public class ScriptCompilerPluginSpec {
     /**
      * @return the names of the modules that this compiler plugin depends on
      */
-    public Set<String> getModuleDependencies() {
+    public Set<ModuleId> getModuleDependencies() {
         return moduleDependencies;
     }
 

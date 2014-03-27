@@ -121,10 +121,12 @@ public class JarScriptArchive implements ScriptArchive {
                 }
                 // create a default module spec
                 if (buildModuleSpec == null) {
-                    String moduleId = this.jarPath.getFileName().toString();
-                    if (moduleId.endsWith(JAR_FILE_SUFFIX)) {
-                        moduleId = moduleId.substring(0, moduleId.lastIndexOf(JAR_FILE_SUFFIX));
+                    String jarFileName = this.jarPath.getFileName().toString();
+                    if (jarFileName.endsWith(JAR_FILE_SUFFIX)) {
+                      jarFileName = jarFileName.substring(0, jarFileName.lastIndexOf(JAR_FILE_SUFFIX));
                     }
+
+                    ModuleId moduleId = ModuleId.create(jarFileName);
                     buildModuleSpec = new ScriptModuleSpec.Builder(moduleId).build();
                 }
             }

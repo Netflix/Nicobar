@@ -24,6 +24,7 @@ import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 import org.jboss.modules.Module;
 
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.module.ScriptModule;
 
@@ -33,13 +34,13 @@ import com.netflix.nicobar.core.module.ScriptModule;
  * @author James Kojo
  */
 public class JBossScriptModule implements ScriptModule {
-    private final String moduleId;
+    private final ModuleId moduleId;
     private final Module jbossModule;
     private final long createTime;
     private final ScriptArchive sourceArchive;
 
-    public JBossScriptModule(String moduleName, Module jbossModule, ScriptArchive sourceArchive) {
-        this.moduleId = Objects.requireNonNull(moduleName, "moduleName");
+    public JBossScriptModule(ModuleId moduleId, Module jbossModule, ScriptArchive sourceArchive) {
+        this.moduleId = Objects.requireNonNull(moduleId, "moduleId");
         this.jbossModule =  Objects.requireNonNull(jbossModule, "jbossModule");
         this.createTime = sourceArchive.getCreateTime();
         this.sourceArchive = Objects.requireNonNull(sourceArchive, "sourceArchive");
@@ -49,7 +50,7 @@ public class JBossScriptModule implements ScriptModule {
      * @return module identifier
      */
     @Override
-    public String getModuleId() {
+    public ModuleId getModuleId() {
         return moduleId;
     }
 

@@ -52,9 +52,9 @@ public class JarScriptArchiveTest {
         Path jarPath = Paths.get(testJarUrl.toURI()).toAbsolutePath();
 
         JarScriptArchive scriptArchive = new JarScriptArchive.Builder(jarPath)
-            .setModuleSpec(new ScriptModuleSpec.Builder("testModuleId").build())
+            .setModuleSpec(new ScriptModuleSpec.Builder(ModuleId.create("testModuleId")).build())
             .build();
-        assertEquals(scriptArchive.getModuleSpec().getModuleId(), "testModuleId");
+        assertEquals(scriptArchive.getModuleSpec().getModuleId().toString(), "testModuleId");
         Set<String> archiveEntryNames = scriptArchive.getArchiveEntryNames();
         assertEquals(archiveEntryNames, TEST_TEXT_JAR.getContentPaths());
         for (String entryName : archiveEntryNames) {

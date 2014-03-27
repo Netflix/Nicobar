@@ -55,6 +55,7 @@ import com.netflix.astyanax.model.Row;
 import com.netflix.astyanax.model.Rows;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.nicobar.core.archive.JarScriptArchive;
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
 import com.netflix.nicobar.core.persistence.ArchiveRepository;
@@ -92,6 +93,7 @@ import com.netflix.nicobar.core.persistence.RepositorySummary;
  *
  * See {@link CassandraArchiveRepositoryConfig} to override the default table name.
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class CassandraArchiveRepository implements ArchiveRepository {
     private final static Logger logger = LoggerFactory.getLogger(CassandraArchiveRepository.class);
@@ -128,7 +130,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
     public void insertArchive(JarScriptArchive jarScriptArchive) throws IOException {
         Objects.requireNonNull(jarScriptArchive, "jarScriptArchive");
         ScriptModuleSpec moduleSpec = jarScriptArchive.getModuleSpec();
-        String moduleId = moduleSpec.getModuleId();
+        ModuleId moduleId = moduleSpec.getModuleId();
         Path jarFilePath;
         try {
             jarFilePath = Paths.get(jarScriptArchive.getRootUrl().toURI());
@@ -139,7 +141,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
         byte[] jarBytes = Files.readAllBytes(jarFilePath);
         byte[] hash = calculateHash(jarBytes);
         MutationBatch mutationBatch = getConfig().getKeyspace().prepareMutationBatch();
-        ColumnListMutation<String> columnMutation = mutationBatch.withRow(getColumnFamily(), moduleId);
+        ColumnListMutation<String> columnMutation = mutationBatch.withRow(getColumnFamily(), moduleId.toString());
         columnMutation
             .putColumn(Columns.shard_num.name(), shardNum)
             .putColumn(Columns.last_update.name(), jarScriptArchive.getCreateTime())
@@ -159,20 +161,20 @@ public class CassandraArchiveRepository implements ArchiveRepository {
      * Get the last update times of all of the script archives managed by this Repository.
      * @return map of moduleId to last update time
      */
-    public Map<String, Long> getArchiveUpdateTimes() throws IOException {
+    public Map<ModuleId, Long> getArchiveUpdateTimes() throws IOException {
         Iterable<Row<String, String>> rows;
         try {
             rows = getRows(EnumSet.of(Columns.module_id, Columns.last_update));
         } catch (ConnectionException e) {
             throw new IOException(e);
         }
-        Map<String, Long> updateTimes = new LinkedHashMap<String, Long>();
+        Map<ModuleId, Long> updateTimes = new LinkedHashMap<ModuleId, Long>();
         for (Row<String, String> row : rows) {
             String moduleId = row.getKey();
             Column<String> lastUpdateColumn = row.getColumns().getColumnByName(Columns.last_update.name());
             Long updateTime = lastUpdateColumn != null ? lastUpdateColumn.getLongValue() : null;
             if (StringUtils.isNotBlank(moduleId) && updateTime != null) {
-                updateTimes.put(moduleId, updateTime);
+                updateTimes.put(ModuleId.fromString(moduleId), updateTime);
             }
         }
         return updateTimes;
@@ -180,7 +182,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
 
     @Override
     public RepositorySummary getRepositorySummary() throws IOException {
-        Map<String, Long> updateTimes = getArchiveUpdateTimes();
+        Map<ModuleId, Long> updateTimes = getArchiveUpdateTimes();
         int archiveCount = updateTimes.size();
         long maxUpdateTime = 0;
         for (Long updateTime : updateTimes.values()) {
@@ -215,7 +217,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
             Column<String> lastUpdateColumn = columns.getColumnByName(Columns.last_update.name());
             long updateTime = lastUpdateColumn != null ? lastUpdateColumn.getLongValue() : 0;
             ScriptModuleSpec moduleSpec = getModuleSpec(columns);
-            ArchiveSummary summary = new ArchiveSummary(moduleId, moduleSpec, updateTime);
+            ArchiveSummary summary = new ArchiveSummary(ModuleId.fromString(moduleId), moduleSpec, updateTime);
             summaries.add(summary);
         }
         return summaries;
@@ -262,19 +264,23 @@ public class CassandraArchiveRepository implements ArchiveRepository {
      * @return set of ScriptArchives retrieved from the database
      */
     @Override
-    public Set<ScriptArchive> getScriptArchives(Set<String> moduleIds) throws IOException {
+    public Set<ScriptArchive> getScriptArchives(Set<ModuleId> moduleIds) throws IOException {
         Set<ScriptArchive> archives = new LinkedHashSet<ScriptArchive>(moduleIds.size()*2);
         Path archiveOuputDir = getConfig().getArchiveOutputDirectory();
-        List<String> moduleIdList = new LinkedList<String>(moduleIds);
+        List<ModuleId> moduleIdList = new LinkedList<ModuleId>(moduleIds);
         int batchSize = getConfig().getArchiveFetchBatchSize();
         int start = 0;
         try {
             while (start < moduleIdList.size()) {
                 int end = Math.min(moduleIdList.size(), start + batchSize);
-                List<String> batchModuleIds = moduleIdList.subList(start, end);
+                List<ModuleId> batchModuleIds = moduleIdList.subList(start, end);
+                List<String> keySliceList = new LinkedList<String>();
+                for (ModuleId batchModuleId:batchModuleIds) {
+                    keySliceList.add(batchModuleId.toString());
+                }
 
                 Rows<String,String> rows = getConfig().getKeyspace().prepareQuery(getColumnFamily())
-                    .getKeySlice(batchModuleIds)
+                    .getKeySlice(keySliceList)
                     .execute()
                     .getResult();
                 for (Row<String, String> row : rows) {
@@ -319,10 +325,10 @@ public class CassandraArchiveRepository implements ArchiveRepository {
      * @throws ConnectionException
      */
     @Override
-    public void deleteArchive(String moduleId) throws IOException {
+    public void deleteArchive(ModuleId moduleId) throws IOException {
         Objects.requireNonNull(moduleId, "moduleId");
         MutationBatch mutationBatch = getConfig().getKeyspace().prepareMutationBatch();
-        mutationBatch.withRow(getColumnFamily(), moduleId).delete();
+        mutationBatch.withRow(getColumnFamily(), moduleId.toString()).delete();
         try {
             mutationBatch.execute();
         } catch (ConnectionException e) {

@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.module.ScriptModule;
 import com.netflix.nicobar.core.module.ScriptModuleLoader;
 
@@ -39,6 +40,7 @@ import com.netflix.nicobar.core.module.ScriptModuleLoader;
  * See {@link ScriptModuleExecutionCommand}.
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class HystrixScriptModuleExecutor<V> {
     private final static Logger logger = LoggerFactory.getLogger(HystrixScriptModuleExecutor.class);
@@ -58,7 +60,7 @@ public class HystrixScriptModuleExecutor<V> {
         }
     }
 
-    private final ConcurrentMap<String, ExecutionStatistics> statistics = new ConcurrentHashMap<String, ExecutionStatistics>();
+    private final ConcurrentMap<ModuleId, ExecutionStatistics> statistics = new ConcurrentHashMap<ModuleId, ExecutionStatistics>();
     private final String executorId;
 
     /**
@@ -84,7 +86,7 @@ public class HystrixScriptModuleExecutor<V> {
 
         List<ScriptModule> modules = new ArrayList<ScriptModule>(moduleIds.size());
         for (String moduleId : moduleIds) {
-           ScriptModule module = moduleLoader.getScriptModule(moduleId);
+           ScriptModule module = moduleLoader.getScriptModule(ModuleId.create(moduleId));
            if (module != null) {
                modules.add(module);
            }
@@ -134,7 +136,7 @@ public class HystrixScriptModuleExecutor<V> {
      * Get the statistics for the given moduleId
      */
     @Nullable
-    public ExecutionStatistics getModuleStatistics(String moduleId) {
+    public ExecutionStatistics getModuleStatistics(ModuleId moduleId) {
         ExecutionStatistics moduleStats = statistics.get(moduleId);
         return moduleStats;
     }
@@ -144,7 +146,7 @@ public class HystrixScriptModuleExecutor<V> {
      * @param moduleId
      * @return new or existing module statistics
      */
-    protected ExecutionStatistics getOrCreateModuleStatistics(String moduleId) {
+    protected ExecutionStatistics getOrCreateModuleStatistics(ModuleId moduleId) {
         ExecutionStatistics moduleStats = statistics.get(moduleId);
         if (moduleStats == null) {
             moduleStats = new ExecutionStatistics();

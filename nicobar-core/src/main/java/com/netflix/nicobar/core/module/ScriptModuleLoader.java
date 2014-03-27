@@ -40,6 +40,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
 import com.netflix.nicobar.core.compile.ScriptCompilationException;
@@ -125,7 +126,7 @@ public class ScriptModuleLoader {
     }
 
     /** Map of script ModuleId to the loaded ScriptModules */
-    protected final Map<String, ScriptModule> loadedScriptModules = new ConcurrentHashMap<String, ScriptModule>();
+    protected final Map<ModuleId, ScriptModule> loadedScriptModules = new ConcurrentHashMap<ModuleId, ScriptModule>();
 
     protected final Set<ScriptCompilerPluginSpec> pluginSpecs;
     protected final ClassLoader appClassLoader;
@@ -160,22 +161,22 @@ public class ScriptModuleLoader {
      *
      * @param candidateArchives archives to load or update
      */
-    public synchronized void updateScriptArchives(Set<ScriptArchive> candidateArchives)  {
+    public synchronized void updateScriptArchives(Set<? extends ScriptArchive> candidateArchives)  {
         Objects.requireNonNull(candidateArchives);
         long updateNumber = System.currentTimeMillis();
 
         // map script module id to archive to be compiled
-        Map<String, ScriptArchive> archivesToCompile = new HashMap<String, ScriptArchive>(candidateArchives.size()*2);
+        Map<ModuleId, ScriptArchive> archivesToCompile = new HashMap<ModuleId, ScriptArchive>(candidateArchives.size()*2);
 
         // create an updated mapping of the scriptModuleId to latest revisionId including the yet-to-be-compiled archives
-        Map<String, ModuleIdentifier> oldRevisionIdMap = jbossModuleLoader.getLatestRevisionIds();
-        Map<String, ModuleIdentifier> updatedRevisionIdMap = new HashMap<String, ModuleIdentifier>((oldRevisionIdMap.size()+candidateArchives.size())*2);
+        Map<ModuleId, ModuleIdentifier> oldRevisionIdMap = jbossModuleLoader.getLatestRevisionIds();
+        Map<ModuleId, ModuleIdentifier> updatedRevisionIdMap = new HashMap<ModuleId, ModuleIdentifier>((oldRevisionIdMap.size()+candidateArchives.size())*2);
         updatedRevisionIdMap.putAll(oldRevisionIdMap);
 
         // Map of the scriptModuleId to it's updated set of dependencies
-        Map<String, Set<String>> archiveDependencies = new HashMap<String, Set<String>>();
+        Map<ModuleId, Set<ModuleId>> archiveDependencies = new HashMap<ModuleId, Set<ModuleId>>();
         for (ScriptArchive scriptArchive : candidateArchives) {
-            String scriptModuleId = scriptArchive.getModuleSpec().getModuleId();
+            ModuleId scriptModuleId = scriptArchive.getModuleSpec().getModuleId();
 
             // filter out archives that have a newer module already loaded
             long createTime = scriptArchive.getCreateTime();
@@ -199,13 +200,13 @@ public class ScriptModuleLoader {
 
         // create a dependency graph with the candidates swapped in in order to figure out the
         // order in which the candidates should be loaded
-        DirectedGraph<String, DefaultEdge> candidateGraph = jbossModuleLoader.getModuleNameGraph();
+        DirectedGraph<ModuleId, DefaultEdge> candidateGraph = jbossModuleLoader.getModuleNameGraph();
         GraphUtils.swapVertices(candidateGraph, archiveDependencies);
 
         // iterate over the graph in reverse dependency order
-        Set<String> leaves = GraphUtils.getLeafVertices(candidateGraph);
+        Set<ModuleId> leaves = GraphUtils.getLeafVertices(candidateGraph);
         while (!leaves.isEmpty()) {
-            for (String scriptModuleId : leaves) {
+            for (ModuleId scriptModuleId : leaves) {
                 ScriptArchive scriptArchive = archivesToCompile.get(scriptModuleId);
                 if (scriptArchive == null) {
                     continue;
@@ -258,8 +259,8 @@ public class ScriptModuleLoader {
                 notifyModuleUpdate(scriptModule, oldModule);
 
                 // find dependents and add them to the to be compiled set
-                Set<String> dependents = GraphUtils.getIncomingVertices(candidateGraph, scriptModuleId);
-                for (String dependentScriptModuleId : dependents) {
+                Set<ModuleId> dependents = GraphUtils.getIncomingVertices(candidateGraph, scriptModuleId);
+                for (ModuleId dependentScriptModuleId : dependents) {
                     if (!archivesToCompile.containsKey(dependentScriptModuleId)) {
                         ScriptModule dependentScriptModule = loadedScriptModules.get(dependentScriptModuleId);
                         if (dependentScriptModule != null) {
@@ -310,7 +311,7 @@ public class ScriptModuleLoader {
         Objects.requireNonNull(pluginSpec, "pluginSpec");
         ModuleIdentifier pluginModuleId = JBossModuleUtils.getPluginModuleId(pluginSpec);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginModuleId);
-        Map<String, ModuleIdentifier> latestRevisionIds = jbossModuleLoader.getLatestRevisionIds();
+        Map<ModuleId, ModuleIdentifier> latestRevisionIds = jbossModuleLoader.getLatestRevisionIds();
         JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec, latestRevisionIds);
         // TODO: We expose the full set of app packages to the compiler too.
         // Maybe more control over what is exposed is needed here.
@@ -340,8 +341,8 @@ public class ScriptModuleLoader {
      * instances of the module cached outside of this module loader will remain
      * un-effected and will continue to operate.
      */
-    public synchronized void removeScriptModule(String scriptModuleId) {
-        jbossModuleLoader.unloadAllModuleRevision(scriptModuleId);
+    public synchronized void removeScriptModule(ModuleId scriptModuleId) {
+        jbossModuleLoader.unloadAllModuleRevision(scriptModuleId.toString());
         ScriptModule oldScriptModule = loadedScriptModules.remove(scriptModuleId);
         if (oldScriptModule != null) {
             notifyModuleUpdate(null, oldScriptModule);
@@ -350,6 +351,11 @@ public class ScriptModuleLoader {
 
     @Nullable
     public ScriptModule getScriptModule(String scriptModuleId) {
+        return loadedScriptModules.get(ModuleId.fromString(scriptModuleId));
+    }
+
+    @Nullable
+    public ScriptModule getScriptModule(ModuleId scriptModuleId) {
         return loadedScriptModules.get(scriptModuleId);
     }
 
@@ -357,9 +363,10 @@ public class ScriptModuleLoader {
      * Get a view of the loaded script modules
      * @return immutable view of the Map that retains the script modules. Map ModuleId the loaded ScriptModule
      */
-    public Map<String, ScriptModule> getAllScriptModules() {
+    public Map<ModuleId, ScriptModule> getAllScriptModules() {
         return Collections.unmodifiableMap(loadedScriptModules);
     }
+
     /**
      * Add listeners to this module loader. Listeners will only be notified of events that occurred after they
      * were added.

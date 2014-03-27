@@ -23,20 +23,23 @@ import java.util.Map;
 import java.util.Set;
 
 import com.netflix.nicobar.core.archive.JarScriptArchive;
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 
 /**
  * Interface to represent a persistence store for archives
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public interface ArchiveRepository {
 
     public String getRepositoryId();
 
     /**
-     * insert a Jar into the script archive
-     * @param jarScriptArchive script archive which describes the jar and the ModuleSpec which should be inserted
+     * insert a Jar into the repository
+     * @param jarScriptArchive script archive which describes the jar and
+     *        the ModuleSpec which should be inserted
      */
     public void insertArchive(JarScriptArchive jarScriptArchive)
         throws IOException;
@@ -45,7 +48,7 @@ public interface ArchiveRepository {
      * Get the last update times of all of the script archives managed by this Repository.
      * @return map of moduleId to last update time
      */
-    public Map<String, Long> getArchiveUpdateTimes() throws IOException;
+    public Map<ModuleId, Long> getArchiveUpdateTimes() throws IOException;
 
     /**
      * Get a summary of the of this repository.
@@ -65,12 +68,12 @@ public interface ArchiveRepository {
      * @param moduleIds keys to search for
      * @return set of ScriptArchives retrieved from the database
      */
-    public Set<ScriptArchive> getScriptArchives(Set<String> moduleIds) throws IOException;
+    public Set<ScriptArchive> getScriptArchives(Set<ModuleId> moduleIds) throws IOException;
 
     /**
      * Delete an archive by ID
      * @param moduleId module id to delete
      * @throws ConnectionException
      */
-    public void deleteArchive(String moduleId) throws IOException;
+    public void deleteArchive(ModuleId moduleId) throws IOException;
 }

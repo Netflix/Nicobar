@@ -5,3 +5,4 @@ project(':nicobar-core') {
         compile 'org.jboss.modules:jboss-modules:1.3.0.Final'
     }
 }
+

@@ -55,7 +55,7 @@ public class SingleFileScriptArchive implements ScriptArchive {
         public Builder(Path filePath) {
             this.filePath = filePath;
         }
-        
+
         /** Set the module spec for this archive */
         public Builder setModuleSpec(ScriptModuleSpec moduleSpec) {
             this.moduleSpec = moduleSpec;
@@ -67,7 +67,7 @@ public class SingleFileScriptArchive implements ScriptArchive {
             this.createTime = createTime;
             return this;
         }
-        
+
         /** Build the {@link PathScriptArchive}. */
         public SingleFileScriptArchive build() throws IOException {
             long buildCreateTime = createTime;
@@ -77,10 +77,10 @@ public class SingleFileScriptArchive implements ScriptArchive {
             ScriptModuleSpec buildModuleSpec = moduleSpec;
             // Define moduleId canonically as the file name with '.'s replaced by '_'.
             if (buildModuleSpec == null) {
-                String moduleId = this.filePath.getFileName().toString().replaceAll("\\.", "_");
+                ModuleId moduleId = ModuleId.create(this.filePath.getFileName().toString().replaceAll("\\.", "_"));
                 buildModuleSpec = new ScriptModuleSpec.Builder(moduleId).build();
             }
-            
+
             Path rootDir = filePath.normalize().getParent();
             String fileName = rootDir.relativize(filePath).toString();
             return new SingleFileScriptArchive(buildModuleSpec, rootDir, fileName, buildCreateTime);
@@ -106,6 +106,7 @@ public class SingleFileScriptArchive implements ScriptArchive {
     public ScriptModuleSpec getModuleSpec() {
         return moduleSpec;
     }
+
 
     @Override
     public URL getRootUrl() {

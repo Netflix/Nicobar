@@ -49,6 +49,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.netflix.nicobar.core.archive.JarScriptArchive;
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.module.ScriptModule;
 import com.netflix.nicobar.core.module.ScriptModuleListener;
 import com.netflix.nicobar.core.module.ScriptModuleLoader;
@@ -85,7 +86,7 @@ public abstract class ArchiveRepositoryPollerTest {
         deployJarArchive(TEST_MODULE_SPEC_JAR, now);
     }
 
-    @BeforeMethod 
+    @BeforeMethod
     public void testSetup() throws Exception {
         ScriptCompilerPluginSpec pluginSpec = new ScriptCompilerPluginSpec.Builder(NoOpCompilerPlugin.PLUGIN_ID)
             .withPluginClassName(NoOpCompilerPlugin.class.getName())
@@ -100,9 +101,9 @@ public abstract class ArchiveRepositoryPollerTest {
     public void testInitialLoad() throws Exception {
         ArchiveRepositoryPoller poller = new ArchiveRepositoryPoller.Builder(moduleLoader).build();
         poller.addRepository(archiveRepository, 10, TimeUnit.SECONDS, true);
-        Map<String, ScriptModule> scriptModules = moduleLoader.getAllScriptModules();
+        Map<ModuleId, ScriptModule> scriptModules = moduleLoader.getAllScriptModules();
 
-        assertEquals(scriptModules.keySet(), new HashSet<String>(Arrays.asList(TEST_TEXT_JAR.getModuleId(), TEST_MODULE_SPEC_JAR.getModuleId())));
+        assertEquals(scriptModules.keySet(), new HashSet<ModuleId>(Arrays.asList(TEST_TEXT_JAR.getModuleId(), TEST_MODULE_SPEC_JAR.getModuleId())));
         List<ArchiveSummary> archiveSummaries = archiveRepository.getArchiveSummaries();
         for (ArchiveSummary archiveSummary : archiveSummaries) {
             ScriptModule scriptModule = moduleLoader.getScriptModule(archiveSummary.getModuleId());
@@ -123,7 +124,7 @@ public abstract class ArchiveRepositoryPollerTest {
         // initial startup phase
         ArchiveRepositoryPoller poller = new ArchiveRepositoryPoller.Builder(moduleLoader).build();
         poller.addRepository(archiveRepository, Integer.MAX_VALUE, TimeUnit.MILLISECONDS, true);
-        Map<String, Long> origUpdateTimes = archiveRepository.getArchiveUpdateTimes();
+        Map<ModuleId, Long> origUpdateTimes = archiveRepository.getArchiveUpdateTimes();
         verify(mockListener, times(2)).moduleUpdated(any(ScriptModule.class), eq((ScriptModule)null));
         verifyNoMoreInteractions(mockListener);
 

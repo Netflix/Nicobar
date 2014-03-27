@@ -26,16 +26,18 @@ import javax.annotation.Nullable;
 
 /**
  * Data object which represents a bundle of scripts and associated resources.
+ * Also contains a {@link ScriptModuleSpec} to describe how this archive
+ * is to be converted into a module.
  *
- * An archive is uniquely identified by it's name and version number.
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public interface ScriptArchive {
 
     /**
      * @return the module spec for this archive
      */
-    ScriptModuleSpec getModuleSpec();
+    public ScriptModuleSpec getModuleSpec();
 
     /**
      * @return {@link URL}s representing the contents of this archive. should be

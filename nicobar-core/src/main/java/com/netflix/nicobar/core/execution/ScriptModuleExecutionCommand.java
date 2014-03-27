@@ -31,6 +31,7 @@ import com.netflix.nicobar.core.module.ScriptModule;
  * about script execution counts and latencies.
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  * @param <R> Type of return value from the command
  */
 public class ScriptModuleExecutionCommand<R> extends HystrixCommand<R>{
@@ -40,7 +41,7 @@ public class ScriptModuleExecutionCommand<R> extends HystrixCommand<R>{
     public ScriptModuleExecutionCommand(String moduleExecutorId, ScriptModuleExecutable<R> executable, ScriptModule module) {
         super(HystrixCommand.Setter
             .withGroupKey(HystrixCommandGroupKey.Factory.asKey(moduleExecutorId))
-            .andCommandKey(HystrixCommandKey.Factory.asKey(module.getModuleId()))
+            .andCommandKey(HystrixCommandKey.Factory.asKey(module.getModuleId().toString()))
             .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withFallbackEnabled(false)));
 
         Objects.requireNonNull(moduleExecutorId, "moduleExecutorId");

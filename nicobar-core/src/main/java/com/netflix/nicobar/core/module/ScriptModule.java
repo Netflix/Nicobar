@@ -19,6 +19,7 @@ package com.netflix.nicobar.core.module;
 
 import java.util.Set;
 
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.module.jboss.JBossModuleClassLoader;
 
@@ -32,7 +33,7 @@ public interface ScriptModule {
     /**
      * @return module identifier
      */
-    public String getModuleId();
+    public ModuleId getModuleId();
 
     /**
      * @return the classes that were compiled and loaded from the scripts
