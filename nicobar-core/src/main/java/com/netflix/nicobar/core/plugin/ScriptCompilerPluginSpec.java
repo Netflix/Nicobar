@@ -83,6 +83,20 @@ public class ScriptCompilerPluginSpec {
             }
             return this;
         }
+        /** Add Module dependency. */
+        public Builder addModuleDependency(String dependencyName) {
+            if (dependencyName != null) {
+                moduleDependencies.add(dependencyName);
+            }
+            return this;
+        }
+        /** Add Module dependencies. */
+        public Builder addModuleDependencies(Set<String> dependencies) {
+            if (dependencies != null) {
+                dependencies.addAll(dependencies);
+            }
+            return this;
+        }
         /** Build the instance. */
         public ScriptCompilerPluginSpec build() {
             return new ScriptCompilerPluginSpec(pluginId,
