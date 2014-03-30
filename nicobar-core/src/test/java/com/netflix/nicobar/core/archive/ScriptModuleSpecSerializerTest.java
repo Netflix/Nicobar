@@ -28,12 +28,13 @@ import com.netflix.nicobar.core.archive.ScriptModuleSpecSerializer;
 /**
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class ScriptModuleSpecSerializerTest {
 
     @Test
     public void testRoundTrip() {
-        ScriptModuleSpec expected = new ScriptModuleSpec.Builder("myModuleId")
+        ScriptModuleSpec expected = new ScriptModuleSpec.Builder(ModuleId.create("myModuleId"))
             .addModuleDependency("dependencyModuleId1")
             .addModuleDependency("dependencyModuleId2")
             .addMetadata("metadataName1", "metadataValue1")

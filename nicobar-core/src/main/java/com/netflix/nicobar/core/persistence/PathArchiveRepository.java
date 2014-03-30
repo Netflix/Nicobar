@@ -41,6 +41,7 @@ import org.apache.commons.io.IOUtils;
 
 import com.netflix.nicobar.core.archive.GsonScriptModuleSpecSerializer;
 import com.netflix.nicobar.core.archive.JarScriptArchive;
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.PathScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
@@ -123,8 +124,8 @@ public class PathArchiveRepository implements ArchiveRepository {
             throws IOException {
         Objects.requireNonNull(jarScriptArchive, "jarScriptArchive");
         ScriptModuleSpec moduleSpec = jarScriptArchive.getModuleSpec();
-        String moduleId = moduleSpec.getModuleId();
-        Path moduleDir = rootDir.resolve(moduleId);
+        ModuleId moduleId = moduleSpec.getModuleId();
+        Path moduleDir = rootDir.resolve(moduleId.toString());
         if (Files.exists(moduleDir)) {
             FileUtils.deleteDirectory(moduleDir.toFile());
         }
@@ -162,13 +163,13 @@ public class PathArchiveRepository implements ArchiveRepository {
     }
 
     @Override
-    public Map<String, Long> getArchiveUpdateTimes() throws IOException {
-        Map<String, Long> updateTimes = new LinkedHashMap<String, Long>();
+    public Map<ModuleId, Long> getArchiveUpdateTimes() throws IOException {
+        Map<ModuleId, Long> updateTimes = new LinkedHashMap<ModuleId, Long>();
         DirectoryStream<Path> archiveDirs = Files.newDirectoryStream(rootDir, DIRECTORY_FILTER);
         for (Path archiveDir: archiveDirs) {
             Path absoluteArchiveDir = rootDir.resolve(archiveDir);
             long lastUpdateTime = Files.getLastModifiedTime(absoluteArchiveDir).toMillis();
-            String moduleId = archiveDir.getFileName().toString();
+            ModuleId moduleId = ModuleId.fromString(archiveDir.getFileName().toString());
             updateTimes.put(moduleId, lastUpdateTime);
         }
         return updateTimes;
@@ -176,7 +177,7 @@ public class PathArchiveRepository implements ArchiveRepository {
 
     @Override
     public RepositorySummary getRepositorySummary() throws IOException {
-        Map<String, Long> archiveUpdateTimes = getArchiveUpdateTimes();
+        Map<ModuleId, Long> archiveUpdateTimes = getArchiveUpdateTimes();
         long maxUpdateTime = 0;
         for (Long updateTime : archiveUpdateTimes.values()) {
             if (updateTime > maxUpdateTime) {
@@ -189,7 +190,7 @@ public class PathArchiveRepository implements ArchiveRepository {
     @Override
     public List<ArchiveSummary> getArchiveSummaries() throws IOException {
         List<ArchiveSummary> summaries = new LinkedList<ArchiveSummary>();
-        Set<String> moduleIds = getArchiveUpdateTimes().keySet();
+        Set<ModuleId> moduleIds = getArchiveUpdateTimes().keySet();
         Set<ScriptArchive> scriptArchives = getScriptArchives(moduleIds);
         for (ScriptArchive scriptArchive : scriptArchives) {
             ScriptModuleSpec moduleSpec = scriptArchive.getModuleSpec();
@@ -200,10 +201,10 @@ public class PathArchiveRepository implements ArchiveRepository {
     }
 
     @Override
-    public Set<ScriptArchive> getScriptArchives(Set<String> moduleIds) throws IOException {
+    public Set<ScriptArchive> getScriptArchives(Set<ModuleId> moduleIds) throws IOException {
         Set<ScriptArchive> scriptArchives = new LinkedHashSet<ScriptArchive>();
-        for (String moduleId : moduleIds) {
-            Path moduleDir = rootDir.resolve(moduleId);
+        for (ModuleId moduleId : moduleIds) {
+            Path moduleDir = rootDir.resolve(moduleId.toString());
             if (Files.exists(moduleDir)) {
                 PathScriptArchive scriptArchive = new PathScriptArchive.Builder(moduleDir).build();
                 scriptArchives.add(scriptArchive);
@@ -213,10 +214,15 @@ public class PathArchiveRepository implements ArchiveRepository {
     }
 
     @Override
-    public void deleteArchive(String moduleId) throws IOException {
-        Path moduleDir = rootDir.resolve(moduleId);
+    public void deleteArchive(ModuleId moduleId) throws IOException {
+        Path moduleDir = rootDir.resolve(moduleId.toString());
         if (Files.exists(moduleDir)) {
             FileUtils.deleteDirectory(moduleDir.toFile());
         }
+    }
+
+    @Override
+    public void addDeploySpecs(ModuleId moduleId, Map<String, Object> deploySpecs) {
+        throw new UnsupportedOperationException();
     }
 }

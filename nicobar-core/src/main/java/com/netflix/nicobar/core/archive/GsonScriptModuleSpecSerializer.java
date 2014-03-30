@@ -17,19 +17,31 @@
  */
 package com.netflix.nicobar.core.archive;
 
+import java.lang.reflect.Type;
 import java.util.Objects;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
 /**
  * Gson based implementation of the {@link ScriptModuleSpecSerializer}
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class GsonScriptModuleSpecSerializer implements ScriptModuleSpecSerializer {
     /** Default file name of the optional {@link ScriptModuleSpec} in the archive */
     public final static String DEFAULT_MODULE_SPEC_FILE_NAME = "moduleSpec.json";
-    private static Gson SERIALIZER = new Gson();
+    private static Gson SERIALIZER = new GsonBuilder()
+        .registerTypeAdapter(ModuleId.class, new ModuleIdDeserializer())
+        .registerTypeAdapter(ModuleId.class, new ModuleIdSerializer())
+        .create();
     private final String moduleSpecFileName;
 
     public GsonScriptModuleSpecSerializer() {
@@ -74,4 +86,27 @@ public class GsonScriptModuleSpecSerializer implements ScriptModuleSpecSerialize
         return SERIALIZER;
     }
 
+    /**
+     * Custom GSON serializer for ModuleId
+     */
+    private static class ModuleIdSerializer implements JsonSerializer<ModuleId>
+    {
+        @Override
+        public JsonElement serialize(ModuleId src, Type typeOfSrc, JsonSerializationContext context) {
+            return context.serialize(src.toString());
+        }
+    }
+
+    /**
+     * Custom GSON deserializer for ModuleId
+     */
+    private static class ModuleIdDeserializer implements JsonDeserializer<ModuleId>
+    {
+        @Override
+        public ModuleId deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext ctx) throws JsonParseException
+        {
+            String moduleId = json.getAsString();
+            return ModuleId.fromString(moduleId);
+        }
+    }
 }

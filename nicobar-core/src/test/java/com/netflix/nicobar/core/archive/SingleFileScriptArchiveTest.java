@@ -47,7 +47,7 @@ public class SingleFileScriptArchiveTest {
             SingleFileScriptArchive scriptArchive = new SingleFileScriptArchive.Builder(scriptPath)
                 .build();
             String moduleId = script.replaceAll("\\.", "_");
-            assertEquals(scriptArchive.getModuleSpec().getModuleId(), moduleId);
+            assertEquals(scriptArchive.getModuleSpec().getModuleId().toString(), moduleId);
             Set<String> archiveEntryNames = scriptArchive.getArchiveEntryNames();
             assertEquals(archiveEntryNames.size(), 1);
             for (String entryName : archiveEntryNames) {
@@ -55,19 +55,19 @@ public class SingleFileScriptArchiveTest {
                 assertNotNull(entryUrl);
                 InputStream inputStream = entryUrl.openStream();
                 String content = IOUtils.toString(inputStream, Charsets.UTF_8);
-                
+
                 // We have stored the file name as the content of the file
                 assertEquals(content, script + "\n");
             }
         }
     }
-    
+
     @Test
     public void testWithModuleSpec() throws Exception {
         URL rootPathUrl = getClass().getClassLoader().getResource(TEST_SCRIPTS_PATH.getResourcePath());
         Path rootPath = Paths.get(rootPathUrl.toURI()).toAbsolutePath();
         Set<String> singleFileScripts = TEST_SCRIPTS_PATH.getContentPaths();
-        String moduleId = "testModuleId";
+        ModuleId moduleId = ModuleId.create("testModuleId");
         for (String script: singleFileScripts) {
             Path scriptPath = rootPath.resolve(script);
             SingleFileScriptArchive scriptArchive = new SingleFileScriptArchive.Builder(scriptPath)

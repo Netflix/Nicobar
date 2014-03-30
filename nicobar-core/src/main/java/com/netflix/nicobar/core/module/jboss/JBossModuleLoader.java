@@ -43,6 +43,7 @@ import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.module.GraphUtils;
 
 /**
@@ -57,6 +58,7 @@ import com.netflix.nicobar.core.module.GraphUtils;
  * using the {@link ModuleIdentifier} "slot" as a revision holder.
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class JBossModuleLoader extends ModuleLoader {
     /** Comparator used for the module revision sorting */
@@ -179,13 +181,13 @@ public class JBossModuleLoader extends ModuleLoader {
      * @param scriptModuleId name to search for
      * @return the highest revision number or -1 if no revisions exist
      */
-    public long getLatestRevisionNumber(String scriptModuleId) {
+    public long getLatestRevisionNumber(ModuleId scriptModuleId) {
         Objects.requireNonNull(scriptModuleId, "scriptModuleId");
         ModuleIdentifier searchIdentifier = JBossModuleUtils.createRevisionId(scriptModuleId, 0);
         SortedMap<ModuleIdentifier,ModuleSpec> tailMap = moduleSpecs.tailMap(searchIdentifier);
         long revisionNumber = -1;
         for (ModuleIdentifier revisionId : tailMap.keySet()) {
-            if (revisionId.getName().equals(scriptModuleId)) {
+            if (revisionId.getName().equals(scriptModuleId.toString())) {
                 revisionNumber = getRevisionNumber(revisionId);
             } else {
                 break;
@@ -199,7 +201,7 @@ public class JBossModuleLoader extends ModuleLoader {
      * @param scriptModuleId name to search for
      * @return the revisionId for the highest revision number. Revision defaults to 0 if it doesn't exist.
      */
-    public ModuleIdentifier getLatestRevisionId(String scriptModuleId) {
+    public ModuleIdentifier getLatestRevisionId(ModuleId scriptModuleId) {
         Objects.requireNonNull(scriptModuleId, "scriptModuleId");
         long latestRevision = getLatestRevisionNumber(scriptModuleId);
         if (latestRevision < 0) {
@@ -226,10 +228,10 @@ public class JBossModuleLoader extends ModuleLoader {
      * Get a map of the the moduleId to {@link ModuleIdentifier} with the highest revision
      * @return immutable snapshot of the latest module revisionIds
      */
-    public Map<String, ModuleIdentifier> getLatestRevisionIds() {
-        Map<String, ModuleIdentifier> nameToIdMap = new HashMap<String, ModuleIdentifier>(moduleSpecs.size()*2);
+    public Map<ModuleId, ModuleIdentifier> getLatestRevisionIds() {
+        Map<ModuleId, ModuleIdentifier> nameToIdMap = new HashMap<ModuleId, ModuleIdentifier>(moduleSpecs.size()*2);
         for (Entry<ModuleIdentifier, ModuleSpec> entry : moduleSpecs.entrySet()) {
-            String scriptModuleId = entry.getKey().getName();
+            ModuleId scriptModuleId = ModuleId.fromString(entry.getKey().getName());
             ModuleSpec moduleSpec = entry.getValue();
             nameToIdMap.put(scriptModuleId, moduleSpec.getModuleIdentifier());
         }
@@ -255,15 +257,15 @@ public class JBossModuleLoader extends ModuleLoader {
      * Construct the Module dependency graph of a module loader where each vertex is the module name
      * @return a mutable snapshot of the underlying dependency
      */
-    public DirectedGraph<String, DefaultEdge> getModuleNameGraph() {
-        SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
-        Map<String, ModuleIdentifier> moduleIdentifiers = getLatestRevisionIds();
+    public DirectedGraph<ModuleId, DefaultEdge> getModuleNameGraph() {
+        SimpleDirectedGraph<ModuleId, DefaultEdge> graph = new SimpleDirectedGraph<ModuleId, DefaultEdge>(DefaultEdge.class);
+        Map<ModuleId, ModuleIdentifier> moduleIdentifiers = getLatestRevisionIds();
         GraphUtils.addAllVertices(graph, moduleIdentifiers.keySet());
-        for (Entry<String, ModuleIdentifier> entry : moduleIdentifiers.entrySet()) {
-            String scriptModuleId = entry.getKey();
+        for (Entry<ModuleId, ModuleIdentifier> entry : moduleIdentifiers.entrySet()) {
+            ModuleId scriptModuleId = entry.getKey();
             ModuleIdentifier revisionID = entry.getValue();
             ModuleSpec moduleSpec = moduleSpecs.get(revisionID);
-            Set<String> dependencyNames = getDependencyScriptModuleIds(moduleSpec);
+            Set<ModuleId> dependencyNames = getDependencyScriptModuleIds(moduleSpec);
             GraphUtils.addOutgoingEdges(graph, scriptModuleId, dependencyNames);
         }
         return graph;
@@ -273,17 +275,17 @@ public class JBossModuleLoader extends ModuleLoader {
      * Extract the Module dependencies for the given module in the form
      * of ScriptModule ids.
      */
-    public static Set<String> getDependencyScriptModuleIds(ModuleSpec moduleSpec) {
+    public static Set<ModuleId> getDependencyScriptModuleIds(ModuleSpec moduleSpec) {
         Objects.requireNonNull(moduleSpec, "moduleSpec");
         if (!(moduleSpec instanceof ConcreteModuleSpec)) {
             throw new IllegalArgumentException("Unsupported ModuleSpec implementation: " + moduleSpec.getClass().getName());
         }
-        Set<String> dependencyNames = new LinkedHashSet<String>();
+        Set<ModuleId> dependencyNames = new LinkedHashSet<ModuleId>();
         ConcreteModuleSpec concreteSpec = (ConcreteModuleSpec)moduleSpec;
         for (DependencySpec dependencSpec : concreteSpec.getDependencies()) {
             if (dependencSpec instanceof ModuleDependencySpec) {
                 ModuleIdentifier revisionId = ((ModuleDependencySpec)dependencSpec).getIdentifier();
-                dependencyNames.add(revisionId.getName());
+                dependencyNames.add(ModuleId.fromString(revisionId.getName()));
             }
         }
         return dependencyNames;

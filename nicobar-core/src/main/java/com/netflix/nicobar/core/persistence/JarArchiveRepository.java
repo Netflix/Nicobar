@@ -41,6 +41,7 @@ import org.apache.commons.io.IOUtils;
 
 import com.netflix.nicobar.core.archive.GsonScriptModuleSpecSerializer;
 import com.netflix.nicobar.core.archive.JarScriptArchive;
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
 import com.netflix.nicobar.core.archive.ScriptModuleSpecSerializer;
@@ -124,7 +125,7 @@ public class JarArchiveRepository implements ArchiveRepository {
             throws IOException {
         Objects.requireNonNull(jarScriptArchive, "jarScriptArchive");
         ScriptModuleSpec moduleSpec = jarScriptArchive.getModuleSpec();
-        String moduleId = moduleSpec.getModuleId();
+        ModuleId moduleId = moduleSpec.getModuleId();
         Path moduleJarPath = getModuleJarPath(moduleId);
         Files.deleteIfExists(moduleJarPath);
         JarFile sourceJarFile;
@@ -166,16 +167,17 @@ public class JarArchiveRepository implements ArchiveRepository {
     }
 
     @Override
-    public Map<String, Long> getArchiveUpdateTimes() throws IOException {
-        Map<String, Long> updateTimes = new LinkedHashMap<String, Long>();
+    public Map<ModuleId, Long> getArchiveUpdateTimes() throws IOException {
+        Map<ModuleId, Long> updateTimes = new LinkedHashMap<ModuleId, Long>();
         DirectoryStream<Path> archiveJars = Files.newDirectoryStream(rootDir, JAR_FILE_FILTER);
         for (Path archiveJar: archiveJars) {
             Path absoluteArchiveFile = rootDir.resolve(archiveJar);
             long lastUpdateTime = Files.getLastModifiedTime(absoluteArchiveFile).toMillis();
-            String moduleId = archiveJar.getFileName().toString();
-            if (moduleId.endsWith(".jar")) {
-                moduleId = moduleId.substring(0, moduleId.lastIndexOf(".jar"));
+            String moduleName = archiveJar.getFileName().toString();
+            if (moduleName.endsWith(".jar")) {
+                moduleName = moduleName.substring(0, moduleName.lastIndexOf(".jar"));
             }
+            ModuleId moduleId = ModuleId.fromString(moduleName);
             updateTimes.put(moduleId, lastUpdateTime);
         }
         return updateTimes;
@@ -183,7 +185,7 @@ public class JarArchiveRepository implements ArchiveRepository {
 
     @Override
     public RepositorySummary getRepositorySummary() throws IOException {
-        Map<String, Long> archiveUpdateTimes = getArchiveUpdateTimes();
+        Map<ModuleId, Long> archiveUpdateTimes = getArchiveUpdateTimes();
         long maxUpdateTime = 0;
         for (Long updateTime : archiveUpdateTimes.values()) {
             if (updateTime > maxUpdateTime) {
@@ -196,7 +198,7 @@ public class JarArchiveRepository implements ArchiveRepository {
     @Override
     public List<ArchiveSummary> getArchiveSummaries() throws IOException {
         List<ArchiveSummary> summaries = new LinkedList<ArchiveSummary>();
-        Set<String> moduleIds = getArchiveUpdateTimes().keySet();
+        Set<ModuleId> moduleIds = getArchiveUpdateTimes().keySet();
         Set<ScriptArchive> scriptArchives = getScriptArchives(moduleIds);
         for (ScriptArchive scriptArchive : scriptArchives) {
             ScriptModuleSpec moduleSpec = scriptArchive.getModuleSpec();
@@ -207,9 +209,9 @@ public class JarArchiveRepository implements ArchiveRepository {
     }
 
     @Override
-    public Set<ScriptArchive> getScriptArchives(Set<String> moduleIds) throws IOException {
+    public Set<ScriptArchive> getScriptArchives(Set<ModuleId> moduleIds) throws IOException {
         Set<ScriptArchive> scriptArchives = new LinkedHashSet<ScriptArchive>();
-        for (String moduleId : moduleIds) {
+        for (ModuleId moduleId : moduleIds) {
             Path moduleJar = getModuleJarPath(moduleId);
             if (Files.exists(moduleJar)) {
                 JarScriptArchive scriptArchive = new JarScriptArchive.Builder(moduleJar).build();
@@ -220,18 +222,25 @@ public class JarArchiveRepository implements ArchiveRepository {
     }
 
     @Override
-    public void deleteArchive(String moduleId) throws IOException {
+    public void deleteArchive(ModuleId moduleId) throws IOException {
         Path moduleJar = getModuleJarPath(moduleId);
         if (Files.exists(moduleJar)) {
             Files.delete(moduleJar);
         }
     }
 
+    @Override
+    public void addDeploySpecs(ModuleId moduleId, Map<String, Object> deploySpecs) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Translated a module id to an absolute path of the module jar
      */
-    protected Path getModuleJarPath(String moduleId) {
+    protected Path getModuleJarPath(ModuleId moduleId) {
         Path moduleJarPath = rootDir.resolve(moduleId + ".jar");
         return moduleJarPath;
     }
+
+
 }

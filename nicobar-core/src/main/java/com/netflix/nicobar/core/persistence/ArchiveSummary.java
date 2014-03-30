@@ -19,6 +19,7 @@ package com.netflix.nicobar.core.persistence;
 
 import java.util.Objects;
 
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
 
 /**
@@ -26,18 +27,19 @@ import com.netflix.nicobar.core.archive.ScriptModuleSpec;
  * of archives.
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class ArchiveSummary {
-    private final String moduleId;
+    private final ModuleId moduleId;
     private final ScriptModuleSpec moduleSpec;
     private final long lastUpdateTime;
 
-    public ArchiveSummary(String moduleId, ScriptModuleSpec moduleSpec, long lastUpdateTime) {
+    public ArchiveSummary(ModuleId moduleId, ScriptModuleSpec moduleSpec, long lastUpdateTime) {
         this.moduleId = Objects.requireNonNull(moduleId, "moduleId");
         this.moduleSpec = moduleSpec;
         this.lastUpdateTime = lastUpdateTime;
     }
-    public String getModuleId() {
+    public ModuleId getModuleId() {
         return moduleId;
     }
 

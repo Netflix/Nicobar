@@ -40,6 +40,7 @@ import org.jboss.modules.ResourceLoaders;
 import org.jboss.modules.filter.MultiplePathFilterBuilder;
 import org.jboss.modules.filter.PathFilters;
 
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
@@ -78,7 +79,7 @@ public class JBossModuleUtils {
      * @param scriptArchive {@link ScriptArchive} to copy from
      * @param latestRevisionIds used to lookup the latest dependencies. see {@link JBossModuleLoader#getLatestRevisionIds()}
      */
-    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ScriptArchive scriptArchive, Map<String, ModuleIdentifier> latestRevisionIds) throws ModuleLoadException {
+    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ScriptArchive scriptArchive, Map<ModuleId, ModuleIdentifier> latestRevisionIds) throws ModuleLoadException {
         Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
         Objects.requireNonNull(moduleSpecBuilder, "scriptArchive");
         Objects.requireNonNull(latestRevisionIds, "latestRevisionIds");
@@ -109,8 +110,8 @@ public class JBossModuleUtils {
         }
         // add dependencies to the module spec
         ScriptModuleSpec scriptModuleSpec = scriptArchive.getModuleSpec();
-        Set<String> dependencies = scriptModuleSpec.getModuleDependencies();
-        for (String scriptModuleId : dependencies) {
+        Set<ModuleId> dependencies = scriptModuleSpec.getModuleDependencies();
+        for (ModuleId scriptModuleId : dependencies) {
             ModuleIdentifier latestIdentifier = latestRevisionIds.get(scriptModuleId);
             if (latestIdentifier == null) {
                 latestIdentifier = JBossModuleUtils.createRevisionId(scriptModuleId, 0);
@@ -160,7 +161,7 @@ public class JBossModuleUtils {
      * @param pluginSpec {@link ScriptCompilerPluginSpec} to copy from
      * @param latestRevisionIds used to lookup the latest dependencies. see {@link JBossModuleLoader#getLatestRevisionIds()}
      */
-    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ScriptCompilerPluginSpec pluginSpec, Map<String, ModuleIdentifier> latestRevisionIds) throws ModuleLoadException {
+    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ScriptCompilerPluginSpec pluginSpec, Map<ModuleId, ModuleIdentifier> latestRevisionIds) throws ModuleLoadException {
         Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
         Objects.requireNonNull(pluginSpec, "pluginSpec");
         Objects.requireNonNull(latestRevisionIds, "latestRevisionIds");
@@ -186,8 +187,8 @@ public class JBossModuleUtils {
         moduleSpecBuilder.addDependency(NICOBAR_CORE_DEPENDENCY_SPEC);
         moduleSpecBuilder.addDependency(DependencySpec.createLocalDependencySpec());
         // add dependencies to the module spec
-        Set<String> dependencies = pluginSpec.getModuleDependencies();
-        for (String scriptModuleId : dependencies) {
+        Set<ModuleId> dependencies = pluginSpec.getModuleDependencies();
+        for (ModuleId scriptModuleId : dependencies) {
             ModuleIdentifier latestIdentifier = latestRevisionIds.get(scriptModuleId);
             if (latestIdentifier == null) {
                 throw new ModuleLoadException("Cannot find dependent module: " + scriptModuleId);
@@ -228,8 +229,8 @@ public class JBossModuleUtils {
     /**
      * Helper method to create a revisionId in a consistent manner
      */
-    public static ModuleIdentifier createRevisionId(String scriptModuleId, long revisionNumber) {
+    public static ModuleIdentifier createRevisionId(ModuleId scriptModuleId, long revisionNumber) {
         Objects.requireNonNull(scriptModuleId, "scriptModuleId");
-        return ModuleIdentifier.create(scriptModuleId, Long.toString(revisionNumber));
+        return ModuleIdentifier.create(scriptModuleId.toString(), Long.toString(revisionNumber));
     }
 }

@@ -39,6 +39,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import com.netflix.nicobar.core.archive.JarScriptArchive;
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
 import com.netflix.nicobar.core.persistence.ArchiveRepository;
@@ -59,7 +60,7 @@ public abstract class ArchiveRepositoryTest {
         if (testJarUrl == null) {
             fail("Couldn't locate " + TEST_MODULE_SPEC_JAR.getResourcePath());
         }
-        testArchiveJarFile = Files.createTempFile(TEST_MODULE_SPEC_JAR.getModuleId(), ".jar");
+        testArchiveJarFile = Files.createTempFile(TEST_MODULE_SPEC_JAR.getModuleId().toString(), ".jar");
         InputStream inputStream = testJarUrl.openStream();
         Files.copy(inputStream, testArchiveJarFile, StandardCopyOption.REPLACE_EXISTING);
         IOUtils.closeQuietly(inputStream);
@@ -76,9 +77,9 @@ public abstract class ArchiveRepositoryTest {
     public void testRoundTrip() throws Exception {
         ArchiveRepository repository = createRepository();
         JarScriptArchive jarScriptArchive = new JarScriptArchive.Builder(testArchiveJarFile).build();
-        String testModuleId = TEST_MODULE_SPEC_JAR.getModuleId();
+        ModuleId testModuleId = TEST_MODULE_SPEC_JAR.getModuleId();
         repository.insertArchive(jarScriptArchive);
-        Map<String, Long> archiveUpdateTimes = repository.getArchiveUpdateTimes();
+        Map<ModuleId, Long> archiveUpdateTimes = repository.getArchiveUpdateTimes();
         long expectedUpdateTime = Files.getLastModifiedTime(testArchiveJarFile).toMillis();
         assertEquals(archiveUpdateTimes, Collections.singletonMap(testModuleId, expectedUpdateTime));
 
@@ -139,7 +140,7 @@ public abstract class ArchiveRepositoryTest {
     @Test
     public void testExternalizedModuleSpec() throws Exception {
         ArchiveRepository repository = createRepository();
-        String testModuleId = TEST_MODULE_SPEC_JAR.getModuleId();
+        ModuleId testModuleId = TEST_MODULE_SPEC_JAR.getModuleId();
         ScriptModuleSpec expectedModuleSpec = new ScriptModuleSpec.Builder(testModuleId)
             .addMetadata("externalizedMetaDataName1", "externalizedMetaDataValue1")
             .build();

@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.module.ScriptModuleLoader;
 
@@ -45,6 +46,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  * them to a {@link ScriptModuleLoader}
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class ArchiveRepositoryPoller {
     public static class Builder {
@@ -84,7 +86,7 @@ public class ArchiveRepositoryPoller {
     /** used for book-keeping  of repositories that are being polled */
     protected static class RepositoryPollerContext {
         /** Map of moduleId to last known update time of the archive */
-        protected  final Map<String, Long> lastUpdateTimes = new HashMap<String, Long>();
+        protected  final Map<ModuleId, Long> lastUpdateTimes = new HashMap<ModuleId, Long>();
 
         @SuppressFBWarnings(value="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD", justification="will use later")
         protected volatile ScheduledFuture<?> future;
@@ -149,7 +151,7 @@ public class ArchiveRepositoryPoller {
 
     protected void pollRepository(ArchiveRepository archiveRepository) {
         RepositoryPollerContext context = repositoryContexts.get(archiveRepository);
-        Map<String, Long> repoUpdateTimes;
+        Map<ModuleId, Long> repoUpdateTimes;
         try {
             repoUpdateTimes = archiveRepository.getArchiveUpdateTimes();
         } catch (IOException e) {
@@ -160,9 +162,9 @@ public class ArchiveRepositoryPoller {
 
         // search for new/updated archives by comparing update times reported by the repo
         // to the local repository context.
-        Set<String> updatedModuleIds = new HashSet<String>(repoUpdateTimes.size());
-        for (Entry<String, Long> entry : repoUpdateTimes.entrySet()) {
-            String moduleId = entry.getKey();
+        Set<ModuleId> updatedModuleIds = new HashSet<ModuleId>(repoUpdateTimes.size());
+        for (Entry<ModuleId, Long> entry : repoUpdateTimes.entrySet()) {
+            ModuleId moduleId = entry.getKey();
             Long queryUpdateTime = entry.getValue();
             Long lastUpdateTime = context.lastUpdateTimes.get(moduleId);
             if (lastUpdateTime == null || lastUpdateTime < queryUpdateTime) {
@@ -175,7 +177,7 @@ public class ArchiveRepositoryPoller {
 
         // find deleted modules by taking the set difference of moduleIds in the repository
         // and module ids in the repository context
-        Set<String> deletedModuleIds = new HashSet<String>(context.lastUpdateTimes.keySet());
+        Set<ModuleId> deletedModuleIds = new HashSet<ModuleId>(context.lastUpdateTimes.keySet());
         deletedModuleIds.removeAll(repoUpdateTimes.keySet());
         context.lastUpdateTimes.keySet().removeAll(deletedModuleIds);
 
@@ -192,7 +194,7 @@ public class ArchiveRepositoryPoller {
         }
 
         if (!deletedModuleIds.isEmpty()) {
-            for (String scriptModuleId : deletedModuleIds) {
+            for (ModuleId scriptModuleId : deletedModuleIds) {
                 moduleLoader.removeScriptModule(scriptModuleId);
             }
         }

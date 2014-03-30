@@ -50,10 +50,11 @@ public class PathScriptArchiveTest {
         URL rootPathUrl = getClass().getClassLoader().getResource(TEST_TEXT_PATH.getResourcePath());
         Path rootPath = Paths.get(rootPathUrl.toURI()).toAbsolutePath();
 
+        ModuleId moduleId = ModuleId.create("testModuleId");
         PathScriptArchive scriptArchive = new PathScriptArchive.Builder(rootPath)
-            .setModuleSpec(new ScriptModuleSpec.Builder("testModuleId").build())
+            .setModuleSpec(new ScriptModuleSpec.Builder(moduleId).build())
             .build();
-        assertEquals(scriptArchive.getModuleSpec().getModuleId(), "testModuleId");
+        assertEquals(scriptArchive.getModuleSpec().getModuleId(), moduleId);
         Set<String> archiveEntryNames = scriptArchive.getArchiveEntryNames();
         assertEquals(archiveEntryNames, TEST_TEXT_PATH.getContentPaths());
         for (String entryName : archiveEntryNames) {

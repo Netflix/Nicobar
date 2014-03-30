@@ -32,6 +32,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -45,14 +46,11 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.netflix.nicobar.core.archive.JarScriptArchive;
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
 import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
 import com.netflix.nicobar.core.compile.ScriptCompilationException;
-import com.netflix.nicobar.core.module.ArchiveRejectedReason;
-import com.netflix.nicobar.core.module.ScriptModule;
-import com.netflix.nicobar.core.module.ScriptModuleListener;
-import com.netflix.nicobar.core.module.ScriptModuleLoader;
 import com.netflix.nicobar.core.module.jboss.JBossModuleClassLoader;
 import com.netflix.nicobar.core.plugin.NoOpCompilerPlugin;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPlugin;
@@ -87,7 +85,7 @@ public class ScriptModuleLoaderTest {
             .build();
         moduleLoader.updateScriptArchives(Collections.singleton(scriptArchive));
 
-        String moduleId = scriptArchive.getModuleSpec().getModuleId();
+        ModuleId moduleId = scriptArchive.getModuleSpec().getModuleId();
         ScriptModule scriptModule = moduleLoader.getScriptModule(moduleId);
 
         assertNotNull(scriptModule);
@@ -347,7 +345,7 @@ public class ScriptModuleLoaderTest {
     }
 
     /**
-     * Custom mockito/hamcrest machther which will inspect a ScriptModule and see if its moduleId
+     * Custom mockito/hamcrest matcher which will inspect a ScriptModule and see if its moduleId
      * equals the input moduleId and likewise for the creation time
      */
     private ScriptModule moduleEquals(final String scriptModuleId, final long createTime) {
@@ -356,7 +354,7 @@ public class ScriptModuleLoaderTest {
             public boolean matches(Object argument) {
                 ScriptModule scriptModule = (ScriptModule)argument;
                 return scriptModule != null &&
-                    scriptModule.getModuleId().equals(scriptModuleId) &&
+                    scriptModule.getModuleId().toString().equals(scriptModuleId) &&
                     scriptModule.getCreateTime() == createTime;
             }
             @Override
@@ -384,6 +382,11 @@ public class ScriptModuleLoaderTest {
         @Override
         public ScriptModuleSpec getModuleSpec() {
             return scriptModuleSpec;
+        }
+
+        @Override
+        public Map<String, Object> getDeploySpecs() {
+            return Collections.<String, Object>emptyMap();
         }
 
         @Override

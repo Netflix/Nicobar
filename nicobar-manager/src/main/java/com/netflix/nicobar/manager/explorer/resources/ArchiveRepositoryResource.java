@@ -40,6 +40,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 
 import com.netflix.nicobar.core.archive.JarScriptArchive;
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
 import com.netflix.nicobar.core.persistence.ArchiveRepository;
 import com.netflix.nicobar.core.persistence.ArchiveSummary;
@@ -109,7 +110,7 @@ public class ArchiveRepositoryResource {
             @FormDataParam("archivejar") InputStream file,
             @FormDataParam("archivejar") FormDataContentDisposition fileDisposition) {
         validateModuleSpec(moduleSpec);
-        String moduleId = moduleSpec.getModuleId();
+        String moduleId = moduleSpec.getModuleId().toString();
         try {
             java.nio.file.Path tempFile = Files.createTempFile(moduleId, ".jar");
             Files.copy(file, tempFile, StandardCopyOption.REPLACE_EXISTING);
@@ -126,7 +127,7 @@ public class ArchiveRepositoryResource {
     @Path("{moduleId}")
     public void deleteArchive(@PathParam("moduleId") String moduleId) {
         try {
-            repository.deleteArchive(moduleId);
+            repository.deleteArchive(ModuleId.fromString(moduleId));
         } catch (IOException e) {
             throw new WebApplicationException(e);
         }

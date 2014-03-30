@@ -38,12 +38,16 @@ public class ScriptModuleSpec {
      * Used to Construct a {@link ScriptModuleSpec}.
      */
     public static class Builder {
-        private final String moduleId;
+        private final ModuleId moduleId;
         private final Set<String> compilerPluginIds = new LinkedHashSet<String>();
         private final Map<String, String> archiveMetadata = new LinkedHashMap<String, String>();
-        private final Set<String> moduleDependencies = new LinkedHashSet<String>();
+        private final Set<ModuleId> moduleDependencies = new LinkedHashSet<ModuleId>();
 
         public Builder(String moduleId) {
+            this.moduleId = ModuleId.fromString(moduleId);
+        }
+
+        public Builder(ModuleId moduleId) {
             this.moduleId = moduleId;
         }
         /** Add a dependency on the named compiler plugin */
@@ -70,14 +74,16 @@ public class ScriptModuleSpec {
         /** Add Module dependency. */
         public Builder addModuleDependency(String dependencyName) {
             if (dependencyName != null) {
-                moduleDependencies.add(dependencyName);
+                moduleDependencies.add(ModuleId.fromString(dependencyName));
             }
             return this;
         }
         /** Add Module dependencies. */
         public Builder addModuleDependencies(Set<String> dependencies) {
             if (dependencies != null) {
-                dependencies.addAll(dependencies);
+                for (String dependency: dependencies) {
+                    addModuleDependency(dependency);
+                }
             }
             return this;
         }
@@ -85,17 +91,17 @@ public class ScriptModuleSpec {
         public ScriptModuleSpec build() {
             return new ScriptModuleSpec(moduleId,
                Collections.unmodifiableMap(new HashMap<String, String>(archiveMetadata)),
-               Collections.unmodifiableSet(new LinkedHashSet<String>(moduleDependencies)),
+               Collections.unmodifiableSet(new LinkedHashSet<ModuleId>(moduleDependencies)),
                Collections.unmodifiableSet(new LinkedHashSet<String>(compilerPluginIds)));
         }
     }
 
-    private final String moduleId;
+    private final ModuleId moduleId;
     private final Map<String, String> archiveMetadata;
-    private final Set<String> moduleDependencies;
+    private final Set<ModuleId> moduleDependencies;
     private final Set<String> compilerPluginIds;
 
-    protected ScriptModuleSpec(String moduleId, Map<String, String> archiveMetadata, Set<String> moduleDependencies, Set<String> pluginIds) {
+    protected ScriptModuleSpec(ModuleId moduleId, Map<String, String> archiveMetadata, Set<ModuleId> moduleDependencies, Set<String> pluginIds) {
         this.moduleId = Objects.requireNonNull(moduleId, "moduleId");
         this.compilerPluginIds = Objects.requireNonNull(pluginIds, "compilerPluginIds");
         this.archiveMetadata = Objects.requireNonNull(archiveMetadata, "archiveMetadata");
@@ -105,7 +111,7 @@ public class ScriptModuleSpec {
     /**
      * @return id of the archive and the subsequently created module
      */
-    public String getModuleId() {
+    public ModuleId getModuleId() {
         return moduleId;
     }
 
@@ -120,7 +126,7 @@ public class ScriptModuleSpec {
     /**
      * @return the names of the modules that this archive depends on
      */
-    public Set<String> getModuleDependencies() {
+    public Set<ModuleId> getModuleDependencies() {
         return moduleDependencies;
     }
 

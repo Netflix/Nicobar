@@ -39,6 +39,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import com.netflix.nicobar.core.archive.JarScriptArchive;
+import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.PathScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
@@ -72,7 +73,7 @@ public class JBossModuleUtilsTest {
             .build();
         ModuleIdentifier pluginId = JBossModuleUtils.getPluginModuleId(pluginSpec);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginId);
-        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec, Collections.<String, ModuleIdentifier>emptyMap());
+        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec, Collections.<ModuleId, ModuleIdentifier>emptyMap());
 
         JBossModuleLoader moduleLoader = new JBossModuleLoader();
         moduleLoader.addModuleSpec(moduleSpecBuilder.create());
@@ -100,7 +101,7 @@ public class JBossModuleUtilsTest {
     public void testJarResources() throws Exception {
         Path jarPath = CoreTestResourceUtil.getResourceAsPath(TEST_TEXT_JAR);
         ScriptArchive jarScriptArchive = new JarScriptArchive.Builder(jarPath)
-                .setModuleSpec(new ScriptModuleSpec.Builder("testModuleId")
+                .setModuleSpec(new ScriptModuleSpec.Builder(ModuleId.create("testModuleId"))
                 .addMetadata(METADATA_NAME, METADATA_VALUE)
                 .build())
             .build();
@@ -129,7 +130,7 @@ public class JBossModuleUtilsTest {
     public void testPathResources() throws Exception {
         Path jarPath = CoreTestResourceUtil.getResourceAsPath(TEST_TEXT_PATH);
         ScriptArchive jarScriptArchive = new PathScriptArchive.Builder(jarPath)
-            .setModuleSpec(new ScriptModuleSpec.Builder("testModuleId")
+            .setModuleSpec(new ScriptModuleSpec.Builder(ModuleId.create("testModuleId"))
                 .addMetadata(METADATA_NAME, METADATA_VALUE)
                 .build())
             .build();

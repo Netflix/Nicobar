@@ -20,22 +20,36 @@ package com.netflix.nicobar.core.archive;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
 
 /**
  * Data object which represents a bundle of scripts and associated resources.
+ * Also contains a {@link ScriptModuleSpec} to describe how this archive
+ * is to be converted into a module, and optionally, a set of deploy specs that
+ * describes deploy data useful in operating the module.
  *
- * An archive is uniquely identified by it's name and version number.
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public interface ScriptArchive {
 
     /**
      * @return the module spec for this archive
      */
-    ScriptModuleSpec getModuleSpec();
+    public ScriptModuleSpec getModuleSpec();
+
+    /**
+     * Deployment specs for an archive, are assumed to be created and managed
+     * by the application code using Nicobar. These may determine how an archive
+     * is deployed into a {@link ScriptModuleLoader} as well as determine
+     * execution parameters for script module executors.
+     *
+     * @return the deployment specs for this archive
+     */
+    public Map<String, Object> getDeploySpecs();
 
     /**
      * @return {@link URL}s representing the contents of this archive. should be
