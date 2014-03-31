@@ -119,6 +119,15 @@ public class PathArchiveRepository implements ArchiveRepository {
         return repositoryId;
     }
 
+    /**
+     * No named views supported by this repository!
+     * Throws UnsupportedOperationException.
+     */
+    @Override
+    public RepositoryView getView(String view) {
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     public void insertArchive(JarScriptArchive jarScriptArchive)
             throws IOException {

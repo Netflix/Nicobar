@@ -18,7 +18,6 @@
 package com.netflix.nicobar.core.persistence;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,9 +31,20 @@ import com.netflix.nicobar.core.archive.ScriptArchive;
  * @author James Kojo
  * @author Vasanth Asokan
  */
-public interface ArchiveRepository {
+public interface ArchiveRepository extends RepositoryView {
 
     public String getRepositoryId();
+
+    /**
+     * Get a specific named view into this repository.
+     *
+     * @param view the name of the view.
+     * @return a {@link RepositoryView} that matches the given name or null if
+     *         one wasn't found.
+     * @throws UnsupportedOperationException
+     *             if this repository does not support named views.
+     */
+    public RepositoryView getView(String view);
 
     /**
      * insert a Jar into the repository
@@ -43,24 +53,6 @@ public interface ArchiveRepository {
      */
     public void insertArchive(JarScriptArchive jarScriptArchive)
         throws IOException;
-
-    /**
-     * Get the last update times of all of the script archives managed by this Repository.
-     * @return map of moduleId to last update time
-     */
-    public Map<ModuleId, Long> getArchiveUpdateTimes() throws IOException;
-
-    /**
-     * Get a summary of the of this repository.
-     * @return displayable summary of the contents
-     */
-    public RepositorySummary getRepositorySummary() throws IOException;
-
-    /**
-     * Get a summary of all archives in this Repository
-     * @return List of summaries
-     */
-    public List<ArchiveSummary> getArchiveSummaries() throws IOException;
 
     /**
      * Get all of the {@link ScriptArchive}s for the given set of moduleIds.

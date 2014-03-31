@@ -61,6 +61,7 @@ import com.netflix.nicobar.core.archive.ScriptModuleSpec;
 import com.netflix.nicobar.core.persistence.ArchiveRepository;
 import com.netflix.nicobar.core.persistence.ArchiveSummary;
 import com.netflix.nicobar.core.persistence.RepositorySummary;
+import com.netflix.nicobar.core.persistence.RepositoryView;
 
 /**
  * Data access object of {@link ScriptArchive}s stored in Cassandra.
@@ -121,6 +122,15 @@ public class CassandraArchiveRepository implements ArchiveRepository {
     @Override
     public String getRepositoryId() {
         return getConfig().getRepositoryId();
+    }
+
+    /**
+     * No named views supported by this repository!
+     * Throws UnsupportedOperationException.
+     */
+    @Override
+    public RepositoryView getView(String view) {
+        throw new UnsupportedOperationException();
     }
 
     /**
