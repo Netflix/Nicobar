@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -126,9 +127,15 @@ public class JBossModuleUtils {
         moduleSpecBuilder.addDependency(NICOBAR_CORE_DEPENDENCY_SPEC);
         moduleSpecBuilder.addDependency(DependencySpec.createLocalDependencySpec());
 
-        // add properties to the module spec
-        Map<String, String> archiveMetadata = scriptModuleSpec.getMetadata();
-        addPropertiesToSpec(moduleSpecBuilder, archiveMetadata);
+        // add string based properties from module spec metadata to the module spec being created
+        Map<String, Object> archiveMetadata = scriptModuleSpec.getMetadata();
+        Map<String, String> stringMetadata = new HashMap<String, String>();
+        for (Entry<String, Object> entry: archiveMetadata.entrySet()) {
+            if (entry.getValue() instanceof String) {
+                stringMetadata.put(entry.getKey(), (String)entry.getValue());
+            }
+        }
+        addPropertiesToSpec(moduleSpecBuilder, stringMetadata);
 
         // override the default ModuleClassLoader to use our customer classloader
         moduleSpecBuilder.setModuleClassLoaderFactory(JBossModuleClassLoader.createFactory(scriptArchive));

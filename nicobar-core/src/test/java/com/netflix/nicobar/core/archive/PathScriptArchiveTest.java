@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -84,8 +85,16 @@ public class PathScriptArchiveTest {
         ScriptModuleSpec moduleSpec = scriptArchive.getModuleSpec();
         assertEquals(moduleSpec.getModuleId(), TEST_MODULE_SPEC_PATH.getModuleId());
         assertEquals(moduleSpec.getModuleDependencies(), Collections.emptySet());
-        Map<String, String> expectedMetadata = new HashMap<String, String>();
-        expectedMetadata.put("metadataName1", "metadataValue1");
-        expectedMetadata.put("metadataName2", "metadataValue2");
+        Map<String, Object> expectedMetadata = new HashMap<String, Object>();
+        Map<String, String> expectedMetadata1 = new HashMap<String, String>();
+
+        expectedMetadata1.put("nestedKey1", "metadataValue1");
+        expectedMetadata1.put("nestedKey2", "metadataValue2");
+
+        expectedMetadata.put("metadataName1", expectedMetadata1);
+        expectedMetadata.put("metadataName2", 2.0);
+        expectedMetadata.put("metadataName3", Arrays.asList(1.0, 2.0, 3.0));
+        Map<String, Object> somedata = moduleSpec.getMetadata();
+        assertEquals(somedata, expectedMetadata);
     }
 }

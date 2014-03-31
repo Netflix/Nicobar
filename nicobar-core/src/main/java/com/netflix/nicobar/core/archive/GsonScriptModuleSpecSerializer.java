@@ -26,6 +26,7 @@ import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
@@ -39,8 +40,8 @@ public class GsonScriptModuleSpecSerializer implements ScriptModuleSpecSerialize
     /** Default file name of the optional {@link ScriptModuleSpec} in the archive */
     public final static String DEFAULT_MODULE_SPEC_FILE_NAME = "moduleSpec.json";
     private static Gson SERIALIZER = new GsonBuilder()
-        .registerTypeAdapter(ModuleId.class, new ModuleIdDeserializer())
-        .registerTypeAdapter(ModuleId.class, new ModuleIdSerializer())
+        .registerTypeAdapter(ModuleId.class, new ModuleIdGsonTransformer())
+        .registerTypeAdapter(Double.class,  new DoubleGsonTransformer())
         .create();
     private final String moduleSpecFileName;
 
@@ -87,26 +88,33 @@ public class GsonScriptModuleSpecSerializer implements ScriptModuleSpecSerialize
     }
 
     /**
-     * Custom GSON serializer for ModuleId
+     * Custom GSON serializer and deserializer for ModuleId
      */
-    private static class ModuleIdSerializer implements JsonSerializer<ModuleId>
-    {
+    private static class ModuleIdGsonTransformer implements JsonSerializer<ModuleId>, JsonDeserializer<ModuleId> {
         @Override
         public JsonElement serialize(ModuleId src, Type typeOfSrc, JsonSerializationContext context) {
             return context.serialize(src.toString());
         }
-    }
 
-    /**
-     * Custom GSON deserializer for ModuleId
-     */
-    private static class ModuleIdDeserializer implements JsonDeserializer<ModuleId>
-    {
         @Override
         public ModuleId deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext ctx) throws JsonParseException
         {
             String moduleId = json.getAsString();
             return ModuleId.fromString(moduleId);
+        }
+    }
+
+    /**
+     * Custom GSON Double serializer
+     * This overrides default Gson behavior, which converts integers and longs into
+     * floats and doubles before writing out as JSON numbers.
+     */
+    private static class DoubleGsonTransformer implements JsonSerializer<Double> {
+        @Override
+        public JsonElement serialize(Double src, Type typeOfSrc, JsonSerializationContext context) {
+            if (src == src.longValue())
+                return new JsonPrimitive(src.longValue());
+            return new JsonPrimitive(src);
         }
     }
 }
