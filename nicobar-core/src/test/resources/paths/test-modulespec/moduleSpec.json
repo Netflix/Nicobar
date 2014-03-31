@@ -4,7 +4,10 @@
     "moduleDependencies": [
     ], 
     "archiveMetadata": {
-        "metadataName1": "metadataValue1", 
-        "metadataName2": "metadataValue2"
+        "metadataName1": { "nestedKey1" : "metadataValue1", 
+                           "nestedKey2" : "metadataValue2"
+                         },
+        "metadataName2": 2,
+        "metadataName3": [1,2,3]
     }
 }

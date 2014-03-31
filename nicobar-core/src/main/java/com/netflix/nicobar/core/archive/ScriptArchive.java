@@ -44,8 +44,7 @@ public interface ScriptArchive {
     /**
      * Deployment specs for an archive, are assumed to be created and managed
      * by the application code using Nicobar. These may determine how an archive
-     * is deployed into a {@link ScriptModuleLoader} as well as determine
-     * execution parameters for script module executors.
+     * is loaded or executed.
      *
      * @return the deployment specs for this archive
      */

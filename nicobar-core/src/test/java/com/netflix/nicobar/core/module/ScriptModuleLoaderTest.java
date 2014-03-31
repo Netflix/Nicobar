@@ -102,7 +102,7 @@ public class ScriptModuleLoaderTest {
 
 
     @Test
-    public void testBadModulSpec() throws Exception {
+    public void testBadModuleSpec() throws Exception {
         final URL badJarUrl = new URL("file:///somepath/myMadJarName.jar");
         ScriptArchive badScriptArchive = new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").build(), 1) {
             @Override

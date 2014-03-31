@@ -40,7 +40,7 @@ public class ScriptModuleSpec {
     public static class Builder {
         private final ModuleId moduleId;
         private final Set<String> compilerPluginIds = new LinkedHashSet<String>();
-        private final Map<String, String> archiveMetadata = new LinkedHashMap<String, String>();
+        private final Map<String, Object> archiveMetadata = new LinkedHashMap<String, Object>();
         private final Set<ModuleId> moduleDependencies = new LinkedHashSet<ModuleId>();
 
         public Builder(String moduleId) {
@@ -58,14 +58,14 @@ public class ScriptModuleSpec {
             return this;
         }
         /** Append all of the given metadata. */
-        public Builder addMetadata(Map<String, String> metadata) {
+        public Builder addMetadata(Map<String, Object> metadata) {
             if (metadata != null) {
                 archiveMetadata.putAll(metadata);
             }
             return this;
         }
         /** Append the given metadata. */
-        public Builder addMetadata(String property, String value) {
+        public Builder addMetadata(String property, Object value) {
             if (property != null && value != null) {
                 archiveMetadata.put(property, value);
             }
@@ -90,18 +90,18 @@ public class ScriptModuleSpec {
         /** Build the {@link PathScriptArchive}. */
         public ScriptModuleSpec build() {
             return new ScriptModuleSpec(moduleId,
-               Collections.unmodifiableMap(new HashMap<String, String>(archiveMetadata)),
+               Collections.unmodifiableMap(new HashMap<String, Object>(archiveMetadata)),
                Collections.unmodifiableSet(new LinkedHashSet<ModuleId>(moduleDependencies)),
                Collections.unmodifiableSet(new LinkedHashSet<String>(compilerPluginIds)));
         }
     }
 
     private final ModuleId moduleId;
-    private final Map<String, String> archiveMetadata;
+    private final Map<String, Object> archiveMetadata;
     private final Set<ModuleId> moduleDependencies;
     private final Set<String> compilerPluginIds;
 
-    protected ScriptModuleSpec(ModuleId moduleId, Map<String, String> archiveMetadata, Set<ModuleId> moduleDependencies, Set<String> pluginIds) {
+    protected ScriptModuleSpec(ModuleId moduleId, Map<String, Object> archiveMetadata, Set<ModuleId> moduleDependencies, Set<String> pluginIds) {
         this.moduleId = Objects.requireNonNull(moduleId, "moduleId");
         this.compilerPluginIds = Objects.requireNonNull(pluginIds, "compilerPluginIds");
         this.archiveMetadata = Objects.requireNonNull(archiveMetadata, "archiveMetadata");
@@ -119,7 +119,7 @@ public class ScriptModuleSpec {
      * @return Application specific metadata about this archive. This metadata will
      * be transferred to the Module after it's been created
      */
-    public Map<String, String> getMetadata() {
+    public Map<String, Object> getMetadata() {
         return archiveMetadata;
     }
 

@@ -39,6 +39,7 @@ public class ScriptModuleSpecSerializerTest {
             .addModuleDependency("dependencyModuleId2")
             .addMetadata("metadataName1", "metadataValue1")
             .addMetadata("metadataName2", "metadataValue2")
+            .addMetadata("metadataName3", 4.0)
             .build();
         ScriptModuleSpecSerializer serializer = new GsonScriptModuleSpecSerializer();
         String json = serializer.serialize(expected);
