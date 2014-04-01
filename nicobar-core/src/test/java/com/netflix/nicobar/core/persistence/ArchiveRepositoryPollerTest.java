@@ -104,7 +104,7 @@ public abstract class ArchiveRepositoryPollerTest {
         Map<ModuleId, ScriptModule> scriptModules = moduleLoader.getAllScriptModules();
 
         assertEquals(scriptModules.keySet(), new HashSet<ModuleId>(Arrays.asList(TEST_TEXT_JAR.getModuleId(), TEST_MODULE_SPEC_JAR.getModuleId())));
-        List<ArchiveSummary> archiveSummaries = archiveRepository.getArchiveSummaries();
+        List<ArchiveSummary> archiveSummaries = archiveRepository.getDefaultView().getArchiveSummaries();
         for (ArchiveSummary archiveSummary : archiveSummaries) {
             ScriptModule scriptModule = moduleLoader.getScriptModule(archiveSummary.getModuleId());
             assertNotNull(scriptModule);
@@ -124,7 +124,7 @@ public abstract class ArchiveRepositoryPollerTest {
         // initial startup phase
         ArchiveRepositoryPoller poller = new ArchiveRepositoryPoller.Builder(moduleLoader).build();
         poller.addRepository(archiveRepository, Integer.MAX_VALUE, TimeUnit.MILLISECONDS, true);
-        Map<ModuleId, Long> origUpdateTimes = archiveRepository.getArchiveUpdateTimes();
+        Map<ModuleId, Long> origUpdateTimes = archiveRepository.getDefaultView().getArchiveUpdateTimes();
         verify(mockListener, times(2)).moduleUpdated(any(ScriptModule.class), eq((ScriptModule)null));
         verifyNoMoreInteractions(mockListener);
 

@@ -31,9 +31,18 @@ import com.netflix.nicobar.core.archive.ScriptArchive;
  * @author James Kojo
  * @author Vasanth Asokan
  */
-public interface ArchiveRepository extends RepositoryView {
-
+public interface ArchiveRepository {
+    /**
+     * Get the ID of this repository
+     * @return the id string.
+     */
     public String getRepositoryId();
+
+    /**
+     * Get the default view into this repository.
+     * @return the default repository view.
+     */
+    public RepositoryView getDefaultView();
 
     /**
      * Get a specific named view into this repository.

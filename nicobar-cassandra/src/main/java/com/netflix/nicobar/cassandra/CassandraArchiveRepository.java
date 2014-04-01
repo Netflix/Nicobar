@@ -65,8 +65,7 @@ import com.netflix.nicobar.core.persistence.RepositoryView;
  * if many instances are using this implementation to poll for updates.
  * Upon insertion, all archives are assigned a shard number calculated as (moduleId.hashCode() % <number of shard>).
  * The shard number is subsequently inserted into a column for which a secondary index has been defined.
- * <p>
- * The {@link #getArchiveUpdateTimes()} method will first search each shard for any rows with an update timestamp greater than
+ * RepositoryView poller methods will first search each shard for any rows with an update timestamp greater than
  * the last poll time, and if any are found, the contents of those archives are loaded in small batches.
  *
  *
@@ -107,6 +106,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
         archive_content;
     }
 
+    protected final RepositoryView defaultView;
     private final CassandraArchiveRepositoryConfig config;
     private final CassandraGateway cassandra;
 
@@ -117,11 +117,31 @@ public class CassandraArchiveRepository implements ArchiveRepository {
     public CassandraArchiveRepository(CassandraArchiveRepositoryConfig config) {
         this.config = Objects.requireNonNull(config, "config");
         this.cassandra = this.config.getCassandraGateway();
+        defaultView = new DefaultView();
+    }
+
+    /**
+     * Construct a instance of the repository with the given configuration
+     * @param config
+     */
+    public CassandraArchiveRepository(CassandraArchiveRepositoryConfig config, RepositoryView defaultView) {
+        this.config = Objects.requireNonNull(config, "config");
+        this.cassandra = this.config.getCassandraGateway();
+        this.defaultView = defaultView;
     }
 
     @Override
     public String getRepositoryId() {
         return getConfig().getRepositoryId();
+    }
+
+    /**
+     * The default view reports all archives inserted into this repository.
+     * @return the default view into all archives.
+     */
+    @Override
+    public RepositoryView getDefaultView() {
+        return defaultView;
     }
 
     /**
@@ -166,72 +186,6 @@ public class CassandraArchiveRepository implements ArchiveRepository {
         } catch (Exception e) {
             throw new IOException(e);
         }
-    }
-
-    /**
-     * Get the last update times of all of the script archives managed by this Repository.
-     * @return map of moduleId to last update time
-     */
-    public Map<ModuleId, Long> getArchiveUpdateTimes() throws IOException {
-        Iterable<Row<String, String>> rows;
-        try {
-            rows = getRows(EnumSet.of(Columns.module_id, Columns.last_update));
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
-        Map<ModuleId, Long> updateTimes = new LinkedHashMap<ModuleId, Long>();
-        for (Row<String, String> row : rows) {
-            String moduleId = row.getKey();
-            Column<String> lastUpdateColumn = row.getColumns().getColumnByName(Columns.last_update.name());
-            Long updateTime = lastUpdateColumn != null ? lastUpdateColumn.getLongValue() : null;
-            if (StringUtils.isNotBlank(moduleId) && updateTime != null) {
-                updateTimes.put(ModuleId.fromString(moduleId), updateTime);
-            }
-        }
-        return updateTimes;
-    }
-
-    @Override
-    public RepositorySummary getRepositorySummary() throws IOException {
-        Map<ModuleId, Long> updateTimes = getArchiveUpdateTimes();
-        int archiveCount = updateTimes.size();
-        long maxUpdateTime = 0;
-        for (Long updateTime : updateTimes.values()) {
-            if (updateTime > maxUpdateTime) {
-                maxUpdateTime = updateTime;
-            }
-        }
-        String description = String.format("Cassandra Keyspace: %s Column Family: %s",
-            cassandra.getKeyspace().getKeyspaceName(), cassandra.getColumnFamily());
-        RepositorySummary repositorySummary = new RepositorySummary(getRepositoryId(),
-            description, archiveCount, maxUpdateTime);
-        return repositorySummary;
-    }
-
-    /**
-     * Get a summary of all archives in this Repository
-     * @return List of summaries
-     */
-    @Override
-    public List<ArchiveSummary> getArchiveSummaries() throws IOException {
-        List<ArchiveSummary> summaries = new LinkedList<ArchiveSummary>();
-        Iterable<Row<String, String>> rows;
-        try {
-                rows = getRows(EnumSet.of(Columns.module_id, Columns.last_update, Columns.module_spec));
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
-
-        for (Row<String, String> row : rows) {
-            String moduleId = row.getKey();
-            ColumnList<String> columns = row.getColumns();
-            Column<String> lastUpdateColumn = columns.getColumnByName(Columns.last_update.name());
-            long updateTime = lastUpdateColumn != null ? lastUpdateColumn.getLongValue() : 0;
-            ScriptModuleSpec moduleSpec = getModuleSpec(columns);
-            ArchiveSummary summary = new ArchiveSummary(ModuleId.fromString(moduleId), moduleSpec, updateTime);
-            summaries.add(summary);
-        }
-        return summaries;
     }
 
     /**
@@ -394,5 +348,79 @@ public class CassandraArchiveRepository implements ArchiveRepository {
      */
     public CassandraArchiveRepositoryConfig getConfig() {
         return config;
+    }
+
+    protected class DefaultView implements RepositoryView {
+        @Override
+        public String getName() {
+            return "Default View";
+        }
+
+        /**
+         * Get the last update times of all of the script archives managed by this Repository.
+         * @return map of moduleId to last update time
+         */
+        @Override
+        public Map<ModuleId, Long> getArchiveUpdateTimes() throws IOException {
+            Iterable<Row<String, String>> rows;
+            try {
+                rows = getRows(EnumSet.of(Columns.module_id, Columns.last_update));
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
+            Map<ModuleId, Long> updateTimes = new LinkedHashMap<ModuleId, Long>();
+            for (Row<String, String> row : rows) {
+                String moduleId = row.getKey();
+                Column<String> lastUpdateColumn = row.getColumns().getColumnByName(Columns.last_update.name());
+                Long updateTime = lastUpdateColumn != null ? lastUpdateColumn.getLongValue() : null;
+                if (StringUtils.isNotBlank(moduleId) && updateTime != null) {
+                    updateTimes.put(ModuleId.fromString(moduleId), updateTime);
+                }
+            }
+            return updateTimes;
+        }
+
+        @Override
+        public RepositorySummary getRepositorySummary() throws IOException {
+            Map<ModuleId, Long> updateTimes = getArchiveUpdateTimes();
+            int archiveCount = updateTimes.size();
+            long maxUpdateTime = 0;
+            for (Long updateTime : updateTimes.values()) {
+                if (updateTime > maxUpdateTime) {
+                    maxUpdateTime = updateTime;
+                }
+            }
+            String description = String.format("Cassandra Keyspace: %s Column Family: %s",
+                cassandra.getKeyspace().getKeyspaceName(), cassandra.getColumnFamily());
+            RepositorySummary repositorySummary = new RepositorySummary(getRepositoryId(),
+                description, archiveCount, maxUpdateTime);
+            return repositorySummary;
+        }
+
+        /**
+         * Get a summary of all archives in this Repository
+         * @return List of summaries
+         */
+        @Override
+        public List<ArchiveSummary> getArchiveSummaries() throws IOException {
+            List<ArchiveSummary> summaries = new LinkedList<ArchiveSummary>();
+            Iterable<Row<String, String>> rows;
+            try {
+                    rows = getRows(EnumSet.of(Columns.module_id, Columns.last_update, Columns.module_spec));
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
+
+            for (Row<String, String> row : rows) {
+                String moduleId = row.getKey();
+                ColumnList<String> columns = row.getColumns();
+                Column<String> lastUpdateColumn = columns.getColumnByName(Columns.last_update.name());
+                long updateTime = lastUpdateColumn != null ? lastUpdateColumn.getLongValue() : 0;
+                ScriptModuleSpec moduleSpec = getModuleSpec(columns);
+                ArchiveSummary summary = new ArchiveSummary(ModuleId.fromString(moduleId), moduleSpec, updateTime);
+                summaries.add(summary);
+            }
+            return summaries;
+        }
     }
 }

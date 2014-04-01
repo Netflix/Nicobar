@@ -6,7 +6,21 @@ import java.util.Map;
 
 import com.netflix.nicobar.core.archive.ModuleId;
 
+/**
+ * A repository view provides a window into querying the archives held by
+ * an {@link ArchiveRepository}. Windowed views allow querying repositories
+ * only for subsets of archives matching the windowing parameters. Archive
+ * repositories must provide atleast one default view, and optionally provide
+ * other named views.
+ * @author Vasanth Asokan
+ */
 public interface RepositoryView {
+    /**
+     * Get the name of this view.
+     * @return the name.
+     */
+    public String getName();
+
     /**
      * Get the last update times of all of the script archives under this
      * repository view.
