@@ -14,7 +14,7 @@ import com.netflix.astyanax.model.ColumnFamily;
  * @author Vasanth Asokan, modified from hystrix command implementations in
  *         Zuul (https://github.com/Netflix/zuul)
  */
-public class HystrixCassandraDeleteColumn<RowKeyType> extends AbstractCassandraHystrixCommand<Void> {
+public class HystrixCassandraDeleteColumns<RowKeyType> extends AbstractCassandraHystrixCommand<Void> {
 
     private final Keyspace keyspace;
     private final ColumnFamily<RowKeyType, String> columnFamily;
@@ -22,7 +22,7 @@ public class HystrixCassandraDeleteColumn<RowKeyType> extends AbstractCassandraH
     private final List<String> columnNames;
 
     @SuppressWarnings("unchecked")
-    public HystrixCassandraDeleteColumn(Keyspace keyspace, String columnFamilyName, RowKeyType rowKey, String... columnNames) {
+    public HystrixCassandraDeleteColumns(Keyspace keyspace, String columnFamilyName, RowKeyType rowKey, String... columnNames) {
         this.keyspace = keyspace;
         this.columnFamily = getColumnFamilyViaColumnName(columnFamilyName, rowKey);
         this.rowKey = rowKey;

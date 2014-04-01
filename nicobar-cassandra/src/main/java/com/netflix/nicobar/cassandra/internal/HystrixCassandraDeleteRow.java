@@ -4,7 +4,7 @@ import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.model.ColumnFamily;
 
 /**
- * Hystrix command to delete a row from Cassandra .
+ * Hystrix command to delete a row from Cassandra.
  * @author Vasanth Asokan, modified from hystrix command implementations in
  *         Zuul (https://github.com/Netflix/zuul)
  */

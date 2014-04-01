@@ -19,7 +19,7 @@ package com.netflix.nicobar.cassandra;
 
 import java.nio.file.Path;
 
-import com.netflix.astyanax.Keyspace;
+import com.netflix.nicobar.cassandra.internal.CassandraGateway;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
 import com.netflix.nicobar.core.archive.ScriptModuleSpecSerializer;
 
@@ -30,15 +30,10 @@ import com.netflix.nicobar.core.archive.ScriptModuleSpecSerializer;
  */
 public interface CassandraArchiveRepositoryConfig {
     /**
-     * The keyspace must have CQL 3.0.0 enabled. see Astynax docs for instructions on setting the cql version number.
-     * @return the {@link Keyspace} in which the operations should be performed.
+     *
+     * @return a gateway to perform common operations on the datastore.
      */
-    public Keyspace getKeyspace();
-
-    /**
-     * @return the column family name of that archives are stored in.
-     */
-    public String getColumnFamilyName();
+    public CassandraGateway getCassandraGateway();
 
     /**
      * @return number of shards to put the archives in

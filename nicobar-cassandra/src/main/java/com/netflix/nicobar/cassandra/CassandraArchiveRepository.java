@@ -27,6 +27,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -34,26 +35,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Future;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Iterables;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.netflix.astyanax.ColumnListMutation;
-import com.netflix.astyanax.MutationBatch;
-import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.netflix.astyanax.connectionpool.exceptions.OperationException;
 import com.netflix.astyanax.model.Column;
-import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.model.ColumnList;
-import com.netflix.astyanax.model.CqlResult;
 import com.netflix.astyanax.model.Row;
 import com.netflix.astyanax.model.Rows;
-import com.netflix.astyanax.serializers.StringSerializer;
+import com.netflix.nicobar.cassandra.internal.CassandraGateway;
 import com.netflix.nicobar.core.archive.JarScriptArchive;
 import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptArchive;
@@ -110,6 +104,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
     }
 
     private final CassandraArchiveRepositoryConfig config;
+    private final CassandraGateway cassandra;
 
     /**
      * Construct a instance of the repository with the given configuration
@@ -117,6 +112,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
      */
     public CassandraArchiveRepository(CassandraArchiveRepositoryConfig config) {
         this.config = Objects.requireNonNull(config, "config");
+        this.cassandra = this.config.getCassandraGateway();
     }
 
     @Override
@@ -147,22 +143,20 @@ public class CassandraArchiveRepository implements ArchiveRepository {
         } catch (URISyntaxException e) {
             throw new IOException(e);
         }
-        int shardNum = Math.abs(moduleId.hashCode() % getConfig().getShardCount());
+        int shardNum = calculateShardNum(moduleId);
         byte[] jarBytes = Files.readAllBytes(jarFilePath);
         byte[] hash = calculateHash(jarBytes);
-        MutationBatch mutationBatch = getConfig().getKeyspace().prepareMutationBatch();
-        ColumnListMutation<String> columnMutation = mutationBatch.withRow(getColumnFamily(), moduleId.toString());
-        columnMutation
-            .putColumn(Columns.shard_num.name(), shardNum)
-            .putColumn(Columns.last_update.name(), jarScriptArchive.getCreateTime())
-            .putColumn(Columns.archive_content_hash.name(), hash)
-            .putColumn(Columns.archive_content.name(), jarBytes);
+        Map<String, Object> columns = new HashMap<String, Object>();
+        columns.put(Columns.shard_num.name(), shardNum);
+        columns.put(Columns.last_update.name(), jarScriptArchive.getCreateTime());
+        columns.put(Columns.archive_content_hash.name(), hash);
+        columns.put(Columns.archive_content.name(), jarBytes);
 
         String serialized = getConfig().getModuleSpecSerializer().serialize(moduleSpec);
-        columnMutation.putColumn(Columns.module_spec.name(), serialized);
+        columns.put(Columns.module_spec.name(), serialized);
         try {
-            mutationBatch.execute();
-        } catch (ConnectionException e) {
+            cassandra.upsert(moduleId.toString(), columns);
+        } catch (Exception e) {
             throw new IOException(e);
         }
     }
@@ -175,7 +169,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
         Iterable<Row<String, String>> rows;
         try {
             rows = getRows(EnumSet.of(Columns.module_id, Columns.last_update));
-        } catch (ConnectionException e) {
+        } catch (Exception e) {
             throw new IOException(e);
         }
         Map<ModuleId, Long> updateTimes = new LinkedHashMap<ModuleId, Long>();
@@ -201,7 +195,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
             }
         }
         String description = String.format("Cassandra Keyspace: %s Column Family: %s",
-            config.getKeyspace().getKeyspaceName(), config.getColumnFamilyName());
+            cassandra.getKeyspace().getKeyspaceName(), cassandra.getColumnFamily());
         RepositorySummary repositorySummary = new RepositorySummary(getRepositoryId(),
             description, archiveCount, maxUpdateTime);
         return repositorySummary;
@@ -217,7 +211,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
         Iterable<Row<String, String>> rows;
         try {
                 rows = getRows(EnumSet.of(Columns.module_id, Columns.last_update, Columns.module_spec));
-        } catch (ConnectionException e) {
+        } catch (Exception e) {
             throw new IOException(e);
         }
 
@@ -238,30 +232,20 @@ public class CassandraArchiveRepository implements ArchiveRepository {
      * @param columns which columns to select
      * @return result rows
      */
-    public Iterable<Row<String, String>> getRows(EnumSet<?> columns) throws ConnectionException {
+    public Iterable<Row<String, String>> getRows(EnumSet<?> columns) throws Exception {
         int shardCount = config.getShardCount();
-        List<ListenableFuture<OperationResult<CqlResult<String,String>>>> futures =
-            new ArrayList<ListenableFuture<OperationResult<CqlResult<String,String>>>>(shardCount);
-        for (int i = 0; i < shardCount; i++) {
-            ListenableFuture<OperationResult<CqlResult<String,String>>> future = getConfig().getKeyspace()
-                .prepareQuery(getColumnFamily())
-                .withCql(generateSelectByShardCql(columns))
-                .asPreparedStatement()
-                .withIntegerValue(i).executeAsync();
 
-            futures.add(future);
+        List<Future<Rows<String, String>>> futures = new ArrayList<Future<Rows<String, String>>>();
+        for (int i = 0; i < shardCount; i++) {
+            futures.add(cassandra.selectAsync(generateSelectByShardCql(columns, i)));
         }
-        // unpack the results
-        List<OperationResult<CqlResult<String, String>>> result;
-        try {
-             result = Futures.allAsList(futures).get();
-        } catch (Exception e) {
-            throw new OperationException(e);
-        }
+
         List<Row<String, String>> rows = new LinkedList<Row<String, String>>();
-        for (OperationResult<CqlResult<String,String>> operationResult : result) {
-            Iterables.addAll(rows, operationResult.getResult().getRows());
+        for (Future<Rows<String, String>> f: futures) {
+            Rows<String, String> shardRows = f.get();
+            Iterables.addAll(rows, shardRows);
         }
+
         return rows;
     }
 
@@ -284,15 +268,12 @@ public class CassandraArchiveRepository implements ArchiveRepository {
             while (start < moduleIdList.size()) {
                 int end = Math.min(moduleIdList.size(), start + batchSize);
                 List<ModuleId> batchModuleIds = moduleIdList.subList(start, end);
-                List<String> keySliceList = new LinkedList<String>();
+                List<String> rowKeys = new ArrayList<String>(batchModuleIds.size());
                 for (ModuleId batchModuleId:batchModuleIds) {
-                    keySliceList.add(batchModuleId.toString());
+                    rowKeys.add(batchModuleId.toString());
                 }
 
-                Rows<String,String> rows = getConfig().getKeyspace().prepareQuery(getColumnFamily())
-                    .getKeySlice(keySliceList)
-                    .execute()
-                    .getResult();
+                Rows<String, String> rows = cassandra.getRows(rowKeys.toArray(new String[0]));
                 for (Row<String, String> row : rows) {
                     String moduleId = row.getKey();
                     ColumnList<String> columns = row.getColumns();
@@ -323,7 +304,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
                 }
                 start = end;
             }
-        } catch (ConnectionException e) {
+        } catch (Exception e) {
             throw new IOException(e);
         }
         return archives;
@@ -337,14 +318,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
     @Override
     public void deleteArchive(ModuleId moduleId) throws IOException {
         Objects.requireNonNull(moduleId, "moduleId");
-        MutationBatch mutationBatch = getConfig().getKeyspace().prepareMutationBatch();
-        mutationBatch.withRow(getColumnFamily(), moduleId.toString()).delete();
-        try {
-            mutationBatch.execute();
-        } catch (ConnectionException e) {
-            throw new IOException(e);
-        }
-
+        cassandra.deleteRow(moduleId.toString());
     }
 
     @Override
@@ -356,7 +330,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
      * Generate the CQL to select specific columns by shard number.
      *  SELECT <columns>... FROM script_repo WHERE shard_num = ?
      */
-    protected String generateSelectByShardCql(EnumSet<?> columns) {
+    protected String generateSelectByShardCql(EnumSet<?> columns, Integer shardNum) {
         StringBuilder sb = new StringBuilder()
             .append("SELECT ");
         boolean first = true;
@@ -369,16 +343,10 @@ public class CassandraArchiveRepository implements ArchiveRepository {
             sb.append(column.name());
         }
         sb.append("\n")
-            .append("FROM ").append(getConfig().getColumnFamilyName()).append("\n")
-            .append("WHERE ").append(Columns.shard_num.name()).append(" = ?\n");
+            .append("FROM ").append(cassandra.getColumnFamily())
+            .append("\n").append("WHERE ").append(Columns.shard_num.name())
+            .append(" = ").append(shardNum).append("\n");
         return sb.toString();
-    }
-
-    /**
-     * Create a column family object using the repository configuration.
-     */
-    protected ColumnFamily<String, String> getColumnFamily() {
-        return ColumnFamily.newColumnFamily(getConfig().getColumnFamilyName(), StringSerializer.get(), StringSerializer.get());
     }
 
     protected boolean verifyHash(byte[] expectedHashCode, byte[] content) {
@@ -396,6 +364,10 @@ public class CassandraArchiveRepository implements ArchiveRepository {
         }
         byte[] hashCode = digester.digest(content);
         return hashCode;
+    }
+
+    protected int calculateShardNum(ModuleId moduleId) {
+        return Math.abs(moduleId.hashCode() % getConfig().getShardCount());
     }
 
     private ScriptModuleSpec getModuleSpec(ColumnList<String> columns) {

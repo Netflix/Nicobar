@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 import com.netflix.astyanax.Keyspace;
+import com.netflix.nicobar.cassandra.internal.CassandraGateway;
 import com.netflix.nicobar.core.archive.GsonScriptModuleSpecSerializer;
 import com.netflix.nicobar.core.archive.ScriptModuleSpecSerializer;
 
@@ -32,10 +33,6 @@ import com.netflix.nicobar.core.archive.ScriptModuleSpecSerializer;
  * @author James Kojo
  */
 public class BasicCassandraRepositoryConfig implements CassandraArchiveRepositoryConfig {
-
-    /** default column family name if not overriden in the builder */
-    public static final String DEFAULT_COLUMN_FAMILY_NAME = "script_repo";
-
     /** default number of shards to separate the archives into */
     public static final int DEFAULT_SHARD_COUNT = 10;
 
@@ -46,25 +43,19 @@ public class BasicCassandraRepositoryConfig implements CassandraArchiveRepositor
     public static final ScriptModuleSpecSerializer DEFAULT_SPEC_SERIALIZER = new GsonScriptModuleSpecSerializer();
 
     public static class Builder {
-        private final Keyspace keyspace;
         private String repositoryId;
-        private String columnFamilyName = DEFAULT_COLUMN_FAMILY_NAME;
         private int shardCount = DEFAULT_SHARD_COUNT;
         private int fetchBatchSize = DEFAULT_FETCH_BATCH_SIZE;
         private Path archiveOutputDirectory;
         private ScriptModuleSpecSerializer specSerializer = DEFAULT_SPEC_SERIALIZER;
+        private CassandraGateway cassandraGateway;
 
-        public Builder(Keyspace keyspace) {
-            this.keyspace = keyspace;
+        public Builder(CassandraGateway gateway) {
+            this.cassandraGateway = gateway;
         }
         /** Set a unique, descriptive identifier used for reporting and display*/
         public Builder setRepositoryId(String repositoryId) {
             this.repositoryId = repositoryId;
-            return this;
-        }
-        /** Override the default column family name that will be used */
-        public Builder setColumnFamilyName(String columnFamilyName) {
-            this.columnFamilyName = columnFamilyName;
             return this;
         }
         /** Number of shards or buckets the archives should be put into */
@@ -89,6 +80,8 @@ public class BasicCassandraRepositoryConfig implements CassandraArchiveRepositor
         }
         /** Construct the config with defaults if necessary */
         public CassandraArchiveRepositoryConfig build() throws IOException {
+            Keyspace keyspace = cassandraGateway.getKeyspace();
+            String columnFamilyName = cassandraGateway.getColumnFamily();
             String buildRepositoryId = repositoryId;
             if (buildRepositoryId == null) {
                 buildRepositoryId = keyspace.getKeyspaceName() + "-" + columnFamilyName;
@@ -97,23 +90,21 @@ public class BasicCassandraRepositoryConfig implements CassandraArchiveRepositor
             if (buildArchiveDir == null) {
                 buildArchiveDir = Files.createTempDirectory("ScriptArchiveOutputDir");
             }
-            return new BasicCassandraRepositoryConfig(buildRepositoryId, keyspace, columnFamilyName, shardCount, fetchBatchSize, buildArchiveDir, specSerializer);
+            return new BasicCassandraRepositoryConfig(buildRepositoryId, cassandraGateway, shardCount, fetchBatchSize, buildArchiveDir, specSerializer);
         }
     }
 
     private final String repositoryId;
-    private final Keyspace keyspace;
-    private final String columnFamilyName;
     private final int shardCount;
     private final int fetchBatchSize;
     private final Path archiveOutputDirectory;
     private final ScriptModuleSpecSerializer moduleSpecSerializer;
+    private final CassandraGateway cassandraGateway;
 
-    protected BasicCassandraRepositoryConfig(String repositoryId, Keyspace keyspace, String columnFamilyName, int shardCount, int fetchBatchSize, Path archiveOutputDirectory,
-            ScriptModuleSpecSerializer moduleSpecSerializer) {
+    protected BasicCassandraRepositoryConfig(String repositoryId, CassandraGateway gateway, int shardCount,
+            int fetchBatchSize, Path archiveOutputDirectory, ScriptModuleSpecSerializer moduleSpecSerializer) {
         this.repositoryId =  Objects.requireNonNull(repositoryId, "repositoryId");
-        this.keyspace = Objects.requireNonNull(keyspace, "keyspace");
-        this.columnFamilyName = Objects.requireNonNull(columnFamilyName, "columnFamilyName");
+        this.cassandraGateway = Objects.requireNonNull(gateway, "cassandraGateway");
         this.shardCount = shardCount;
         this.fetchBatchSize = fetchBatchSize;
         this.archiveOutputDirectory = Objects.requireNonNull(archiveOutputDirectory, "archiveOutputDirectory");
@@ -121,13 +112,8 @@ public class BasicCassandraRepositoryConfig implements CassandraArchiveRepositor
     }
 
     @Override
-    public Keyspace getKeyspace() {
-        return keyspace;
-    }
-
-    @Override
-    public String getColumnFamilyName() {
-        return columnFamilyName;
+    public CassandraGateway getCassandraGateway() {
+        return cassandraGateway;
     }
 
     @Override
