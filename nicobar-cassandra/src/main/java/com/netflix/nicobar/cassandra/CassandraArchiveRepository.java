@@ -75,6 +75,8 @@ import com.netflix.nicobar.core.persistence.RepositoryView;
  *
  * CREATE TABLE script_repo (
  *    module_id varchar,
+ *    module_name varchar,
+ *    module_version varchar,
  *    shard_num int,
  *    last_update timestamp,
  *    module_spec varchar,
@@ -96,6 +98,8 @@ public class CassandraArchiveRepository implements ArchiveRepository {
     /** column names */
     public static enum Columns {
         module_id,
+        module_name,
+        module_version,
         shard_num,
         last_update,
         module_spec,
@@ -147,6 +151,9 @@ public class CassandraArchiveRepository implements ArchiveRepository {
         byte[] jarBytes = Files.readAllBytes(jarFilePath);
         byte[] hash = calculateHash(jarBytes);
         Map<String, Object> columns = new HashMap<String, Object>();
+        columns.put(Columns.module_id.name(), moduleId.toString());
+        columns.put(Columns.module_name.name(), moduleId.getName());
+        columns.put(Columns.module_version.name(), moduleId.getVersion());
         columns.put(Columns.shard_num.name(), shardNum);
         columns.put(Columns.last_update.name(), jarScriptArchive.getCreateTime());
         columns.put(Columns.archive_content_hash.name(), hash);
