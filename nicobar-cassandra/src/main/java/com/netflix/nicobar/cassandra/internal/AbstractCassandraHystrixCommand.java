@@ -36,7 +36,7 @@ public abstract class AbstractCassandraHystrixCommand<K> extends HystrixCommand<
      * returns a ColumnFamily given a columnFamilyName
      * @param columnFamilyName
      * @param rowKey
-     * @return
+     * @return the constructed ColumnFamily
      */
     @SuppressWarnings("rawtypes")
     protected ColumnFamily getColumnFamilyViaColumnName(String columnFamilyName, Object rowKey) {
@@ -47,7 +47,7 @@ public abstract class AbstractCassandraHystrixCommand<K> extends HystrixCommand<
      * returns a ColumnFamily given a columnFamilyName
      * @param columnFamilyName
      * @param rowKeyClass
-     * @return
+     * @return a constructed ColumnFamily
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     protected ColumnFamily getColumnFamilyViaColumnName(String columnFamilyName, Class rowKeyClass) {
