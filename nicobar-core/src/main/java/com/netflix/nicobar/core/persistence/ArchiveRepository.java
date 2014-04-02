@@ -90,12 +90,12 @@ public interface ArchiveRepository {
     public void deleteArchive(ModuleId moduleId) throws IOException;
 
     /**
-     * Merge given deploy specs into an archive's deploy specs.
+     * Put (merge) given deploy specs into an archive's deploy specs.
      *
      * @param moduleId module id to add the given deploy specs to
      * @param deploySpecs set of specs to merge into module's deploy specs
      * @throws UnsupportedOperationException
      *         If this repository does not support adding deploy specs to a module.
      */
-    public void addDeploySpecs(ModuleId moduleId, Map<String, Object> deploySpecs);
+    public void putDeploySpecs(ModuleId moduleId, Map<String, Object> deploySpecs);
 }

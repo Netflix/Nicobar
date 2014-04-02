@@ -150,7 +150,7 @@ public class CassandraArchiveRepositoryTest {
 
     @Test(expectedExceptions=UnsupportedOperationException.class)
     public void testAddDeploySpecs() throws IOException {
-        repository.addDeploySpecs(ModuleId.create("testModuleId"), Collections.<String, Object>emptyMap());
+        repository.putDeploySpecs(ModuleId.create("testModuleId"), Collections.<String, Object>emptyMap());
     }
 
     @Test(expectedExceptions=UnsupportedOperationException.class)

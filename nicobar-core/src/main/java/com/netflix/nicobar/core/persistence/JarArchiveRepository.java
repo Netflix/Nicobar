@@ -216,7 +216,7 @@ public class JarArchiveRepository implements ArchiveRepository {
     }
 
     @Override
-    public void addDeploySpecs(ModuleId moduleId, Map<String, Object> deploySpecs) {
+    public void putDeploySpecs(ModuleId moduleId, Map<String, Object> deploySpecs) {
         throw new UnsupportedOperationException();
     }
 
