@@ -56,11 +56,22 @@ public interface ArchiveRepository {
     public RepositoryView getView(String view);
 
     /**
-     * insert a Jar into the repository
+     * Insert a Jar into the repository
      * @param jarScriptArchive script archive which describes the jar and
      *        the ModuleSpec which should be inserted
      */
     public void insertArchive(JarScriptArchive jarScriptArchive)
+        throws IOException;
+
+    /**
+     * Insert a Jar into the repository
+     * @param jarScriptArchive script archive which describes the jar and
+     *        the ModuleSpec which should be inserted
+     * @param initialDeploySpecs a set of initial deployment specs.
+     * @throws UnsupportedOperationException if this repository does not support
+     *         adding deploy specs to a module.
+     */
+    public void insertArchive(JarScriptArchive jarScriptArchive, Map <String, Object> initialDeploySpecs)
         throws IOException;
 
     /**

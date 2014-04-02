@@ -189,6 +189,15 @@ public class CassandraArchiveRepository implements ArchiveRepository {
     }
 
     /**
+     * Unsupported.
+     */
+    @Override
+    public void insertArchive(JarScriptArchive jarScriptArchive, Map<String, Object> initialDeploySpecs)
+            throws IOException {
+        throw new UnsupportedOperationException("This repository does not support deployment specs.");
+    }
+
+    /**
      * Get all of the rows in in the table. Attempts to reduce the load on cassandra by splitting up the query into smaller sub-queries
      * @param columns which columns to select
      * @return result rows

@@ -185,6 +185,15 @@ public class JarArchiveRepository implements ArchiveRepository {
         Files.setLastModifiedTime(moduleJarPath, FileTime.fromMillis(jarScriptArchive.getCreateTime()));
     }
 
+    /**
+     * Unsupported.
+     */
+    @Override
+    public void insertArchive(JarScriptArchive jarScriptArchive, Map<String, Object> initialDeploySpecs)
+            throws IOException {
+        throw new UnsupportedOperationException("This repository does not support deployment specs.");
+    }
+
     @Override
     public Set<ScriptArchive> getScriptArchives(Set<ModuleId> moduleIds) throws IOException {
         Set<ScriptArchive> scriptArchives = new LinkedHashSet<ScriptArchive>();
