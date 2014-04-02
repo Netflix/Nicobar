@@ -17,7 +17,10 @@
  */
 package com.netflix.nicobar.core.persistence;
 
+import java.util.Map;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
@@ -33,11 +36,13 @@ public class ArchiveSummary {
     private final ModuleId moduleId;
     private final ScriptModuleSpec moduleSpec;
     private final long lastUpdateTime;
+    private final Map<String, Object> deploySpecs;
 
-    public ArchiveSummary(ModuleId moduleId, ScriptModuleSpec moduleSpec, long lastUpdateTime) {
+    public ArchiveSummary(ModuleId moduleId, ScriptModuleSpec moduleSpec, long lastUpdateTime, @Nullable Map<String, Object> deploySpecs) {
         this.moduleId = Objects.requireNonNull(moduleId, "moduleId");
         this.moduleSpec = moduleSpec;
         this.lastUpdateTime = lastUpdateTime;
+        this.deploySpecs = deploySpecs;
     }
     public ModuleId getModuleId() {
         return moduleId;
@@ -49,5 +54,14 @@ public class ArchiveSummary {
 
     public long getLastUpdateTime() {
         return lastUpdateTime;
+    }
+
+    /**
+     * Deployment specs for this archive. This depends on the underlying
+     * archive repository's support for deploy specs, and thus could be null.
+     * @return concrete set of deployment specs, or null
+     */
+    public Map<String, Object> getDeploySpecs() {
+        return deploySpecs;
     }
 }

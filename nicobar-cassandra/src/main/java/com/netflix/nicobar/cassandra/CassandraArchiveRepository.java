@@ -426,7 +426,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
                 Column<String> lastUpdateColumn = columns.getColumnByName(Columns.last_update.name());
                 long updateTime = lastUpdateColumn != null ? lastUpdateColumn.getLongValue() : 0;
                 ScriptModuleSpec moduleSpec = getModuleSpec(columns);
-                ArchiveSummary summary = new ArchiveSummary(ModuleId.fromString(moduleId), moduleSpec, updateTime);
+                ArchiveSummary summary = new ArchiveSummary(ModuleId.fromString(moduleId), moduleSpec, updateTime, null);
                 summaries.add(summary);
             }
             return summaries;

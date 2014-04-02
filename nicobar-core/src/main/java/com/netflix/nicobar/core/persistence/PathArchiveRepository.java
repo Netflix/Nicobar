@@ -255,7 +255,7 @@ public class PathArchiveRepository implements ArchiveRepository {
             for (ScriptArchive scriptArchive : scriptArchives) {
                 ScriptModuleSpec moduleSpec = scriptArchive.getModuleSpec();
                 long lastUpdateTime = scriptArchive.getCreateTime();
-                summaries.add(new ArchiveSummary(moduleSpec.getModuleId(), moduleSpec, lastUpdateTime));
+                summaries.add(new ArchiveSummary(moduleSpec.getModuleId(), moduleSpec, lastUpdateTime, null));
             }
             return summaries;
         }
