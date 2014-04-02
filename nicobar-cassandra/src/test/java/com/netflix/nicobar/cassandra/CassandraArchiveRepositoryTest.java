@@ -1,5 +1,7 @@
 package com.netflix.nicobar.cassandra;
 
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,16 +17,26 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 
 import org.apache.commons.io.IOUtils;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import com.netflix.astyanax.Keyspace;
+import com.netflix.astyanax.model.Row;
+import com.netflix.astyanax.model.Rows;
 import com.netflix.nicobar.cassandra.CassandraArchiveRepository.Columns;
 import com.netflix.nicobar.cassandra.internal.CassandraGateway;
 import com.netflix.nicobar.core.archive.JarScriptArchive;
@@ -34,7 +46,6 @@ import com.netflix.nicobar.core.archive.ScriptModuleSpec;
 /**
  * Tests for {@link CassandraArchiveRepository}
  * @author Vasanth Asokan
- * TODO: Add tests for all ArchiveRepoistory interfaces.
  */
 public class CassandraArchiveRepositoryTest {
 
@@ -102,14 +113,6 @@ public class CassandraArchiveRepositoryTest {
         repository.insertArchive(jarArchive);
 
         Map<String, Object> columns = new HashMap<String, Object>();
-        /*
-         * columns.put(Columns.shard_num.name(), shardNum);
-        columns.put(Columns.last_update.name(), jarScriptArchive.getCreateTime());
-        columns.put(Columns.archive_content_hash.name(), hash);
-        columns.put(Columns.archive_content.name(), jarBytes);
-
-        columns.put(Columns.module_spec.name(), serialized);
-         */
         Path jarFilePath;
         try {
             jarFilePath = Paths.get(jarArchive.getRootUrl().toURI());
@@ -138,4 +141,80 @@ public class CassandraArchiveRepositoryTest {
         assertEquals(serialized, (String)columnMap.get(Columns.module_spec.name()));
         assertEquals(jarArchive.getCreateTime(), (long)columnMap.get(Columns.last_update.name()));
     }
+
+    @Test(expectedExceptions=UnsupportedOperationException.class)
+    public void testArchiveWithDeploySpecs() throws IOException {
+        JarScriptArchive jarArchive = new JarScriptArchive.Builder(testArchiveJarFile).build();
+        repository.insertArchive(jarArchive, null);
+    }
+
+    @Test(expectedExceptions=UnsupportedOperationException.class)
+    public void testAddDeploySpecs() throws IOException {
+        repository.addDeploySpecs(ModuleId.create("testModuleId"), Collections.<String, Object>emptyMap());
+    }
+
+    @Test(expectedExceptions=UnsupportedOperationException.class)
+    public void testGetView() throws IOException {
+        repository.getView("");
+    }
+
+    @Test
+    public void testDeleteArchive() throws IllegalArgumentException, IOException {
+        repository.deleteArchive(ModuleId.fromString("testModule.v3"));
+        verify(gateway).deleteRow("testModule.v3");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testGetRows() throws Exception {
+        EnumSet<Columns> columns = EnumSet.of(Columns.module_id, Columns.module_name);
+        Rows<String, String> mockRows = mock(Rows.class);
+        Row<String, String> row1 = mock(Row.class);
+        Row<String, String> row2 = mock(Row.class);
+        List<Row<String, String>> rowList = Arrays.asList(row1, row2);
+
+        when(mockRows.iterator()).thenReturn(rowList.iterator());
+
+        FutureTask<Rows<String, String>> future = new FutureTask<Rows<String, String>>(new Runnable() {
+            @Override
+            public void run() {
+            }
+        }, mockRows);
+        ExecutorService executor = Executors.newFixedThreadPool(1);
+        executor.execute(future);
+        when(gateway.selectAsync(anyString())).thenReturn(future);
+
+        repository.getRows(columns);
+        List<String> selectList = new ArrayList<String>();
+        for (int shardNum = 0; shardNum < config.getShardCount(); shardNum++) {
+            selectList.add(repository.generateSelectByShardCql(columns, shardNum));
+        }
+
+        InOrder inOrder = inOrder(gateway);
+        for (int shardNum = 0; shardNum < config.getShardCount(); shardNum++) {
+            inOrder.verify(gateway).selectAsync(selectList.get(shardNum));
+        }
+    }
+
+    @Test
+    public void testGetArchiveUpdateTimes() {
+        // TODO: Fill out test.
+    }
+
+    @Test
+    public void testGetArchiveSummaries() {
+        // TODO: Fill out test.
+    }
+
+
+    @Test
+    public void testGetRepositorySummary() throws Exception {
+        // TODO: Fill out test.
+    }
+
+    @Test
+    public void testGetScriptArchives() {
+        // TODO: Fill out test.
+    }
+
 }

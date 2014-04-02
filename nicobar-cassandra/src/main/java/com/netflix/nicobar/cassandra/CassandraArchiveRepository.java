@@ -198,28 +198,6 @@ public class CassandraArchiveRepository implements ArchiveRepository {
     }
 
     /**
-     * Get all of the rows in in the table. Attempts to reduce the load on cassandra by splitting up the query into smaller sub-queries
-     * @param columns which columns to select
-     * @return result rows
-     */
-    public Iterable<Row<String, String>> getRows(EnumSet<?> columns) throws Exception {
-        int shardCount = config.getShardCount();
-
-        List<Future<Rows<String, String>>> futures = new ArrayList<Future<Rows<String, String>>>();
-        for (int i = 0; i < shardCount; i++) {
-            futures.add(cassandra.selectAsync(generateSelectByShardCql(columns, i)));
-        }
-
-        List<Row<String, String>> rows = new LinkedList<Row<String, String>>();
-        for (Future<Rows<String, String>> f: futures) {
-            Rows<String, String> shardRows = f.get();
-            Iterables.addAll(rows, shardRows);
-        }
-
-        return rows;
-    }
-
-    /**
      * Get all of the {@link ScriptArchive}s for the given set of moduleIds. Will perform the operation in batches
      * as specified by {@link CassandraArchiveRepositoryConfig#getArchiveFetchBatchSize()} and outputs the jar files in
      * the path specified by {@link CassandraArchiveRepositoryConfig#getArchiveOutputDirectory()}.
@@ -294,6 +272,28 @@ public class CassandraArchiveRepository implements ArchiveRepository {
     @Override
     public void addDeploySpecs(ModuleId moduleId, Map<String, Object> deploySpecs) {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Get all of the rows in in the table. Attempts to reduce the load on cassandra by splitting up the query into smaller sub-queries
+     * @param columns which columns to select
+     * @return result rows
+     */
+    protected Iterable<Row<String, String>> getRows(EnumSet<?> columns) throws Exception {
+        int shardCount = config.getShardCount();
+
+        List<Future<Rows<String, String>>> futures = new ArrayList<Future<Rows<String, String>>>();
+        for (int i = 0; i < shardCount; i++) {
+            futures.add(cassandra.selectAsync(generateSelectByShardCql(columns, i)));
+        }
+
+        List<Row<String, String>> rows = new LinkedList<Row<String, String>>();
+        for (Future<Rows<String, String>> f: futures) {
+            Rows<String, String> shardRows = f.get();
+            Iterables.addAll(rows, shardRows);
+        }
+
+        return rows;
     }
 
     /**
