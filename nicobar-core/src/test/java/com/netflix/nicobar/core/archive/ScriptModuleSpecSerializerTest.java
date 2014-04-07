@@ -43,7 +43,6 @@ public class ScriptModuleSpecSerializerTest {
             .build();
         ScriptModuleSpecSerializer serializer = new GsonScriptModuleSpecSerializer();
         String json = serializer.serialize(expected);
-        System.out.println("json: " + json);
         ScriptModuleSpec deserialized = serializer.deserialize(json);
         assertEquals(deserialized, expected);
     }
