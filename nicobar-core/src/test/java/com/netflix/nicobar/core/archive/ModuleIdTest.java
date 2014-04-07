@@ -14,8 +14,8 @@ public class ModuleIdTest {
 
     @Test
     public void testDefaultVersion() {
-        ModuleId moduleId = ModuleId.create("test-Module");
-        assertEquals(moduleId.toString(), "test-Module");
+        ModuleId moduleId = ModuleId.create("/test/module");
+        assertEquals(moduleId.toString(), "/test/module");
     }
 
     @Test
