@@ -84,7 +84,7 @@ public class ArchiveRepositoryResource {
     public RepositorySummary getRepositorySummary() {
         RepositorySummary repositorySummary;
         try {
-            repositorySummary = repository.getRepositorySummary();
+            repositorySummary = repository.getDefaultView().getRepositorySummary();
         } catch (IOException e) {
             throw new WebApplicationException(e);
         }
@@ -97,7 +97,7 @@ public class ArchiveRepositoryResource {
     @Path("archivesummaries")
     public List<ArchiveSummary> getSummaries() {
         try {
-            return repository.getArchiveSummaries();
+            return repository.getDefaultView().getArchiveSummaries();
         } catch (IOException e) {
             throw new WebApplicationException(e);
         }

@@ -153,7 +153,7 @@ public class ArchiveRepositoryPoller {
         RepositoryPollerContext context = repositoryContexts.get(archiveRepository);
         Map<ModuleId, Long> repoUpdateTimes;
         try {
-            repoUpdateTimes = archiveRepository.getArchiveUpdateTimes();
+            repoUpdateTimes = archiveRepository.getDefaultView().getArchiveUpdateTimes();
         } catch (IOException e) {
             logger.error("Exception while fetching update times for repository " +
                 archiveRepository.getRepositoryId(), e);

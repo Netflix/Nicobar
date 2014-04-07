@@ -18,7 +18,6 @@
 package com.netflix.nicobar.core.persistence;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,11 +32,31 @@ import com.netflix.nicobar.core.archive.ScriptArchive;
  * @author Vasanth Asokan
  */
 public interface ArchiveRepository {
-
+    /**
+     * Get the ID of this repository
+     * @return the id string.
+     */
     public String getRepositoryId();
 
     /**
-     * insert a Jar into the repository
+     * Get the default view into this repository.
+     * @return the default repository view.
+     */
+    public RepositoryView getDefaultView();
+
+    /**
+     * Get a specific named view into this repository.
+     *
+     * @param view the name of the view.
+     * @return a {@link RepositoryView} that matches the given name or null if
+     *         one wasn't found.
+     * @throws UnsupportedOperationException
+     *             if this repository does not support named views.
+     */
+    public RepositoryView getView(String view);
+
+    /**
+     * Insert a Jar into the repository
      * @param jarScriptArchive script archive which describes the jar and
      *        the ModuleSpec which should be inserted
      */
@@ -45,22 +64,15 @@ public interface ArchiveRepository {
         throws IOException;
 
     /**
-     * Get the last update times of all of the script archives managed by this Repository.
-     * @return map of moduleId to last update time
+     * Insert a Jar into the repository
+     * @param jarScriptArchive script archive which describes the jar and
+     *        the ModuleSpec which should be inserted
+     * @param initialDeploySpecs a set of initial deployment specs.
+     * @throws UnsupportedOperationException if this repository does not support
+     *         adding deploy specs to a module.
      */
-    public Map<ModuleId, Long> getArchiveUpdateTimes() throws IOException;
-
-    /**
-     * Get a summary of the of this repository.
-     * @return displayable summary of the contents
-     */
-    public RepositorySummary getRepositorySummary() throws IOException;
-
-    /**
-     * Get a summary of all archives in this Repository
-     * @return List of summaries
-     */
-    public List<ArchiveSummary> getArchiveSummaries() throws IOException;
+    public void insertArchive(JarScriptArchive jarScriptArchive, Map <String, Object> initialDeploySpecs)
+        throws IOException;
 
     /**
      * Get all of the {@link ScriptArchive}s for the given set of moduleIds.
@@ -78,12 +90,12 @@ public interface ArchiveRepository {
     public void deleteArchive(ModuleId moduleId) throws IOException;
 
     /**
-     * Merge given deploy specs into an archive's deploy specs.
+     * Put (merge) given deploy specs into an archive's deploy specs.
      *
      * @param moduleId module id to add the given deploy specs to
      * @param deploySpecs set of specs to merge into module's deploy specs
      * @throws UnsupportedOperationException
      *         If this repository does not support adding deploy specs to a module.
      */
-    public void addDeploySpecs(ModuleId moduleId, Map<String, Object> deploySpecs);
+    public void putDeploySpecs(ModuleId moduleId, Map<String, Object> deploySpecs);
 }

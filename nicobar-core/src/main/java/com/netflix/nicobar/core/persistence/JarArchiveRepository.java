@@ -107,6 +107,7 @@ public class JarArchiveRepository implements ArchiveRepository {
     private final String repositoryId ;
     private final ScriptModuleSpecSerializer moduleSpecSerializer;
     private final String repositoryDescription;
+    private final RepositoryView defaultView = new DefaultView();
 
     protected JarArchiveRepository(Path rootDir, String repositoryId, String repositoryDescription, ScriptModuleSpecSerializer moduleSpecSerializer) {
         this.rootDir = Objects.requireNonNull(rootDir, "rootDir");
@@ -118,6 +119,24 @@ public class JarArchiveRepository implements ArchiveRepository {
     @Override
     public String getRepositoryId() {
         return repositoryId;
+    }
+
+    /**
+     * The default view reports all archives inserted into this repository.
+     * @return the default view into all archives.
+     */
+    @Override
+    public RepositoryView getDefaultView() {
+        return defaultView;
+    }
+
+    /**
+     * No named views supported by this repository!
+     * Throws UnsupportedOperationException.
+     */
+    @Override
+    public RepositoryView getView(String view) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -166,46 +185,13 @@ public class JarArchiveRepository implements ArchiveRepository {
         Files.setLastModifiedTime(moduleJarPath, FileTime.fromMillis(jarScriptArchive.getCreateTime()));
     }
 
+    /**
+     * Unsupported.
+     */
     @Override
-    public Map<ModuleId, Long> getArchiveUpdateTimes() throws IOException {
-        Map<ModuleId, Long> updateTimes = new LinkedHashMap<ModuleId, Long>();
-        DirectoryStream<Path> archiveJars = Files.newDirectoryStream(rootDir, JAR_FILE_FILTER);
-        for (Path archiveJar: archiveJars) {
-            Path absoluteArchiveFile = rootDir.resolve(archiveJar);
-            long lastUpdateTime = Files.getLastModifiedTime(absoluteArchiveFile).toMillis();
-            String moduleName = archiveJar.getFileName().toString();
-            if (moduleName.endsWith(".jar")) {
-                moduleName = moduleName.substring(0, moduleName.lastIndexOf(".jar"));
-            }
-            ModuleId moduleId = ModuleId.fromString(moduleName);
-            updateTimes.put(moduleId, lastUpdateTime);
-        }
-        return updateTimes;
-    }
-
-    @Override
-    public RepositorySummary getRepositorySummary() throws IOException {
-        Map<ModuleId, Long> archiveUpdateTimes = getArchiveUpdateTimes();
-        long maxUpdateTime = 0;
-        for (Long updateTime : archiveUpdateTimes.values()) {
-            if (updateTime > maxUpdateTime) {
-                maxUpdateTime = updateTime;
-            }
-        }
-        return new RepositorySummary(getRepositoryId(), repositoryDescription, archiveUpdateTimes.size(), maxUpdateTime);
-    }
-
-    @Override
-    public List<ArchiveSummary> getArchiveSummaries() throws IOException {
-        List<ArchiveSummary> summaries = new LinkedList<ArchiveSummary>();
-        Set<ModuleId> moduleIds = getArchiveUpdateTimes().keySet();
-        Set<ScriptArchive> scriptArchives = getScriptArchives(moduleIds);
-        for (ScriptArchive scriptArchive : scriptArchives) {
-            ScriptModuleSpec moduleSpec = scriptArchive.getModuleSpec();
-            long lastUpdateTime = scriptArchive.getCreateTime();
-            summaries.add(new ArchiveSummary(moduleSpec.getModuleId(), moduleSpec, lastUpdateTime));
-        }
-        return summaries;
+    public void insertArchive(JarScriptArchive jarScriptArchive, Map<String, Object> initialDeploySpecs)
+            throws IOException {
+        throw new UnsupportedOperationException("This repository does not support deployment specs.");
     }
 
     @Override
@@ -230,7 +216,7 @@ public class JarArchiveRepository implements ArchiveRepository {
     }
 
     @Override
-    public void addDeploySpecs(ModuleId moduleId, Map<String, Object> deploySpecs) {
+    public void putDeploySpecs(ModuleId moduleId, Map<String, Object> deploySpecs) {
         throw new UnsupportedOperationException();
     }
 
@@ -243,4 +229,52 @@ public class JarArchiveRepository implements ArchiveRepository {
     }
 
 
+    protected class DefaultView implements RepositoryView {
+        @Override
+        public String getName() {
+            return "Default View";
+        }
+
+        @Override
+        public Map<ModuleId, Long> getArchiveUpdateTimes() throws IOException {
+            Map<ModuleId, Long> updateTimes = new LinkedHashMap<ModuleId, Long>();
+            DirectoryStream<Path> archiveJars = Files.newDirectoryStream(rootDir, JAR_FILE_FILTER);
+            for (Path archiveJar: archiveJars) {
+                Path absoluteArchiveFile = rootDir.resolve(archiveJar);
+                long lastUpdateTime = Files.getLastModifiedTime(absoluteArchiveFile).toMillis();
+                String moduleName = archiveJar.getFileName().toString();
+                if (moduleName.endsWith(".jar")) {
+                    moduleName = moduleName.substring(0, moduleName.lastIndexOf(".jar"));
+                }
+                ModuleId moduleId = ModuleId.fromString(moduleName);
+                updateTimes.put(moduleId, lastUpdateTime);
+            }
+            return updateTimes;
+        }
+
+        @Override
+        public RepositorySummary getRepositorySummary() throws IOException {
+            Map<ModuleId, Long> archiveUpdateTimes = getArchiveUpdateTimes();
+            long maxUpdateTime = 0;
+            for (Long updateTime : archiveUpdateTimes.values()) {
+                if (updateTime > maxUpdateTime) {
+                    maxUpdateTime = updateTime;
+                }
+            }
+            return new RepositorySummary(getRepositoryId(), repositoryDescription, archiveUpdateTimes.size(), maxUpdateTime);
+        }
+
+        @Override
+        public List<ArchiveSummary> getArchiveSummaries() throws IOException {
+            List<ArchiveSummary> summaries = new LinkedList<ArchiveSummary>();
+            Set<ModuleId> moduleIds = getArchiveUpdateTimes().keySet();
+            Set<ScriptArchive> scriptArchives = getScriptArchives(moduleIds);
+            for (ScriptArchive scriptArchive : scriptArchives) {
+                ScriptModuleSpec moduleSpec = scriptArchive.getModuleSpec();
+                long lastUpdateTime = scriptArchive.getCreateTime();
+                summaries.add(new ArchiveSummary(moduleSpec.getModuleId(), moduleSpec, lastUpdateTime, null));
+            }
+            return summaries;
+        }
+    }
 }

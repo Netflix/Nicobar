@@ -79,7 +79,7 @@ public abstract class ArchiveRepositoryTest {
         JarScriptArchive jarScriptArchive = new JarScriptArchive.Builder(testArchiveJarFile).build();
         ModuleId testModuleId = TEST_MODULE_SPEC_JAR.getModuleId();
         repository.insertArchive(jarScriptArchive);
-        Map<ModuleId, Long> archiveUpdateTimes = repository.getArchiveUpdateTimes();
+        Map<ModuleId, Long> archiveUpdateTimes = repository.getDefaultView().getArchiveUpdateTimes();
         long expectedUpdateTime = Files.getLastModifiedTime(testArchiveJarFile).toMillis();
         assertEquals(archiveUpdateTimes, Collections.singletonMap(testModuleId, expectedUpdateTime));
 
@@ -91,14 +91,14 @@ public abstract class ArchiveRepositoryTest {
         assertEquals(scriptArchive.getCreateTime(), expectedUpdateTime);
 
         // assert getArchiveSummaries
-        List<ArchiveSummary> archiveSummaries = repository.getArchiveSummaries();
+        List<ArchiveSummary> archiveSummaries = repository.getDefaultView().getArchiveSummaries();
         assertEquals(archiveSummaries.size(), 1);
         ArchiveSummary archiveSummary = archiveSummaries.get(0);
         assertEquals(archiveSummary.getModuleId(), testModuleId);
         assertEquals(archiveSummary.getLastUpdateTime(), expectedUpdateTime);
 
         // assert getRepositorySummary
-        RepositorySummary repositorySummary = repository.getRepositorySummary();
+        RepositorySummary repositorySummary = repository.getDefaultView().getRepositorySummary();
         assertNotNull(repositorySummary);
         assertEquals(repositorySummary.getArchiveCount(), 1);
         assertEquals(repositorySummary.getLastUpdated(), expectedUpdateTime);
@@ -108,7 +108,7 @@ public abstract class ArchiveRepositoryTest {
         Files.setLastModifiedTime(testArchiveJarFile, FileTime.fromMillis(expectedUpdateTime));
         jarScriptArchive = new JarScriptArchive.Builder(testArchiveJarFile).build();
         repository.insertArchive(jarScriptArchive);
-        archiveUpdateTimes = repository.getArchiveUpdateTimes();
+        archiveUpdateTimes = repository.getDefaultView().getArchiveUpdateTimes();
         assertEquals(archiveUpdateTimes, Collections.singletonMap(testModuleId, expectedUpdateTime));
 
         // assert getScriptArchives
@@ -119,21 +119,21 @@ public abstract class ArchiveRepositoryTest {
         assertEquals(scriptArchive.getCreateTime(), expectedUpdateTime);
 
         // assert getArchiveSummaries
-        archiveSummaries = repository.getArchiveSummaries();
+        archiveSummaries = repository.getDefaultView().getArchiveSummaries();
         assertEquals(archiveSummaries.size(), 1);
         archiveSummary = archiveSummaries.get(0);
         assertEquals(archiveSummary.getModuleId(), testModuleId);
         assertEquals(archiveSummary.getLastUpdateTime(), expectedUpdateTime);
 
         // assert getRepositorySummary
-        repositorySummary = repository.getRepositorySummary();
+        repositorySummary = repository.getDefaultView().getRepositorySummary();
         assertNotNull(repositorySummary);
         assertEquals(repositorySummary.getArchiveCount(), 1);
         assertEquals(repositorySummary.getLastUpdated(), expectedUpdateTime);
 
         // delete module
         repository.deleteArchive(testModuleId);
-        archiveUpdateTimes = repository.getArchiveUpdateTimes();
+        archiveUpdateTimes = repository.getDefaultView().getArchiveUpdateTimes();
         assertTrue(archiveUpdateTimes.isEmpty(), archiveUpdateTimes.toString());
     }
 
