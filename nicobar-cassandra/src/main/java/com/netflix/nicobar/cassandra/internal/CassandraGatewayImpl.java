@@ -70,4 +70,9 @@ public class CassandraGatewayImpl implements CassandraGateway {
     public void deleteRow(String rowKey) {
         new HystrixCassandraDeleteRow<String>(keyspace, columnFamily, rowKey).execute();
     }
+
+    @Override
+    public void deleteColumn(String rowKey, String column) {
+        new HystrixCassandraDeleteColumns<String>(keyspace, columnFamily, rowKey, column);
+    }
 }
