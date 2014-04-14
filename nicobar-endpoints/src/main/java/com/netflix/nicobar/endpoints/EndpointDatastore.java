@@ -54,12 +54,12 @@ public class EndpointDatastore {
     }
 
     /**
-     * Create a new version of an endpoint's script archive.
+     * Insert the script archive for an endpoint version.
      *
      * @param endpointArchive the script archive defining the endpoint code.
      * @throws IOException
      */
-    public void createEndpointVersion(JarScriptArchive endpointArchive) throws IOException {
+    public void insertEndpointArchive(JarScriptArchive endpointArchive) throws IOException {
         Objects.requireNonNull(endpointArchive, "endpointArchive");
         String endpointUri = endpointArchive.getModuleSpec().getModuleId().getName();
         String endpointVersion = endpointArchive.getModuleSpec().getModuleId().getVersion();

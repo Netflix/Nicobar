@@ -2,6 +2,7 @@ package com.netflix.nicobar.endpoints;
 
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -62,11 +63,12 @@ public class EndpointSummary {
     }
 
     /**
-     * Set the latest version string.
+     * Set the latest version string. Cannot be null.
      *
      * @param latestVersion the latest version string for this endpoint.
      */
-    public void setLatestVersion(String latestVersion) {
+    public void setLatestVersion(@Nonnull String latestVersion) {
+        Objects.requireNonNull(latestVersion, "latestVersion");
         this.latestVersion = latestVersion;
     }
 
