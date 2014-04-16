@@ -1,8 +1,6 @@
 {
     "moduleId": "HelloWorld",
-    "dependencies": [
-        "Groovy2RuntimeModule"
-    ], 
+    "compilerPluginIds": ["groovy2"],
     "archiveMetadata": {
         "SCRIPT_LANGUAGE": "groovy2"
     }
