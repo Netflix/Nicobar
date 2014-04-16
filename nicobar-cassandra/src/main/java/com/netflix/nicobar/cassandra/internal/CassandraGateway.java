@@ -48,6 +48,13 @@ public interface CassandraGateway {
     public void deleteRow(String rowKey);
 
     /**
+     * Deletes a column from a row in Cassandra.
+     * @param rowKey the key of the row containing the column.
+     * @param column the name of the column to delete.
+     */
+    public void deleteColumn(String rowKey, String column);
+
+    /**
      * Gets specific columns from a specific row
      *
      * @param rowKey the specific row's key.

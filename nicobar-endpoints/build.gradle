@@ -1,0 +1,7 @@
+project(':nicobar-endpoints') {
+    dependencies {
+        compile project(':nicobar-core')
+        compile project(':nicobar-cassandra')
+        compile project(':nicobar-manager')
+    }
+}
