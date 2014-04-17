@@ -78,7 +78,7 @@ public class JBossModuleClassLoader extends ModuleClassLoader {
 
     /**
      * Manually add the compiled classes to this classloader. This method will
-     * define and resolve the class, binding this classlaoder to the class.
+     * define and resolve the class, binding this classloader to the class.
      * @return the loaded class
      */
     public Class<?> addClassBytes(String name, byte[] classBytes) {

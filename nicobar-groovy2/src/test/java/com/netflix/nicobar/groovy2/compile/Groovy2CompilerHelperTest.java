@@ -22,6 +22,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 
 import java.lang.reflect.Method;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,7 +56,7 @@ public class Groovy2CompilerHelperTest {
             .addFile(TestScript.HELLO_WORLD.getScriptPath())
             .build();
 
-        Set<GroovyClass> compiledClasses = new Groovy2CompilerHelper()
+        Set<GroovyClass> compiledClasses = new Groovy2CompilerHelper(Files.createTempDirectory("Groovy2CompilerHelperTest"))
             .addScriptArchive(scriptArchive)
             .compile();
 
@@ -81,7 +82,7 @@ public class Groovy2CompilerHelperTest {
             .addFile(TestScript.HELLO_PACKAGE.getScriptPath())
             .build();
 
-        Set<GroovyClass> compiledClasses = new Groovy2CompilerHelper()
+        Set<GroovyClass> compiledClasses = new Groovy2CompilerHelper(Files.createTempDirectory("Groovy2CompilerHelperTest"))
             .addScriptArchive(scriptArchive)
             .compile();
 

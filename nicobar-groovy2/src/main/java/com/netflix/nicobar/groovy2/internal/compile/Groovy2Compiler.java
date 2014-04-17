@@ -18,6 +18,7 @@
 package com.netflix.nicobar.groovy2.internal.compile;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -43,9 +44,9 @@ public class Groovy2Compiler implements ScriptArchiveCompiler {
     }
 
     @Override
-    public Set<Class<?>> compile(ScriptArchive archive, JBossModuleClassLoader moduleClassLoader)
+    public Set<Class<?>> compile(ScriptArchive archive, JBossModuleClassLoader moduleClassLoader, Path compilationRootDir)
         throws ScriptCompilationException, IOException {
-         Set<GroovyClass> groovyClasses = new Groovy2CompilerHelper()
+         Set<GroovyClass> groovyClasses = new Groovy2CompilerHelper(compilationRootDir)
             .addScriptArchive(archive)
             .withParentClassloader(moduleClassLoader)
             .compile();

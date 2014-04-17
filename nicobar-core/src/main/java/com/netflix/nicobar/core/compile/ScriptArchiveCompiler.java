@@ -18,6 +18,7 @@
 package com.netflix.nicobar.core.compile;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Set;
 
 import com.netflix.nicobar.core.archive.ScriptArchive;
@@ -40,10 +41,11 @@ public interface ScriptArchiveCompiler {
      * @param archive archive to generate class files for
      * @param moduleClassLoader class loader which can be used to find all classes and resources for modules.
      *  The resultant classes of the compile operation should be injected into the classloader
-     * for which the given archive has a declared dependency on
+     *  for which the given archive has a declared dependency on
+     * @param targetDir a directory in which to store compiled classes, if any.
      * @return The set of classes that were compiled
      * @throws ScriptCompilationException if there was a compilation issue in the archive.
      * @throws IOException if there was a problem reading/writing the archive
      */
-    public Set<Class<?>> compile(ScriptArchive archive, JBossModuleClassLoader moduleClassLoader) throws ScriptCompilationException, IOException;
+    public Set<Class<?>> compile(ScriptArchive archive, JBossModuleClassLoader moduleClassLoader, Path targetDir) throws ScriptCompilationException, IOException;
 }

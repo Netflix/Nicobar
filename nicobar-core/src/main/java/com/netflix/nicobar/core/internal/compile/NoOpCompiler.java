@@ -1,5 +1,6 @@
 package com.netflix.nicobar.core.internal.compile;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Set;
 
@@ -20,7 +21,7 @@ public class NoOpCompiler implements ScriptArchiveCompiler {
     }
 
     @Override
-    public Set<Class<?>> compile(ScriptArchive archive, JBossModuleClassLoader moduleClassLoader) {
+    public Set<Class<?>> compile(ScriptArchive archive, JBossModuleClassLoader moduleClassLoader, Path targetDir) {
         return Collections.<Class<?>>emptySet();
     }
 }

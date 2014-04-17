@@ -46,12 +46,14 @@ import com.netflix.nicobar.core.compile.ScriptCompilationException;
  * @author James Kojo
  */
 public class Groovy2CompilerHelper {
+    private final Path targetDir;
     private final List<Path> sourceFiles = new LinkedList<Path>();
     private final List<ScriptArchive> scriptArchives = new LinkedList<ScriptArchive>();
     private ClassLoader parentClassLoader;
     private CompilerConfiguration compileConfig;
 
-    public Groovy2CompilerHelper() {
+    public Groovy2CompilerHelper(Path targetDir) {
+        this.targetDir = targetDir;
     }
 
     public Groovy2CompilerHelper withParentClassloader(ClassLoader parentClassLoader) {
@@ -90,6 +92,7 @@ public class Groovy2CompilerHelper {
         final CompilerConfiguration conf = compileConfig != null ? compileConfig: CompilerConfiguration.DEFAULT;
         conf.setTolerance(0);
         conf.setVerbose(true);
+        conf.setTargetDirectory(targetDir.toFile());
         final ClassLoader buildParentClassloader = parentClassLoader != null ?
             parentClassLoader : Thread.currentThread().getContextClassLoader();
         GroovyClassLoader groovyClassLoader = AccessController.doPrivileged(new PrivilegedAction<GroovyClassLoader>() {
@@ -119,7 +122,7 @@ public class Groovy2CompilerHelper {
             unit.addSource(sourceFile.toFile());
         }
         try {
-            unit.compile(Phases.CLASS_GENERATION);
+            unit.compile(Phases.OUTPUT);
         } catch (CompilationFailedException e) {
            throw new ScriptCompilationException("Exception during script compilation", e);
         }

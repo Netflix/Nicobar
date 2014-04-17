@@ -10,7 +10,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.jboss.modules.ModuleLoadException;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -30,7 +29,7 @@ public class BytecodeLoadingPluginTest {
     private ScriptModuleLoader moduleLoader;
 
     @BeforeTest
-    public void setup() throws ModuleLoadException {
+    public void setup() throws Exception {
         ScriptCompilerPluginSpec pluginSpec = getCompilerSpec();
 
         // Create a set of app packages to allow access by the compilers, as well as the scripts.

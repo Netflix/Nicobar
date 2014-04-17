@@ -142,6 +142,17 @@ public class JBossModuleUtils {
     }
 
     /**
+     * Populates a builder with a {@link ResourceLoaderSpec} to a filesystem resource root.
+     * {@link ScriptArchive}
+     * @param moduleSpecBuilder builder to populate
+     * @param resourceRoot a path to the resource root directory
+     */
+    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, Path resourceRoot) {
+        ResourceLoader resourceLoader = ResourceLoaders.createFileResourceLoader(resourceRoot.toString(), resourceRoot.toFile());
+        moduleSpecBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoader));
+    }
+
+    /**
      * Populates a {@link ModuleSpec} with a dependency on application runtime packages
      * specified as a set of package paths, loaded within the given classloader. This is the
      * primary way that a module gains access to packages defined in the application classloader

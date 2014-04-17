@@ -78,7 +78,7 @@ public class ScriptModuleLoaderTest {
 
         ScriptArchive scriptArchive = new JarScriptArchive.Builder(jarPath).build();
         when(MOCK_COMPILER.shouldCompile(Mockito.eq(scriptArchive))).thenReturn(true);
-        when(MOCK_COMPILER.compile(Mockito.eq(scriptArchive), Mockito.any(JBossModuleClassLoader.class))).thenReturn(Collections.<Class<?>>emptySet());
+        when(MOCK_COMPILER.compile(Mockito.eq(scriptArchive), Mockito.any(JBossModuleClassLoader.class), Mockito.any(Path.class))).thenReturn(Collections.<Class<?>>emptySet());
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
             .addPluginSpec(new ScriptCompilerPluginSpec.Builder(NoOpCompilerPlugin.PLUGIN_ID)
                 .withPluginClassName(MockScriptCompilerPlugin.class.getName()).build())
@@ -96,7 +96,7 @@ public class ScriptModuleLoaderTest {
             assertNotNull(resourceUrl, "couldn't find entry in the classloader: " + entryName);
         }
         verify(MOCK_COMPILER).shouldCompile(Mockito.eq(scriptArchive));
-        verify(MOCK_COMPILER).compile(Mockito.eq(scriptArchive), Mockito.any(JBossModuleClassLoader.class));
+        verify(MOCK_COMPILER).compile(Mockito.eq(scriptArchive), Mockito.any(JBossModuleClassLoader.class), Mockito.any(Path.class));
         verifyNoMoreInteractions(MOCK_COMPILER);
     }
 
@@ -135,7 +135,7 @@ public class ScriptModuleLoaderTest {
             .build();
 
         when(MOCK_COMPILER.shouldCompile(Mockito.any(ScriptArchive.class))).thenReturn(true);
-        when(MOCK_COMPILER.compile(Mockito.any(ScriptArchive.class), Mockito.any(JBossModuleClassLoader.class))).thenReturn(Collections.<Class<?>>emptySet());
+        when(MOCK_COMPILER.compile(Mockito.any(ScriptArchive.class), Mockito.any(JBossModuleClassLoader.class), Mockito.any(Path.class))).thenReturn(Collections.<Class<?>>emptySet());
         moduleLoader.updateScriptArchives(updateArchives);
 
         // validate that they were compiled in reverse dependency order
@@ -184,7 +184,7 @@ public class ScriptModuleLoaderTest {
 
         ScriptModuleListener mockListener = createMockListener();
         when(MOCK_COMPILER.shouldCompile(Mockito.any(ScriptArchive.class))).thenReturn(true);
-        when(MOCK_COMPILER.compile(Mockito.any(ScriptArchive.class), Mockito.any(JBossModuleClassLoader.class))).thenReturn(Collections.<Class<?>>emptySet());
+        when(MOCK_COMPILER.compile(Mockito.any(ScriptArchive.class), Mockito.any(JBossModuleClassLoader.class), Mockito.any(Path.class))).thenReturn(Collections.<Class<?>>emptySet());
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
             .addListener(mockListener)
             .addPluginSpec(new ScriptCompilerPluginSpec.Builder("mockPlugin")
@@ -229,7 +229,7 @@ public class ScriptModuleLoaderTest {
         updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("D").addCompilerPluginId("mockPlugin").build(), originalCreateTime));
 
         when(MOCK_COMPILER.shouldCompile(Mockito.any(ScriptArchive.class))).thenReturn(true);
-        when(MOCK_COMPILER.compile(Mockito.any(ScriptArchive.class), Mockito.any(JBossModuleClassLoader.class))).thenReturn(Collections.<Class<?>>emptySet());
+        when(MOCK_COMPILER.compile(Mockito.any(ScriptArchive.class), Mockito.any(JBossModuleClassLoader.class), Mockito.any(Path.class))).thenReturn(Collections.<Class<?>>emptySet());
 
         ScriptModuleListener mockListener = createMockListener();
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
@@ -243,7 +243,7 @@ public class ScriptModuleLoaderTest {
         reset(mockListener);
         reset(MOCK_COMPILER);
         when(MOCK_COMPILER.shouldCompile(Mockito.any(ScriptArchive.class))).thenReturn(true);
-        when(MOCK_COMPILER.compile(Mockito.eq(archiveB), Mockito.any(JBossModuleClassLoader.class))).thenThrow(new ScriptCompilationException("TestCompileException", null));
+        when(MOCK_COMPILER.compile(Mockito.eq(archiveB), Mockito.any(JBossModuleClassLoader.class), Mockito.any(Path.class))).thenThrow(new ScriptCompilationException("TestCompileException", null));
         // update C. would normally cause C,B,A to be compiled in order, but B will fail, so A will be skipped
         updateArchives.clear();
         long updatedCreateTime = 2000;
@@ -295,7 +295,7 @@ public class ScriptModuleLoaderTest {
         reset(MOCK_COMPILER);
         when(MOCK_COMPILER.shouldCompile(Mockito.eq(updatedArchiveC))).thenReturn(true);
         ScriptCompilationException compilationException = new ScriptCompilationException("TestCompileException", null);
-        when(MOCK_COMPILER.compile(Mockito.eq(updatedArchiveC), Mockito.any(JBossModuleClassLoader.class))).thenThrow(compilationException);
+        when(MOCK_COMPILER.compile(Mockito.eq(updatedArchiveC), Mockito.any(JBossModuleClassLoader.class), Mockito.any(Path.class))).thenThrow(compilationException);
 
         moduleLoader.updateScriptArchives(updateArchives);
 
@@ -318,7 +318,7 @@ public class ScriptModuleLoaderTest {
         updateArchives.add(new TestDependecyScriptArchive(new ScriptModuleSpec.Builder("A").addCompilerPluginId("mockPlugin").build(), originalCreateTime));
 
         when(MOCK_COMPILER.shouldCompile(Mockito.any(ScriptArchive.class))).thenReturn(true);
-        when(MOCK_COMPILER.compile(Mockito.any(ScriptArchive.class), Mockito.any(JBossModuleClassLoader.class))).thenReturn(Collections.<Class<?>>emptySet());
+        when(MOCK_COMPILER.compile(Mockito.any(ScriptArchive.class), Mockito.any(JBossModuleClassLoader.class), Mockito.any(Path.class))).thenReturn(Collections.<Class<?>>emptySet());
 
         ScriptModuleListener mockListener = createMockListener();
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()

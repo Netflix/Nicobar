@@ -18,6 +18,9 @@
 package com.netflix.nicobar.core.module;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.io.FileUtils;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
@@ -76,6 +80,7 @@ public class ScriptModuleLoader {
         private final Set<ScriptCompilerPluginSpec> pluginSpecs=  new LinkedHashSet<ScriptCompilerPluginSpec>();
         private final Set<ScriptModuleListener> listeners = new LinkedHashSet<ScriptModuleListener>();
         private final Set<String> paths = new LinkedHashSet<String>();
+        private Path compilationRootDir;
         private ClassLoader appClassLoader = ScriptModuleLoader.class.getClassLoader();
 
         public Builder() {
@@ -120,8 +125,12 @@ public class ScriptModuleLoader {
             return this;
         }
 
-        public ScriptModuleLoader build() throws ModuleLoadException {
-           return new ScriptModuleLoader(pluginSpecs, appClassLoader, paths, listeners);
+        public ScriptModuleLoader build() throws ModuleLoadException, IOException {
+            if (compilationRootDir == null) {
+                compilationRootDir = Files.createTempDirectory("ScriptModuleLoader");
+            }
+
+            return new ScriptModuleLoader(pluginSpecs, appClassLoader, paths, listeners, compilationRootDir);
         }
     }
 
@@ -132,6 +141,7 @@ public class ScriptModuleLoader {
     protected final ClassLoader appClassLoader;
     protected final Set<String> appPackagePaths;
     protected final List<ScriptArchiveCompiler> compilers = new ArrayList<ScriptArchiveCompiler>();
+    protected final Path compilationRootDir;
 
     protected final Set<ScriptModuleListener> listeners =
         Collections.newSetFromMap(new ConcurrentHashMap<ScriptModuleListener, Boolean>());
@@ -141,7 +151,8 @@ public class ScriptModuleLoader {
     protected ScriptModuleLoader(final Set<ScriptCompilerPluginSpec> pluginSpecs,
             final ClassLoader appClassLoader,
             final Set<String> appPackagePaths,
-            final Set<ScriptModuleListener> listeners) throws ModuleLoadException {
+            final Set<ScriptModuleListener> listeners,
+            final Path compilationRootDir) throws ModuleLoadException {
         this.pluginSpecs = Objects.requireNonNull(pluginSpecs);
         this.appClassLoader = Objects.requireNonNull(appClassLoader);
         this.appPackagePaths = Objects.requireNonNull(appPackagePaths);
@@ -150,6 +161,7 @@ public class ScriptModuleLoader {
             addCompilerPlugin(pluginSpec);
         }
         addListeners(Objects.requireNonNull(listeners));
+        this.compilationRootDir = compilationRootDir;
     }
 
     /**
@@ -213,6 +225,9 @@ public class ScriptModuleLoader {
                 }
                 ModuleSpec moduleSpec;
                 ModuleIdentifier candidateRevisionId;
+                Path modulePath = Paths.get(scriptArchive.getModuleSpec().getModuleId().toString());
+                Path moduleCompilationRoot = compilationRootDir.resolve(modulePath);
+
                 try {
                     // create the jboss module pre-cursor artifact
                     candidateRevisionId = updatedRevisionIdMap.get(scriptModuleId);
@@ -221,6 +236,8 @@ public class ScriptModuleLoader {
                     JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, scriptArchive, updatedRevisionIdMap);
                     // Add to the moduleSpec application classloader dependencies
                     JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, appClassLoader, appPackagePaths);
+                    // Allow compiled class files to fetched as resources later on.
+                    JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, moduleCompilationRoot);
                     moduleSpec = moduleSpecBuilder.create();
                 } catch (ModuleLoadException e) {
                     logger.error("Exception loading archive " +
@@ -234,7 +251,8 @@ public class ScriptModuleLoader {
                 Module jbossModule = null;
                 try {
                     jbossModule = jbossModuleLoader.loadModule(candidateRevisionId);
-                    compileModule(jbossModule);
+                    FileUtils.deleteQuietly(moduleCompilationRoot.toFile());
+                    compileModule(jbossModule, moduleCompilationRoot);
                 } catch (Exception e) {
                     // rollback
                     logger.error("Exception loading module " + candidateRevisionId, e);
@@ -282,8 +300,9 @@ public class ScriptModuleLoader {
      * and delegating the compilation. the classes will be loaded into the module's classloader
      * upon completion.
      * @param module module to be compiled
+     * @param moduleCompilationRoot the directory to store compiled classes in.
      */
-    protected void compileModule(Module module) throws ScriptCompilationException, IOException {
+    protected void compileModule(Module module, Path moduleCompilationRoot) throws ScriptCompilationException, IOException {
         // compile the script archive for the module, and inject the resultant classes into
         // the ModuleClassLoader
         ModuleClassLoader moduleClassLoader = module.getClassLoader();
@@ -297,7 +316,7 @@ public class ScriptModuleLoader {
 
             // Compile iteratively
             for (ScriptArchiveCompiler compiler: candidateCompilers) {
-                compiler.compile(scriptArchive, jBossModuleClassLoader);
+                compiler.compile(scriptArchive, jBossModuleClassLoader, moduleCompilationRoot);
             }
         }
     }
