@@ -1,7 +1,9 @@
 package com.netflix.nicobar.core.compile;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Matchers.anyBoolean;
 import static org.testng.AssertJUnit.assertEquals;
 
 import java.net.URL;
@@ -23,7 +25,8 @@ import com.netflix.nicobar.core.module.jboss.JBossModuleClassLoader;
  * @author Vasanth Asokan
  */
 public class BytecodeLoaderTest {
-    private Class<?> compiledClass;
+    @SuppressWarnings("rawtypes")
+    private Class compiledClass;
 
     @BeforeMethod
     public void setup() {
@@ -31,6 +34,7 @@ public class BytecodeLoaderTest {
         compiledClass = this.getClass();
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testHelloworldArchive() throws Exception {
         URL jarPath = getClass().getClassLoader().getResource("testmodules/testmodule.jar");
@@ -39,10 +43,10 @@ public class BytecodeLoaderTest {
         JBossModuleClassLoader moduleClassLoader = mock(JBossModuleClassLoader.class);
         BytecodeLoader loader = new BytecodeLoader();
 
-        Mockito.doReturn(compiledClass).when(moduleClassLoader).addClassBytes(Mockito.anyString(), Mockito.any(byte[].class));
+        when(moduleClassLoader.loadClassLocal(Mockito.anyString(), anyBoolean())).thenReturn(compiledClass);
         Set<Class<?>> compiledClasses = loader.compile(scriptArchive, moduleClassLoader);
 
-        verify(moduleClassLoader).addClassBytes("com.netflix.nicobar.test.Fake", "fake bytes".getBytes(Charset.forName("UTF-8")));
+        verify(moduleClassLoader).addClasses(compiledClasses);
         assertEquals(compiledClasses.size(), 1);
         Iterator<Class<?>> iterator = compiledClasses.iterator();
         assertEquals(compiledClass, iterator.next());

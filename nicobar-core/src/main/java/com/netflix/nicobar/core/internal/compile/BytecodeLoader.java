@@ -1,12 +1,9 @@
 package com.netflix.nicobar.core.internal.compile;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.apache.commons.io.IOUtils;
 
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
@@ -41,16 +38,21 @@ public class BytecodeLoader implements ScriptArchiveCompiler {
     public Set<Class<?>> compile(ScriptArchive archive, JBossModuleClassLoader moduleClassLoader)
             throws ScriptCompilationException, IOException {
         HashSet<Class<?>> addedClasses = new HashSet<Class<?>>(archive.getArchiveEntryNames().size());
+
         for (String entry : archive.getArchiveEntryNames()) {
             if (!entry.endsWith(".class")) {
                 continue;
             }
+            String entryName = entry.replace(".class", "").replace("/", ".");
+            try {
+                // Load from the underlying archive class resource
+                Class<?> addedClass = moduleClassLoader.loadClassLocal(entryName, true);
+                addedClasses.add(addedClass);
+            } catch (Exception e) {
+                throw new ScriptCompilationException("Unable to load class: " + entryName, e);
+            }
 
-            URL archiveEntry = archive.getEntry(entry);
-            byte [] classBytes = IOUtils.toByteArray(archiveEntry.openStream());
-            String classEntry = entry.replace(".class", "").replace("/", ".");
-            Class<?> addedClass = moduleClassLoader.addClassBytes(classEntry, classBytes);
-            addedClasses.add(addedClass);
+            moduleClassLoader.addClasses(addedClasses);
         }
 
         return Collections.unmodifiableSet(addedClasses);
