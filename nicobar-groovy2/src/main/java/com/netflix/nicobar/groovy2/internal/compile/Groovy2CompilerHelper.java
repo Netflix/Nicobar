@@ -26,6 +26,7 @@ import java.security.PrivilegedAction;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.codehaus.groovy.control.CompilationFailedException;
@@ -44,6 +45,7 @@ import com.netflix.nicobar.core.compile.ScriptCompilationException;
  * If a parent {@link ClassLoader} is not provided, the current thread context classloader is used.
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class Groovy2CompilerHelper {
     private final Path targetDir;
@@ -53,6 +55,7 @@ public class Groovy2CompilerHelper {
     private CompilerConfiguration compileConfig;
 
     public Groovy2CompilerHelper(Path targetDir) {
+        Objects.requireNonNull(targetDir, "targetDir");
         this.targetDir = targetDir;
     }
 

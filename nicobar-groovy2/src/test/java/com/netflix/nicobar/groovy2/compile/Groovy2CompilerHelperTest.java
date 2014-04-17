@@ -41,6 +41,7 @@ import com.netflix.nicobar.groovy2.testutil.GroovyTestResourceUtil.TestScript;
  * Unit Tests for {@link Groovy2CompilerHelper}
  *
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class Groovy2CompilerHelperTest {
 
