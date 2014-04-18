@@ -1,36 +1,44 @@
-package com.netflix.nicobar.core.plugin;
+package com.netflix.nicobar.core.utils;
+
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.testng.annotations.BeforeTest;
+import org.jboss.modules.ModuleLoadException;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.google.common.collect.Sets;
 import com.netflix.nicobar.core.archive.JarScriptArchive;
 import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.module.ScriptModule;
 import com.netflix.nicobar.core.module.ScriptModuleLoader;
 import com.netflix.nicobar.core.module.ScriptModuleUtils;
-import com.netflix.nicobar.core.utils.ClassPathUtils;
+import com.netflix.nicobar.core.plugin.BytecodeLoadingPlugin;
+import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
 
 /**
- * Tests for the Bytecode language plugin.
+ * Unit tests for {@link ScriptModuleUtils}
+ *
  * @author Vasanth Asokan
  */
-public class BytecodeLoadingPluginTest {
+public class ScriptModuleUtilsTest {
 
     private ScriptModuleLoader moduleLoader;
 
-    @BeforeTest
-    public void setup() throws Exception {
+    @BeforeClass
+    public void setup() throws ModuleLoadException, IOException {
         ScriptCompilerPluginSpec pluginSpec = getCompilerSpec();
 
         // Create a set of app packages to allow access by the compilers, as well as the scripts.
@@ -51,48 +59,28 @@ public class BytecodeLoadingPluginTest {
             .build();
     }
 
-    /**
-     * Test a plain archive with no dependencies.
-     * @throws Exception
-     */
     @Test
-    public void testHelloHelperJar() throws Exception {
+    public void testScriptModuleConversion() throws Exception {
         URL jarPath = getClass().getClassLoader().getResource("testmodules/hellohelper.jar");
 
         JarScriptArchive jarArchive = new JarScriptArchive.Builder(Paths.get(jarPath.getFile()))
             .build();
+        ModuleId moduleId = ModuleId.create("hellohelper");
         moduleLoader.updateScriptArchives(Collections.singleton((ScriptArchive)jarArchive));
-        ScriptModule module = moduleLoader.getScriptModule(ModuleId.create("hellohelper"));
+        ScriptModule module = moduleLoader.getScriptModule(moduleId);
         assertNotNull(module);
 
+        Path tmpDir = Files.createTempDirectory("ScriptModuleUtilsTest");
+        Path convertedJarPath = tmpDir.resolve("converted.jar");
+        ScriptModuleUtils.toCompiledScriptArchive(module, convertedJarPath, Sets.newHashSet(".class", ".java"));
+        moduleLoader.removeScriptModule(moduleId);
+
+        // Ensure that the converted archive works just as well as the new archive
+        JarScriptArchive convertedJarArchive = new JarScriptArchive.Builder(convertedJarPath).build();
+        moduleLoader.updateScriptArchives(Collections.singleton(convertedJarArchive));
+        module = moduleLoader.getScriptModule(moduleId);
+        assertNotNull(module);
         Class<?> targetClass = ScriptModuleUtils.findClass(module, "com.netflix.nicobar.test.HelloHelper");
-        assertNotNull(targetClass);
-        Object instance = targetClass.newInstance();
-        Method method = targetClass.getMethod("execute");
-        String message = (String)method.invoke(instance);
-        assertEquals(message, "Hello Nicobar World!");
-    }
-
-    /**
-     * Test an archive with module dependencies.
-     * @throws Exception
-     */
-    @Test
-    public void testHelloworldWithDeps() throws Exception {
-        URL jarPath = getClass().getClassLoader().getResource("testmodules/helloworld.jar");
-        JarScriptArchive jarArchive = new JarScriptArchive.Builder(Paths.get(jarPath.getFile()))
-            .build();
-        URL depJarPath = getClass().getClassLoader().getResource("testmodules/hellohelper.jar");
-        JarScriptArchive depArchive = new JarScriptArchive.Builder(Paths.get(depJarPath.getFile()))
-            .build();
-        Set<ScriptArchive> archives = new HashSet<ScriptArchive>();
-        Collections.<ScriptArchive>addAll(archives, depArchive, jarArchive);
-        moduleLoader.updateScriptArchives(archives);
-        ScriptModule module = moduleLoader.getScriptModule(ModuleId.create("helloworld"));
-        assertNotNull(module);
-
-        Class<?> targetClass = ScriptModuleUtils.findClass(module, "com.netflix.nicobar.test.Helloworld");
-        assertNotNull(targetClass);
         Object instance = targetClass.newInstance();
         Method method = targetClass.getMethod("execute");
         String message = (String)method.invoke(instance);

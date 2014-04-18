@@ -57,6 +57,13 @@ public class ScriptModuleSpec {
             }
             return this;
         }
+        /** Add a dependency on the named compiler plugin */
+        public Builder addCompilerPluginIds(Set<String> pluginIds) {
+            if (pluginIds != null) {
+                compilerPluginIds.addAll(pluginIds);
+            }
+            return this;
+        }
         /** Append all of the given metadata. */
         public Builder addMetadata(Map<String, Object> metadata) {
             if (metadata != null) {
@@ -78,10 +85,17 @@ public class ScriptModuleSpec {
             }
             return this;
         }
+        /** Add Module dependency. */
+        public Builder addModuleDependency(ModuleId dependency) {
+            if (dependency != null) {
+                moduleDependencies.add(dependency);
+            }
+            return this;
+        }
         /** Add Module dependencies. */
-        public Builder addModuleDependencies(Set<String> dependencies) {
+        public Builder addModuleDependencies(Set<ModuleId> dependencies) {
             if (dependencies != null) {
-                for (String dependency: dependencies) {
+                for (ModuleId dependency: dependencies) {
                     addModuleDependency(dependency);
                 }
             }
