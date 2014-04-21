@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 import com.netflix.astyanax.Keyspace;
-import com.netflix.nicobar.cassandra.internal.CassandraGateway;
 import com.netflix.nicobar.core.archive.GsonScriptModuleSpecSerializer;
 import com.netflix.nicobar.core.archive.ScriptModuleSpecSerializer;
 
@@ -50,9 +49,16 @@ public class BasicCassandraRepositoryConfig implements CassandraArchiveRepositor
         private ScriptModuleSpecSerializer specSerializer = DEFAULT_SPEC_SERIALIZER;
         private CassandraGateway cassandraGateway;
 
+        /** Build by constructing a cassandra gateway for the given keyspace and column family */
+        public Builder(Keyspace keyspace, String columnFamily) {
+            this.cassandraGateway = new CassandraGatewayImpl(keyspace, columnFamily);
+        }
+
+        /** Build with the given cassandra gateway */
         public Builder(CassandraGateway gateway) {
             this.cassandraGateway = gateway;
         }
+
         /** Set a unique, descriptive identifier used for reporting and display*/
         public Builder setRepositoryId(String repositoryId) {
             this.repositoryId = repositoryId;

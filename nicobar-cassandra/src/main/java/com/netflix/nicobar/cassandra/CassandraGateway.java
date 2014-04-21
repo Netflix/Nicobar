@@ -1,4 +1,4 @@
-package com.netflix.nicobar.cassandra.internal;
+package com.netflix.nicobar.cassandra;
 
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -8,7 +8,8 @@ import com.netflix.astyanax.model.ColumnList;
 import com.netflix.astyanax.model.Rows;
 
 /**
- * Facade for common cassandra interactions.
+ * Common cassandra CRUD operations.
+ *
  * @author Vasanth Asokan
  */
 public interface CassandraGateway {

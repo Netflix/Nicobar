@@ -7,7 +7,7 @@ import java.util.Objects;
 
 import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnList;
-import com.netflix.nicobar.cassandra.internal.CassandraGateway;
+import com.netflix.nicobar.cassandra.CassandraGateway;
 import com.netflix.nicobar.endpoints.EndpointIndex;
 import com.netflix.nicobar.endpoints.EndpointSummary;
 import com.netflix.nicobar.endpoints.EndpointSummarySerializer;

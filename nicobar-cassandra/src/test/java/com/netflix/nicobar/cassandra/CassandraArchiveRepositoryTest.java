@@ -38,7 +38,6 @@ import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.model.Row;
 import com.netflix.astyanax.model.Rows;
 import com.netflix.nicobar.cassandra.CassandraArchiveRepository.Columns;
-import com.netflix.nicobar.cassandra.internal.CassandraGateway;
 import com.netflix.nicobar.core.archive.JarScriptArchive;
 import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;

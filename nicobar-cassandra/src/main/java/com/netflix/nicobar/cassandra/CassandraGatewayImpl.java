@@ -1,4 +1,4 @@
-package com.netflix.nicobar.cassandra.internal;
+package com.netflix.nicobar.cassandra;
 
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -6,9 +6,20 @@ import java.util.concurrent.Future;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.model.ColumnList;
 import com.netflix.astyanax.model.Rows;
+import com.netflix.nicobar.cassandra.internal.HystrixCassandraDeleteColumns;
+import com.netflix.nicobar.cassandra.internal.HystrixCassandraDeleteRow;
+import com.netflix.nicobar.cassandra.internal.HystrixCassandraGetRow;
+import com.netflix.nicobar.cassandra.internal.HystrixCassandraGetRowsByKeys;
+import com.netflix.nicobar.cassandra.internal.HystrixCassandraGetRowsByQuery;
+import com.netflix.nicobar.cassandra.internal.HystrixCassandraPut;
 
 /**
  * Concrete implementation of CassandraGateway, using Cassandra Hystrix commands.
+ *
+ * It is not ideal that this behavior is provided by nicobar-cassandra. Preferably,
+ * Astyanax itself should expose hystrix protected cassandra operations that we
+ * can directly use.
+ *
  * @author Vasanth Asokan
  */
 public class CassandraGatewayImpl implements CassandraGateway {

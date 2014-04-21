@@ -19,7 +19,6 @@ package com.netflix.nicobar.cassandra;
 
 import java.nio.file.Path;
 
-import com.netflix.nicobar.cassandra.internal.CassandraGateway;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
 import com.netflix.nicobar.core.archive.ScriptModuleSpecSerializer;
 

@@ -56,7 +56,7 @@ public class EndpointRegistryTest {
     @BeforeMethod
     public void setup() throws IOException {
         MockitoAnnotations.initMocks(this);
-        registry = new EndpointRegistry(datastore, moduleLoader, poller);
+        registry = new EndpointRegistry(datastore, moduleLoader);
         when(datastore.getDatastoreId()).thenReturn("datastore");
     }
 
@@ -297,9 +297,8 @@ public class EndpointRegistryTest {
      * Extended non-abstract registry to test.
      */
     private static class EndpointRegistry extends BaseEndpointRegistry<EndpointExecutable<TestEndpoint>> {
-        public EndpointRegistry(EndpointDatastore datastore, ScriptModuleLoader moduleLoader,
-                EndpointDatastorePoller dataStorePoller) {
-            super(datastore, moduleLoader, dataStorePoller);
+        public EndpointRegistry(EndpointDatastore datastore, ScriptModuleLoader moduleLoader) {
+            super(datastore, moduleLoader);
         }
 
         @Override

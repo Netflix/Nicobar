@@ -48,7 +48,7 @@ public abstract class BaseEndpointRegistry<T extends EndpointExecutable<?>> {
     /**
      * Construct an EndpointRegistry.
      */
-    public BaseEndpointRegistry(EndpointDatastore datastore, ScriptModuleLoader moduleLoader, EndpointDatastorePoller dataStorePoller) {
+    public BaseEndpointRegistry(EndpointDatastore datastore, ScriptModuleLoader moduleLoader) {
         Objects.requireNonNull(datastore, "datastore");
         Objects.requireNonNull(moduleLoader, "moduleLoader");
         this.datastore = datastore;
