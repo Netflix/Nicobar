@@ -14,7 +14,7 @@ import com.netflix.nicobar.core.persistence.ArchiveRepository;
 /**
  * A datastore for creating, querying and managing an endpoint and its versions.
  * Each endpoint version is backed by a {@link ScriptArchive} which can be converted
- * to a {@link ScriptModule}.
+ * to a ScriptModule.
  *
  * This datastore, essentially wraps a {@link ArchiveRepository} and an
  * {@link EndpointIndex}, providing a consistent view of persisted endpoints.

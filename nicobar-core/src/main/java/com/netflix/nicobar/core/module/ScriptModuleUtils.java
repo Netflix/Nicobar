@@ -29,6 +29,7 @@ import java.util.zip.ZipEntry;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 
 import com.netflix.nicobar.core.archive.GsonScriptModuleSpecSerializer;
@@ -113,7 +114,7 @@ public class ScriptModuleUtils {
      *
      * @param module the input script module containing loaded classes
      * @param jarPath the path to a destination JarScriptArchive.
-     * @param excludedExtensions a set of extensions with which
+     * @param excludeExtensions a set of extensions with which
      *        source script archive entries can be excluded.
      *
      * @throws Exception
@@ -122,7 +123,6 @@ public class ScriptModuleUtils {
             Set<String> excludeExtensions) throws Exception {
         ScriptArchive sourceArchive = module.getSourceArchive();
         JarOutputStream jarStream = new JarOutputStream(new FileOutputStream(jarPath.toFile()));
-        FileOutputStream outputStream = null;
         try {
             // First copy all resources (excluding those with excluded extensions)
             // from the source script archive, into the target script archive
@@ -180,12 +180,9 @@ public class ScriptModuleUtils {
             ScriptModuleSpecSerializer specSerializer = new GsonScriptModuleSpecSerializer();
             String json = specSerializer.serialize(newModuleSpecBuilder.build());
             jarStream.putNextEntry(new ZipEntry(specSerializer.getModuleSpecFileName()));
-            jarStream.write(json.getBytes());
+            jarStream.write(json.getBytes(Charsets.UTF_8));
             jarStream.closeEntry();
         } finally {
-            if (outputStream != null) {
-                IOUtils.closeQuietly(outputStream);
-            }
             if (jarStream != null) {
                 jarStream.close();
             }
