@@ -45,7 +45,7 @@ public class ModuleIdTest {
 
         try {
             ModuleId.fromString("test.Module.v2");
-            fail("Should disallow in module name");
+            fail("Should disallow dots in module name");
         } catch (IllegalArgumentException e) {
             passed = true;
         }
@@ -73,6 +73,36 @@ public class ModuleIdTest {
             try {
                 ModuleId.create("testModule" + Character.toString(c) + "suffix", "v1");
                 fail("Should disallow " + Character.toString(c) +  " in module name");
+            } catch (IllegalArgumentException e) {
+                passed = true;
+            }
+        }
+    }
+
+    @Test
+    public void testModuleVersion() {
+        ModuleId moduleId = ModuleId.create("test-Module", "");
+        assertEquals(moduleId.toString(), "test-Module");
+    }
+
+    @Test
+    public void testBadModuleVersion() {
+        // Just to make PMD happy about empty catch blocks,
+        // We set a dummy operation.
+        @SuppressWarnings("unused")
+        boolean passed = false;
+        try {
+            ModuleId.create("test-Module", ".v2");
+            fail("Should disallow dots in module version");
+        } catch (IllegalArgumentException e) {
+            passed = true;
+        }
+
+        char [] disallowedChars = { '/', '\\', '#', '!', '(', ')', '.'};
+        for (char c: disallowedChars) {
+            try {
+                ModuleId.create("testModule", "v" + Character.toString(c) + "1");
+                fail("Should disallow " + Character.toString(c) +  " in module version");
             } catch (IllegalArgumentException e) {
                 passed = true;
             }

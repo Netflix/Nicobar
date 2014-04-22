@@ -11,7 +11,9 @@ import java.util.regex.Pattern;
  */
 public final class ModuleId {
     private static final String MODULE_NAME_PATTERN_STR = "^[a-zA-Z0-9_/][a-zA-Z0-9_\\-{}\\\\@$:<>/]*$";
+    private static final String MODULE_VERSION_PATTERN_STR = "^[a-zA-Z0-9_\\-]*$";
     private static Pattern MODULE_NAME_PATTERN = Pattern.compile(MODULE_NAME_PATTERN_STR);
+    private static Pattern MODULE_VERSION_PATTERN = Pattern.compile(MODULE_VERSION_PATTERN_STR);
     public static final String DEFAULT_VERSION = "";
     public static final String MODULE_VERSION_SEPARATOR = ".";
 
@@ -20,17 +22,22 @@ public final class ModuleId {
     private final int hashCode;
 
     private ModuleId(final String name, final String version) {
-        if (name == null || name.equals(""))
+        if (name == null || name.equals("")) {
             throw new IllegalArgumentException("Module name can not be null or empty.");
+        }
         if (!MODULE_NAME_PATTERN.matcher(name).matches()) {
             throw new IllegalArgumentException("Module name must match " + MODULE_NAME_PATTERN_STR);
         }
         this.name = name;
 
-        if (version == null)
+        if (version == null) {
             this.version = DEFAULT_VERSION;
-        else
+        } else {
+            if (!MODULE_VERSION_PATTERN.matcher(version).matches()) {
+                throw new IllegalArgumentException("Module version must match " + MODULE_VERSION_PATTERN_STR);
+            }
             this.version = version;
+        }
 
         hashCode = Objects.hash(name, version);
     }
@@ -129,7 +136,7 @@ public final class ModuleId {
      * @param version the version string
      * @return the identifier
      */
-    public static ModuleId create(final String name, String version) {
+    public static ModuleId create(final String name, final String version) {
         return new ModuleId(name, version);
     }
 
@@ -139,7 +146,7 @@ public final class ModuleId {
      * @param name the name of the module
      * @return the identifier
      */
-    public static ModuleId create(String name) {
+    public static ModuleId create(final String name) {
         return create(name, null);
     }
 }
