@@ -136,7 +136,7 @@ public class ScriptModuleLoader {
 
     /** Map of script ModuleId to the loaded ScriptModules */
     protected final Map<ModuleId, ScriptModule> loadedScriptModules = new ConcurrentHashMap<ModuleId, ScriptModule>();
-
+    protected final Map<String, ClassLoader> compilerClassLoaders = new ConcurrentHashMap<String, ClassLoader>();
     protected final Set<ScriptCompilerPluginSpec> pluginSpecs;
     protected final ClassLoader appClassLoader;
     protected final Set<String> appPackagePaths;
@@ -352,6 +352,9 @@ public class ScriptModuleLoader {
             } catch (Exception e) {
                 throw new ModuleLoadException(e);
             }
+
+            // Save classloader away, in case clients would like access to compiler plugin's classes.
+            compilerClassLoaders.put(pluginSpec.getPluginId(), pluginModule.getClassLoader());
         }
     }
 
@@ -371,6 +374,11 @@ public class ScriptModuleLoader {
     @Nullable
     public ScriptModule getScriptModule(String scriptModuleId) {
         return loadedScriptModules.get(ModuleId.fromString(scriptModuleId));
+    }
+
+    @Nullable
+    public ClassLoader getCompilerPluginClassLoader(String pluginModuleId) {
+        return compilerClassLoaders.get(pluginModuleId);
     }
 
     @Nullable

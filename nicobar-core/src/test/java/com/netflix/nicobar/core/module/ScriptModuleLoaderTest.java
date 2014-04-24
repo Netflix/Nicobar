@@ -39,6 +39,7 @@ import java.util.Set;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 import org.hamcrest.Description;
+import org.jboss.modules.ModuleLoadException;
 import org.mockito.ArgumentMatcher;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
@@ -342,6 +343,24 @@ public class ScriptModuleLoaderTest {
 
         // validate the post-condition of the module database
         assertEquals(moduleLoader.getScriptModule("A").getCreateTime(), originalCreateTime);
+    }
+
+    /**
+     * Test that the compiler plugin classloader is available through the ScriptModuleLoader.
+     * @throws IOException
+     * @throws ModuleLoadException
+     * @throws ClassNotFoundException
+     */
+    @Test
+    public void testCompilerPluginClassloader() throws ModuleLoadException, IOException, ClassNotFoundException {
+        ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
+            .addPluginSpec(new ScriptCompilerPluginSpec.Builder("mockPlugin")
+                .withPluginClassName(MockScriptCompilerPlugin.class.getName()).build())
+            .build();
+        ClassLoader classLoader = moduleLoader.getCompilerPluginClassLoader("mockPlugin");
+        assertNotNull(classLoader);
+        Class<?> pluginClass = classLoader.loadClass(MockScriptCompilerPlugin.class.getName());
+        assertNotNull(pluginClass);
     }
 
     /**
