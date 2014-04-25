@@ -11,7 +11,15 @@ project(':nicobar-core') {
         compile 'com.google.guava:guava:15.0'
         compile 'com.google.code.gson:gson:2.2.4'
         compile 'com.netflix.hystrix:hystrix-core:1.3.12'
-        compile 'org.jboss.modules:jboss-modules:1.3.0.Final'
+        compile 'org.jboss.modules:jboss-modules:1.3.3.Final'
+        compile 'org.apache.commons:commons-lang3:3.1'
     }
+}
+
+task copyTestClassJars(type: Copy, dependsOn: ':nicobar-core:nicobar-test-classes:build') {
+	project(':nicobar-core:nicobar-test-classes').subprojects.each { p ->
+		from (p.libsDir) 
+	}
+	into (project(':nicobar-core').sourceSets.test.resources.srcDirs.toArray()[0].absolutePath + "/jars")
 }
 

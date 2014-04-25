@@ -9,6 +9,7 @@ import org.testng.annotations.Test;
  * Unit tests for {@link ModuleId}
  *
  * @author Vasanth Asokan
+ * @author Aaron Tull
  */
 public class ModuleIdTest {
 
@@ -107,5 +108,12 @@ public class ModuleIdTest {
                 passed = true;
             }
         }
+    }
+    
+    @Test
+    public void testNegativeIntegerStringifiedName() {
+    	String name = String.valueOf(Integer.toHexString(Integer.MIN_VALUE));
+	    ModuleId moduleId = ModuleId.create(name);
+    	assertEquals(moduleId.toString(), name);
     }
 }

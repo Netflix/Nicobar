@@ -43,8 +43,6 @@ import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.PathScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
-import com.netflix.nicobar.core.module.jboss.JBossModuleLoader;
-import com.netflix.nicobar.core.module.jboss.JBossModuleUtils;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPlugin;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
 import com.netflix.nicobar.core.testutil.CoreTestResourceUtil;

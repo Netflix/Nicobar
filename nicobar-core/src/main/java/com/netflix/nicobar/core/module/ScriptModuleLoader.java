@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
 
 import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.archive.ScriptArchive;
+import com.netflix.nicobar.core.archive.ScriptModuleSpec;
 import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
 import com.netflix.nicobar.core.compile.ScriptCompilationException;
 import com.netflix.nicobar.core.module.jboss.JBossModuleClassLoader;
@@ -72,6 +73,7 @@ import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
  *
  * @author James Kojo
  * @author Vasanth Asokan
+ * @author Aaron Tull
  */
 public class ScriptModuleLoader {
     private final static Logger logger = LoggerFactory.getLogger(ScriptModuleLoader.class);
@@ -237,19 +239,29 @@ public class ScriptModuleLoader {
                     notifyArchiveRejected(scriptArchive, ArchiveRejectedReason.ARCHIVE_IO_EXCEPTION, ioe);
                 }
 
+                ScriptModuleSpec archiveSpec = scriptArchive.getModuleSpec();
                 try {
                     // create the jboss module pre-cursor artifact
                     ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(candidateRevisionId);
                     // Populate the modulespec with the scriptArchive dependencies
+                    for (ModuleId dependencyModuleId : archiveSpec.getModuleDependencies()) {
+                        ScriptModule dependencyModule = getScriptModule(dependencyModuleId);
+                        Set<String> exportPaths = dependencyModule.getSourceArchive().getModuleSpec().getModuleExportFilterPaths();
+                        
+                        JBossModuleUtils.populateModuleBuilderWithDependency(moduleSpecBuilder,
+                            archiveSpec.getModuleImportFilterPaths(), exportPaths, updatedRevisionIdMap.get(dependencyModuleId));
+                    }
+                    
                     JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, scriptArchive, updatedRevisionIdMap);
                     // Add to the moduleSpec application classloader dependencies
-                    JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, appClassLoader, appPackagePaths);
+                    Set<String> moduleImportFilterPaths = scriptArchive.getModuleSpec().getModuleImportFilterPaths();
+                    JBossModuleUtils.populateModuleSpecWithImportFilters(moduleSpecBuilder, moduleImportFilterPaths, appClassLoader, appPackagePaths);
                     // Allow compiled class files to fetched as resources later on.
                     JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, moduleCompilationRoot);
                     moduleSpec = moduleSpecBuilder.create();
                 } catch (ModuleLoadException e) {
                     logger.error("Exception loading archive " +
-                        scriptArchive.getModuleSpec().getModuleId(), e);
+                        archiveSpec.getModuleId(), e);
                     notifyArchiveRejected(scriptArchive, ArchiveRejectedReason.ARCHIVE_IO_EXCEPTION, e);
                     continue;
                 }

@@ -75,7 +75,7 @@ public abstract class ArchiveRepositoryPollerTest {
     public abstract ArchiveRepository createArchiveRepository(Path rootArchiveDirectory);
 
     @BeforeClass
-    public void suiteSetup() throws Exception {
+    public void classSetup() throws Exception {
         Path rootArchiveDirectory = Files.createTempDirectory(ArchiveRepositoryPollerTest.class.getSimpleName()+"_");
         logger.info("rootArchiveDirectory: {}", rootArchiveDirectory);
         FileUtils.forceDeleteOnExit(rootArchiveDirectory.toFile());

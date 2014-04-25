@@ -27,11 +27,14 @@ import java.util.Set;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
+import org.jboss.modules.filter.PathFilter;
+import org.jboss.modules.filter.PathFilters;
 
 /**
  * Common configuration elements for converting a {@link ScriptArchive} to a module.
  * @author James Kojo
  * @author Vasanth Asokan
+ * @author Aaron Tull
  */
 public class ScriptModuleSpec {
     /**
@@ -42,6 +45,9 @@ public class ScriptModuleSpec {
         private final Set<String> compilerPluginIds = new LinkedHashSet<String>();
         private final Map<String, Object> archiveMetadata = new LinkedHashMap<String, Object>();
         private final Set<ModuleId> moduleDependencies = new LinkedHashSet<ModuleId>();
+        private final Set<String> moduleImportFilters = new LinkedHashSet<String>();
+        private final Set<String> moduleExportFilters = new LinkedHashSet<String>();
+        public static final PathFilter defaultPathFilter = PathFilters.acceptAll();
 
         public Builder(String moduleId) {
             this.moduleId = ModuleId.fromString(moduleId);
@@ -101,12 +107,46 @@ public class ScriptModuleSpec {
             }
             return this;
         }
+        /** Add Module import filter paths. */
+        public Builder addModuleImportFilters(Set<String> filterPaths) {
+            if (filterPaths != null) {
+                for (String path: filterPaths) {
+                    addModuleImportFilter(path);
+                }
+            }
+            return this;
+        }
+        /** Add a Module import filter path. */
+        public Builder addModuleImportFilter(String filterPath) {
+            if (filterPath != null) {
+                moduleImportFilters.add(filterPath);
+            }
+            return this;
+        }
+        /** Add Module export filter paths. */
+        public Builder addModuleExportFilters(Set<String> filterPaths) {
+            if (filterPaths != null) {
+                for (String path: filterPaths) {
+                    addModuleExportFilter(path);
+                }
+            }
+            return this;
+        }
+        /** Add a Module export filter path. */
+        public Builder addModuleExportFilter(String filterPath) {
+            if (filterPath != null) {
+                moduleExportFilters.add(filterPath);
+            }
+            return this;
+        }
         /** Build the {@link PathScriptArchive}. */
         public ScriptModuleSpec build() {
             return new ScriptModuleSpec(moduleId,
                Collections.unmodifiableMap(new HashMap<String, Object>(archiveMetadata)),
                Collections.unmodifiableSet(new LinkedHashSet<ModuleId>(moduleDependencies)),
-               Collections.unmodifiableSet(new LinkedHashSet<String>(compilerPluginIds)));
+               Collections.unmodifiableSet(new LinkedHashSet<String>(compilerPluginIds)),
+               Collections.unmodifiableSet(new LinkedHashSet<String>(moduleImportFilters)),
+               Collections.unmodifiableSet(new LinkedHashSet<String>(moduleExportFilters)));
         }
     }
 
@@ -114,12 +154,16 @@ public class ScriptModuleSpec {
     private final Map<String, Object> archiveMetadata;
     private final Set<ModuleId> moduleDependencies;
     private final Set<String> compilerPluginIds;
+    private final Set<String> importFilters;
+    private final Set<String> exportFilters;
 
-    protected ScriptModuleSpec(ModuleId moduleId, Map<String, Object> archiveMetadata, Set<ModuleId> moduleDependencies, Set<String> pluginIds) {
+    protected ScriptModuleSpec(ModuleId moduleId, Map<String, Object> archiveMetadata, Set<ModuleId> moduleDependencies, Set<String> pluginIds, Set<String> importFilters, Set<String> exportFilters) {
         this.moduleId = Objects.requireNonNull(moduleId, "moduleId");
         this.compilerPluginIds = Objects.requireNonNull(pluginIds, "compilerPluginIds");
         this.archiveMetadata = Objects.requireNonNull(archiveMetadata, "archiveMetadata");
         this.moduleDependencies = Objects.requireNonNull(moduleDependencies, "dependencies");
+        this.importFilters = Objects.requireNonNull(importFilters, "import filters");
+        this.exportFilters = Objects.requireNonNull(exportFilters, "export filters");
     }
 
     /**
@@ -149,6 +193,20 @@ public class ScriptModuleSpec {
      */
     public Set<String> getCompilerPluginIds() {
         return compilerPluginIds;
+    }
+
+    /**
+     * @return the {@link PathFilter} to apply to the paths imported into the module from dependencies
+     */
+    public Set<String> getModuleImportFilterPaths() {
+        return importFilters != null ? importFilters : Collections.<String>emptySet();
+    }
+
+    /**
+     * @return the {@link PathFilter} to apply to the paths exported to all modules depending on this module
+     */
+    public Set<String> getModuleExportFilterPaths() {
+        return exportFilters != null ? exportFilters : Collections.<String>emptySet();
     }
 
     @Override

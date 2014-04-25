@@ -33,6 +33,7 @@ import com.netflix.nicobar.core.archive.ModuleId;
  *
  * @author James Kojo
  * @author Vasanth Asokan
+ * @author Aaron Tull
  */
 public class CoreTestResourceUtil {
     /**
@@ -46,7 +47,9 @@ public class CoreTestResourceUtil {
         TEST_DEFAULT_MODULE_SPEC_JAR("test-default-modulespec", "jars/test-default-modulespec.jar", "root.txt", "META-INF/MANIFEST.MF"),
         TEST_MODULE_SPEC_JAR("test-modulespec-moduleId", "jars/test-modulespec.jar", "root.txt", "META-INF/MANIFEST.MF"),
         TEST_SCRIPTS_PATH("test-scripts-moduleId", "scripts", "script1.txt", "script2.txt", "script3.txt"),
-        TEST_CLASSPATHDIR_PATH("test-classpath", "classpathdir");
+        TEST_CLASSPATHDIR_PATH("test-classpath", "classpathdir"),
+        TEST_DEPENDENCIES_PRIMARY("interdependent-primary", "jars/interfaces-module-1.jar"),
+        TEST_DEPENDENCIES_DEPENDENT("interdependent-dependent", "jars/impl-module-1.jar");
 
         private final ModuleId moduleId;
         private final String resourcePath;

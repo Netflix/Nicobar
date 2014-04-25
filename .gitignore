@@ -42,12 +42,14 @@ Thumbs.db
 .m2
 
 # Build output directies
+/bin
+**/bin
 /target
-*/target
+**/target
 /build
-*/build
+**/build
 /test-output
-*/test-output
+**/test-output
 
 # IntelliJ specific files/directories
 out

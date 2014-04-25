@@ -72,6 +72,7 @@ public class ScriptModuleLoaderTest {
     public void resetMocks() {
         reset(MOCK_COMPILER);
     }
+    
 
     @Test
     public void testLoadArchive() throws Exception {
@@ -189,7 +190,7 @@ public class ScriptModuleLoaderTest {
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
             .addListener(mockListener)
             .addPluginSpec(new ScriptCompilerPluginSpec.Builder("mockPlugin")
-                .withPluginClassName(MockScriptCompilerPlugin.class.getName()).build())
+            .withPluginClassName(MockScriptCompilerPlugin.class.getName()).build())
             .build();
         moduleLoader.updateScriptArchives(updateArchives);
 
