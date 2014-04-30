@@ -94,7 +94,10 @@ public class JBossModuleClassLoader extends ModuleClassLoader {
         if (local != null) {
             return local;
         }
-        return super.loadClassLocal(className, resolve);
+        local = super.loadClassLocal(className, resolve);
+        if (local != null)
+            localClassCache.put(className, local);
+        return local;
     }
 
     public ScriptArchive getScriptArchive() {

@@ -20,10 +20,7 @@ package com.netflix.nicobar.groovy2.internal.compile;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
-
-import org.codehaus.groovy.tools.GroovyClass;
 
 import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
@@ -46,15 +43,10 @@ public class Groovy2Compiler implements ScriptArchiveCompiler {
     @Override
     public Set<Class<?>> compile(ScriptArchive archive, JBossModuleClassLoader moduleClassLoader, Path compilationRootDir)
         throws ScriptCompilationException, IOException {
-         Set<GroovyClass> groovyClasses = new Groovy2CompilerHelper(compilationRootDir)
+         new Groovy2CompilerHelper(compilationRootDir)
             .addScriptArchive(archive)
             .withParentClassloader(moduleClassLoader)
             .compile();
-         HashSet<Class<?>> addedClasses = new HashSet<Class<?>>(archive.getArchiveEntryNames().size());
-         for (GroovyClass groovyClass : groovyClasses) {
-            Class<?> addedClass = moduleClassLoader.addClassBytes(groovyClass.getName(), groovyClass.getBytes());
-            addedClasses.add(addedClass);
-        }
-        return Collections.unmodifiableSet(addedClasses);
+        return Collections.emptySet();
     }
 }
