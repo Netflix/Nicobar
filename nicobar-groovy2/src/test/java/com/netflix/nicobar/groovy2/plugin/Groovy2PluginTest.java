@@ -246,7 +246,7 @@ public class Groovy2PluginTest {
             .addFile(Paths.get("InternalDependencyB.groovy"))
             .addFile(Paths.get("InternalDependencyA.groovy"))
             .addFile(Paths.get("InternalDependencyD.groovy"))
-            .addFile(Paths.get("InternalDependencyC.groovy"))
+            .addFile(Paths.get("subpackage/InternalDependencyC.groovy"))
             .setModuleSpec(createGroovyModuleSpec(TestScript.INTERNAL_DEPENDENCY_A.getModuleId()).build())
             .build();
         moduleLoader.updateScriptArchives(Collections.singleton(scriptArchive));

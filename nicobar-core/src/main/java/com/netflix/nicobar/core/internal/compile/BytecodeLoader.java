@@ -39,20 +39,18 @@ public class BytecodeLoader implements ScriptArchiveCompiler {
     public Set<Class<?>> compile(ScriptArchive archive, JBossModuleClassLoader moduleClassLoader, Path targetDir)
             throws ScriptCompilationException, IOException {
         HashSet<Class<?>> addedClasses = new HashSet<Class<?>>(archive.getArchiveEntryNames().size());
-
         for (String entry : archive.getArchiveEntryNames()) {
             if (!entry.endsWith(".class")) {
                 continue;
             }
+            // Load from the underlying archive class resource
             String entryName = entry.replace(".class", "").replace("/", ".");
             try {
-                // Load from the underlying archive class resource
                 Class<?> addedClass = moduleClassLoader.loadClassLocal(entryName, true);
                 addedClasses.add(addedClass);
             } catch (Exception e) {
                 throw new ScriptCompilationException("Unable to load class: " + entryName, e);
             }
-
             moduleClassLoader.addClasses(addedClasses);
         }
 

@@ -290,4 +290,13 @@ public class JBossModuleLoader extends ModuleLoader {
         }
         return dependencyNames;
     }
+
+    /**
+     * Refresh a loaded module's resource loaders.
+     * (expose protected super class method)
+     * @param module a loaded module.
+     */
+    public void refreshModuleLoaders(Module module) {
+        super.refreshResourceLoaders(module);
+    }
 }

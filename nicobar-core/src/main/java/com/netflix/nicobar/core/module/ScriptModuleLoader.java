@@ -18,9 +18,12 @@
 package com.netflix.nicobar.core.module;
 
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -224,13 +227,18 @@ public class ScriptModuleLoader {
                     continue;
                 }
                 ModuleSpec moduleSpec;
-                ModuleIdentifier candidateRevisionId;
-                Path modulePath = Paths.get(scriptArchive.getModuleSpec().getModuleId().toString());
-                Path moduleCompilationRoot = compilationRootDir.resolve(modulePath);
+                ModuleIdentifier candidateRevisionId = updatedRevisionIdMap.get(scriptModuleId);
+                Path modulePath = Paths.get(candidateRevisionId.toString());
+                final Path moduleCompilationRoot = compilationRootDir.resolve(modulePath);
+                FileUtils.deleteQuietly(moduleCompilationRoot.toFile());
+                try {
+                    Files.createDirectories(moduleCompilationRoot);
+                } catch (IOException ioe) {
+                    notifyArchiveRejected(scriptArchive, ArchiveRejectedReason.ARCHIVE_IO_EXCEPTION, ioe);
+                }
 
                 try {
                     // create the jboss module pre-cursor artifact
-                    candidateRevisionId = updatedRevisionIdMap.get(scriptModuleId);
                     ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(candidateRevisionId);
                     // Populate the modulespec with the scriptArchive dependencies
                     JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, scriptArchive, updatedRevisionIdMap);
@@ -251,8 +259,27 @@ public class ScriptModuleLoader {
                 Module jbossModule = null;
                 try {
                     jbossModule = jbossModuleLoader.loadModule(candidateRevisionId);
-                    FileUtils.deleteQuietly(moduleCompilationRoot.toFile());
                     compileModule(jbossModule, moduleCompilationRoot);
+
+                    // Now refresh the resource loaders for this module, and load the set of
+                    // compiled classes and populate into the module's local class cache.
+                    jbossModuleLoader.refreshModuleLoaders(jbossModule);
+                    final Set<String> classesToLoad = new LinkedHashSet<String>();
+                    Files.walkFileTree(moduleCompilationRoot, new SimpleFileVisitor<Path>() {
+                        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                            String relativePath = moduleCompilationRoot.relativize(file).toString();
+                            if (relativePath.endsWith(".class")) {
+                                String className = relativePath.replaceAll(".class", "").replace("/", ".");
+                                classesToLoad.add(className);
+                            }
+                            return FileVisitResult.CONTINUE;
+                        };
+                    });
+                    for (String loadClass: classesToLoad) {
+                        Class<?> loadedClass = jbossModule.getClassLoader().loadClassLocal(loadClass, true);
+                        if (loadedClass == null)
+                            throw new ScriptCompilationException("Unable to load compiled class: " + loadClass);
+                    }
                 } catch (Exception e) {
                     // rollback
                     logger.error("Exception loading module " + candidateRevisionId, e);

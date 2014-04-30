@@ -15,8 +15,10 @@
  *     limitations under the License.
  *
  */
-public class InternalDependencyB {
+import subpackage.InternalDependencyC
+
+public class InternalDependencyB extends InternalDependencyC {
     public String getMessage() {
-       return "I'm B. Called C and got: " + new InternalDependencyC().message;
+        return "I'm B. Called C and got: " + super.getMessage();
     }
 }
