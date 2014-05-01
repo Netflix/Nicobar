@@ -39,6 +39,7 @@ import org.jboss.modules.ResourceLoader;
 import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.modules.ResourceLoaders;
 import org.jboss.modules.filter.MultiplePathFilterBuilder;
+import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 
 import com.netflix.nicobar.core.archive.ModuleId;
@@ -53,6 +54,7 @@ import com.netflix.nicobar.core.utils.ClassPathUtils;
  *
  * @author James Kojo
  * @author Vasanth Asokan
+ * @author Aaron Tull
  */
 public class JBossModuleUtils {
     /** Dependency specification which allows for importing the core library classes */
@@ -82,7 +84,7 @@ public class JBossModuleUtils {
      */
     public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ScriptArchive scriptArchive, Map<ModuleId, ModuleIdentifier> latestRevisionIds) throws ModuleLoadException {
         Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
-        Objects.requireNonNull(moduleSpecBuilder, "scriptArchive");
+        Objects.requireNonNull(scriptArchive, "scriptArchive");
         Objects.requireNonNull(latestRevisionIds, "latestRevisionIds");
 
         MultiplePathFilterBuilder pathFilterBuilder = PathFilters.multiplePathFilterBuilder(true);
@@ -111,14 +113,6 @@ public class JBossModuleUtils {
         }
         // add dependencies to the module spec
         ScriptModuleSpec scriptModuleSpec = scriptArchive.getModuleSpec();
-        Set<ModuleId> dependencies = scriptModuleSpec.getModuleDependencies();
-        for (ModuleId scriptModuleId : dependencies) {
-            ModuleIdentifier latestIdentifier = latestRevisionIds.get(scriptModuleId);
-            if (latestIdentifier == null) {
-                latestIdentifier = JBossModuleUtils.createRevisionId(scriptModuleId, 0);
-            }
-            moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(latestIdentifier, true, false));
-        }
         Set<String> compilerPlugins = scriptModuleSpec.getCompilerPluginIds();
         for (String compilerPluginId : compilerPlugins) {
             moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(getPluginModuleId(compilerPluginId), true, false));
@@ -141,6 +135,31 @@ public class JBossModuleUtils {
         moduleSpecBuilder.setModuleClassLoaderFactory(JBossModuleClassLoader.createFactory(scriptArchive));
     }
 
+	/**
+	 * Populate a builder with a {@link DependencySpec}
+	 * @param moduleSpecBuilder builder to populate
+	 * @param moduleImportFilterPaths paths valid for importing into the module being built
+	 * @param dependencyExportFilterPaths export paths for the dependency being linked
+	 * @param latestIdentifier used to lookup the latest dependencies. see {@link JBossModuleLoader#getLatestRevisionIds()}
+	 */
+	public static void populateModuleBuilderWithDependency(ModuleSpec.Builder moduleSpecBuilder, Set<String> moduleImportFilterPaths, Set<String> dependencyExportFilterPaths, ModuleIdentifier latestIdentifier) {
+		PathFilter moduleImportFilters = buildFilters(moduleImportFilterPaths, false);
+        PathFilter dependencyExportFilters = buildFilters(dependencyExportFilterPaths, false);
+        PathFilter importFilters = PathFilters.all(dependencyExportFilters, moduleImportFilters);
+		moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(importFilters, dependencyExportFilters, null, latestIdentifier, false));
+	}
+
+    private static PathFilter buildFilters(Set<String> filterPaths, boolean acceptIfMatching) {
+        if (filterPaths == null || filterPaths.isEmpty())
+            return ScriptModuleSpec.Builder.defaultPathFilter;
+        else {
+            MultiplePathFilterBuilder builder = PathFilters.multiplePathFilterBuilder(acceptIfMatching);
+            for (String importPathGlob : filterPaths)
+                builder.addFilter(PathFilters.match(importPathGlob), !acceptIfMatching);
+            return builder.create();
+        }
+    }
+
     /**
      * Populates a builder with a {@link ResourceLoaderSpec} to a filesystem resource root.
      * {@link ScriptArchive}
@@ -158,16 +177,35 @@ public class JBossModuleUtils {
      * primary way that a module gains access to packages defined in the application classloader
      *
      * @param moduleSpecBuilder builder to populate
+     * @param moduleImportFilterPaths
      * @param classLoader a classloader
      * @param appPackages set of / separated package names (n
      */
-    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ClassLoader classLoader, Set<String> appPackages)
-            throws ModuleLoadException {
+    public static void populateModuleSpecWithImportFilters(ModuleSpec.Builder moduleSpecBuilder, Set<String> moduleImportFilterPaths, ClassLoader classLoader, Set<String> appPackages) {
+        Objects.requireNonNull(moduleImportFilterPaths, "moduleImportFilterPaths");
+        PathFilter moduleImportFilters = buildFilters(moduleImportFilterPaths, false);
+        populateAppPackageDependency(moduleSpecBuilder, classLoader, appPackages, moduleImportFilters);
+    }
+
+    private static void populateAppPackageDependency(ModuleSpec.Builder moduleSpecBuilder, ClassLoader classLoader, Set<String> appPackages, PathFilter moduleImportFilters) {
         Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
         Objects.requireNonNull(classLoader, "classLoader");
         Objects.requireNonNull(appPackages, "appPackages");
+        DependencySpec dependencySpec = DependencySpec.createClassLoaderDependencySpec(moduleImportFilters, moduleImportFilters, classLoader, appPackages);
+        moduleSpecBuilder.addDependency(dependencySpec);
+    }
 
-        moduleSpecBuilder.addDependency(DependencySpec.createClassLoaderDependencySpec(classLoader, appPackages));
+    /**
+     * Populates a {@link ModuleSpec} with a dependency on application runtime packages
+     * specified as a set of package paths, loaded within the given classloader. This is the
+     * primary way that a module gains access to packages defined in the application classloader
+     *
+     * @param moduleSpecBuilder builder to populate
+     * @param classLoader a classloader
+     * @param appPackages set of / separated package names (n
+     */
+    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ClassLoader classLoader, Set<String> appPackages) {
+        populateAppPackageDependency(moduleSpecBuilder, classLoader, appPackages, PathFilters.acceptAll());
     }
 
     /**

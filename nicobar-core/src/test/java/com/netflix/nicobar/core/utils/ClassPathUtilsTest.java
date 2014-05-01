@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import com.netflix.nicobar.core.testutil.CoreTestResourceUtil;
@@ -21,7 +22,8 @@ public class ClassPathUtilsTest {
 
     private String classPathStr = "";
 
-    public ClassPathUtilsTest() throws Exception {
+    @BeforeTest
+    public void testSetup() throws Exception {
         String rootDir = CoreTestResourceUtil.getResourceAsPath(TestResource.TEST_CLASSPATHDIR_PATH).toString();
         String classesDir = rootDir + File.separator + "classes";
         String jarPath = rootDir + File.separator + "libs" + File.separator + "nicobar-test-v1.0.jar";
