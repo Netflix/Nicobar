@@ -1,4 +1,4 @@
-package subpackage;
+package mypackage;
 
 /*
  *

@@ -263,7 +263,8 @@ public class ScriptModuleLoader {
 
                     // Now refresh the resource loaders for this module, and load the set of
                     // compiled classes and populate into the module's local class cache.
-                    jbossModuleLoader.refreshModuleLoaders(jbossModule);
+                    jbossModuleLoader.rescanModule(jbossModule);
+
                     final Set<String> classesToLoad = new LinkedHashSet<String>();
                     Files.walkFileTree(moduleCompilationRoot, new SimpleFileVisitor<Path>() {
                         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {

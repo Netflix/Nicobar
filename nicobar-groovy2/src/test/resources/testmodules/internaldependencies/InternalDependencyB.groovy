@@ -15,7 +15,7 @@
  *     limitations under the License.
  *
  */
-import subpackage.InternalDependencyC
+import mypackage.InternalDependencyC
 
 public class InternalDependencyB extends InternalDependencyC {
     public String getMessage() {

@@ -292,11 +292,16 @@ public class JBossModuleLoader extends ModuleLoader {
     }
 
     /**
-     * Refresh a loaded module's resource loaders.
-     * (expose protected super class method)
+     * Rescan a module.
+     *
+     * Post-compilation, this method triggers a module to pick up
+     * resources created from compilation.
+     *
      * @param module a loaded module.
+     * @throws ModuleLoadException
      */
-    public void refreshModuleLoaders(Module module) {
+    public void rescanModule(Module module) throws ModuleLoadException {
         super.refreshResourceLoaders(module);
+        super.relink(module);
     }
 }

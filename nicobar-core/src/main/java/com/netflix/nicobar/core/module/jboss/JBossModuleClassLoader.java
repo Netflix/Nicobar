@@ -36,6 +36,7 @@ import com.netflix.nicobar.core.archive.ScriptArchive;
  * Holds a {@link ScriptArchive} and adds simple life-cycle hooks
  * adds a post-construction hook to inject classes into the classloader
  * @author James Kojo
+ * @author Vasanth Asokan
  */
 public class JBossModuleClassLoader extends ModuleClassLoader {
     private final ScriptArchive scriptArchive;
