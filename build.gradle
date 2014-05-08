@@ -53,3 +53,9 @@ subprojects {
         }
     }
 }
+
+release { 
+  failOnUpdateNeeded = false
+  failOnCommitNeeded = false
+  failOnPublishNeeded = false
+}
