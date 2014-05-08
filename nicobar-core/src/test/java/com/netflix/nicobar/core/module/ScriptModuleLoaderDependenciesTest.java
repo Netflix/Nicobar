@@ -1,5 +1,6 @@
 package com.netflix.nicobar.core.module;
 
+import static com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource.TEST_CLASSPATH_DEPENDENT;
 import static com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource.TEST_DEPENDENCIES_DEPENDENT;
 import static com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource.TEST_DEPENDENCIES_PRIMARY;
 
@@ -9,7 +10,9 @@ import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Set;
 
+import org.jboss.modules.Module;
 import org.jboss.modules.ModuleLoadException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -83,7 +86,6 @@ public class ScriptModuleLoaderDependenciesTest {
         exerciseDependentModules(moduleLoader);
     }
 
-
     private void exerciseDependentModules(ScriptModuleLoader moduleLoader) throws ClassNotFoundException,
         InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         ScriptModule primaryModule = moduleLoader.getScriptModule(TEST_DEPENDENCIES_DEPENDENT.getModuleId());
@@ -139,6 +141,62 @@ public class ScriptModuleLoaderDependenciesTest {
             }
         }));
         return moduleLoader;
+    }
+
+    private ScriptModuleLoader setupClassPathDependentWithFilter(String importFilter)
+        throws ModuleLoadException, IOException, Exception {
+        ScriptCompilerPluginSpec pluginSpec = new ScriptCompilerPluginSpec.Builder(BytecodeLoadingPlugin.PLUGIN_ID)
+            .withPluginClassName(BytecodeLoadingPlugin.class.getName())
+            .build();
+
+        Set<String> packages = new HashSet<String>();
+        packages.add("org/jboss/modules");
+        ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
+            .addPluginSpec(pluginSpec)
+            .addAppPackages(packages )
+            .build();
+    
+        Path primaryJarPath = CoreTestResourceUtil.getResourceAsPath(TEST_CLASSPATH_DEPENDENT);
+        ScriptModuleSpec.Builder primarySpecBuilder = new ScriptModuleSpec.Builder(TEST_CLASSPATH_DEPENDENT.getModuleId())
+                .addCompilerPluginId(BytecodeLoadingPlugin.PLUGIN_ID)
+                .addModuleImportFilter(importFilter);
+        final ScriptArchive primaryJarArchive = new JarScriptArchive.Builder(primaryJarPath)
+                .setModuleSpec(primarySpecBuilder.build())
+                .build();
+        
+        moduleLoader.updateScriptArchives(Collections.unmodifiableSet(new HashSet<ScriptArchive>() {
+            private static final long serialVersionUID = -5461608508917035441L;
+            {
+                add(primaryJarArchive);
+            }
+        }));
+        return moduleLoader;
+    }
+    
+    private void exerciseClasspathDependentModule(ScriptModuleLoader moduleLoader) throws ClassNotFoundException,
+        InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+        ScriptModule module = moduleLoader.getScriptModule(TEST_CLASSPATH_DEPENDENT.getModuleId());
+        JBossModuleClassLoader primaryModuleLoader = module.getModuleClassLoader();
+        Class<?> dependentClass = primaryModuleLoader.loadClass("DependentClass");
+        Object helper = dependentClass.newInstance();
+    }
+
+
+    @Test
+    public void failsIfImportFilterExcludesNecessaryPathFromAppPackage() throws ModuleLoadException, IOException, Exception {
+        ScriptModuleLoader moduleLoader = setupClassPathDependentWithFilter("java");
+        Module.forClass(Object.class);
+        try {
+            exerciseClasspathDependentModule(moduleLoader);
+        } catch (java.lang.NoClassDefFoundError e) {
+            Assert.assertTrue(e.getMessage().contains("org/jboss/modules/Module"));
+        }
+    }
+
+    @Test
+    public void passesIfImportFilterIncludesAllNecessaryPathsFromAppPackage() throws ModuleLoadException, IOException, Exception {
+        ScriptModuleLoader moduleLoader = setupClassPathDependentWithFilter("org/jboss/modules");
+        exerciseClasspathDependentModule(moduleLoader);
     }
 
 }

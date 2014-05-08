@@ -115,7 +115,9 @@ public class JBossModuleUtils {
         ScriptModuleSpec scriptModuleSpec = scriptArchive.getModuleSpec();
         Set<String> compilerPlugins = scriptModuleSpec.getCompilerPluginIds();
         for (String compilerPluginId : compilerPlugins) {
-            moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(getPluginModuleId(compilerPluginId), true, false));
+            Set<String> moduleImportFilterPaths = scriptArchive.getModuleSpec().getModuleImportFilterPaths();
+            PathFilter moduleImportFilters = buildFilters(moduleImportFilterPaths, false);
+            moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(moduleImportFilters, moduleImportFilters, null, getPluginModuleId(compilerPluginId), false));
         }
         moduleSpecBuilder.addDependency(JRE_DEPENDENCY_SPEC);
         moduleSpecBuilder.addDependency(NICOBAR_CORE_DEPENDENCY_SPEC);

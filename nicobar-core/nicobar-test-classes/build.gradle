@@ -5,3 +5,6 @@ subprojects {
 project(':nicobar-core:nicobar-test-classes:impl-module').dependencies {
     compile project(':nicobar-core:nicobar-test-classes:interfaces-module')
 }
+project(':nicobar-core:nicobar-test-classes:classpath-dependent-module').dependencies {
+    compile 'org.jboss.modules:jboss-modules:1.3.0.Final'
+}
