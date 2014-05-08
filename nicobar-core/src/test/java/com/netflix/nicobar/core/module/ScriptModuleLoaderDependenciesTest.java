@@ -1,5 +1,6 @@
 package com.netflix.nicobar.core.module;
 
+import static org.testng.AssertJUnit.assertNotNull;
 import static com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource.TEST_CLASSPATH_DEPENDENT;
 import static com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource.TEST_DEPENDENCIES_DEPENDENT;
 import static com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource.TEST_DEPENDENCIES_PRIMARY;
@@ -35,7 +36,7 @@ public class ScriptModuleLoaderDependenciesTest {
     public void testDependenciesExportFilterExcludesNonMatching() throws Exception {
         ScriptModuleLoader moduleLoader = setupDependentModulesWithFilters("path.to.public.interface", null);
         exerciseDependentModules(moduleLoader);
-        
+
         ScriptModule primaryModule = moduleLoader.getScriptModule(TEST_DEPENDENCIES_DEPENDENT.getModuleId());
         JBossModuleClassLoader primaryModuleLoader = primaryModule.getModuleClassLoader();
         primaryModuleLoader.loadClass("impl.ManagerImpl");
@@ -44,7 +45,7 @@ public class ScriptModuleLoaderDependenciesTest {
     @Test(expectedExceptions=java.lang.LinkageError.class)
     public void testDependenciesImportFilterExcludesNonMatching() throws Exception {
         ScriptModuleLoader moduleLoader = setupDependentModulesWithFilters(null, "path.to.public.interface");
-        
+
         ScriptModule primaryModule = moduleLoader.getScriptModule(TEST_DEPENDENCIES_DEPENDENT.getModuleId());
         JBossModuleClassLoader primaryModuleLoader = primaryModule.getModuleClassLoader();
         primaryModuleLoader.loadClass("impl.ManagerImpl");
@@ -104,7 +105,7 @@ public class ScriptModuleLoaderDependenciesTest {
         Assert.assertTrue(superviseResult instanceof String);
         Assert.assertEquals(superviseResult, "impl.ManagerImpl supervising impl.HelperImpl doing nothing");
     }
-    
+
     private ScriptModuleLoader setupDependentModulesWithFilters(String exportFilter, String importFilter)
         throws ModuleLoadException, IOException, Exception {
         ScriptCompilerPluginSpec pluginSpec = new ScriptCompilerPluginSpec.Builder(BytecodeLoadingPlugin.PLUGIN_ID)
@@ -114,7 +115,7 @@ public class ScriptModuleLoaderDependenciesTest {
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
             .addPluginSpec(pluginSpec)
             .build();
-    
+
         Path primaryJarPath = CoreTestResourceUtil.getResourceAsPath(TEST_DEPENDENCIES_PRIMARY);
         ScriptModuleSpec.Builder primarySpecBuilder = new ScriptModuleSpec.Builder(TEST_DEPENDENCIES_PRIMARY.getModuleId())
                 .addModuleExportFilter(exportFilter)
@@ -131,7 +132,7 @@ public class ScriptModuleLoaderDependenciesTest {
         final ScriptArchive dependentJarArchive = new JarScriptArchive.Builder(dependentJarPath)
             .setModuleSpec(dependentSpecBuilder.build())
             .build();
-        
+
         moduleLoader.updateScriptArchives(Collections.unmodifiableSet(new HashSet<ScriptArchive>() {
             private static final long serialVersionUID = -5461608508917035441L;
 
@@ -155,7 +156,7 @@ public class ScriptModuleLoaderDependenciesTest {
             .addPluginSpec(pluginSpec)
             .addAppPackages(packages )
             .build();
-    
+
         Path primaryJarPath = CoreTestResourceUtil.getResourceAsPath(TEST_CLASSPATH_DEPENDENT);
         ScriptModuleSpec.Builder primarySpecBuilder = new ScriptModuleSpec.Builder(TEST_CLASSPATH_DEPENDENT.getModuleId())
                 .addCompilerPluginId(BytecodeLoadingPlugin.PLUGIN_ID)
@@ -163,7 +164,7 @@ public class ScriptModuleLoaderDependenciesTest {
         final ScriptArchive primaryJarArchive = new JarScriptArchive.Builder(primaryJarPath)
                 .setModuleSpec(primarySpecBuilder.build())
                 .build();
-        
+
         moduleLoader.updateScriptArchives(Collections.unmodifiableSet(new HashSet<ScriptArchive>() {
             private static final long serialVersionUID = -5461608508917035441L;
             {
@@ -172,13 +173,14 @@ public class ScriptModuleLoaderDependenciesTest {
         }));
         return moduleLoader;
     }
-    
+
     private void exerciseClasspathDependentModule(ScriptModuleLoader moduleLoader) throws ClassNotFoundException,
         InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         ScriptModule module = moduleLoader.getScriptModule(TEST_CLASSPATH_DEPENDENT.getModuleId());
         JBossModuleClassLoader primaryModuleLoader = module.getModuleClassLoader();
         Class<?> dependentClass = primaryModuleLoader.loadClass("DependentClass");
         Object helper = dependentClass.newInstance();
+        assertNotNull(helper);
     }
 
 
