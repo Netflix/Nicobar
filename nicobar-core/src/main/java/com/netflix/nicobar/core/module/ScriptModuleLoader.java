@@ -332,20 +332,23 @@ public class ScriptModuleLoader {
         ScriptModuleSpec archiveSpec = archive.getModuleSpec();
         // create the jboss module pre-cursor artifact
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(moduleId);
+
+        JBossModuleUtils.populateModuleSpecWithResources(moduleSpecBuilder, archive);
+        JBossModuleUtils.populateModuleSpecWithCoreDependencies(moduleSpecBuilder, archive);
+        JBossModuleUtils.populateModuleSpecWithAppImports(moduleSpecBuilder,
+                appClassLoader, appPackagePaths, archiveSpec.getAppImportFilterPaths(), archiveSpec.getModuleExportFilterPaths());
+        // Allow compiled class files to fetched as resources later on.
+        JBossModuleUtils.populateModuleSpecWithCompilationRoot(moduleSpecBuilder, moduleCompilationRoot);
+
         // Populate the modulespec with the scriptArchive dependencies
         for (ModuleId dependencyModuleId : archiveSpec.getModuleDependencies()) {
             ScriptModule dependencyModule = getScriptModule(dependencyModuleId);
             Set<String> exportPaths = dependencyModule.getSourceArchive().getModuleSpec().getModuleExportFilterPaths();
 
-            JBossModuleUtils.populateModuleBuilderWithDependency(moduleSpecBuilder,
+            JBossModuleUtils.populateModuleSpecWithModuleDependency(moduleSpecBuilder,
                 archiveSpec.getModuleImportFilterPaths(), exportPaths, moduleIdMap.get(dependencyModuleId));
         }
 
-        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, archive, moduleIdMap);
-        // Add to the moduleSpec application classloader dependencies
-        JBossModuleUtils.populateModuleSpecWithAppImports(moduleSpecBuilder, appClassLoader, appPackagePaths, archiveSpec.getAppImportFilterPaths(), archiveSpec.getModuleExportFilterPaths());
-        // Allow compiled class files to fetched as resources later on.
-        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, moduleCompilationRoot);
         return moduleSpecBuilder.create();
     }
 
@@ -385,7 +388,7 @@ public class ScriptModuleLoader {
         ModuleIdentifier pluginModuleId = JBossModuleUtils.getPluginModuleId(pluginSpec);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginModuleId);
         Map<ModuleId, ModuleIdentifier> latestRevisionIds = jbossModuleLoader.getLatestRevisionIds();
-        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec, latestRevisionIds);
+        JBossModuleUtils.populateCompilerModuleSpec(moduleSpecBuilder, pluginSpec, latestRevisionIds);
         // Add app package dependencies, while blocking them from leaking (being exported) to downstream modules
         // TODO: We expose the full set of app packages to the compiler too.
         // Maybe more control over what is exposed is needed here.

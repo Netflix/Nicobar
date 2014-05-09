@@ -71,7 +71,7 @@ public class JBossModuleUtilsTest {
             .build();
         ModuleIdentifier pluginId = JBossModuleUtils.getPluginModuleId(pluginSpec);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginId);
-        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec, Collections.<ModuleId, ModuleIdentifier>emptyMap());
+        JBossModuleUtils.populateCompilerModuleSpec(moduleSpecBuilder, pluginSpec, Collections.<ModuleId, ModuleIdentifier>emptyMap());
 
         JBossModuleLoader moduleLoader = new JBossModuleLoader();
         moduleLoader.addModuleSpec(moduleSpecBuilder.create());
@@ -107,7 +107,8 @@ public class JBossModuleUtilsTest {
         ModuleIdentifier revisionId = JBossModuleUtils.createRevisionId(TEST_TEXT_JAR.getModuleId(), 1);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(revisionId);
         JBossModuleLoader moduleLoader = new JBossModuleLoader();
-        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, jarScriptArchive, moduleLoader.getLatestRevisionIds());
+        JBossModuleUtils.populateModuleSpecWithCoreDependencies(moduleSpecBuilder, jarScriptArchive);
+        JBossModuleUtils.populateModuleSpecWithResources(moduleSpecBuilder, jarScriptArchive);
 
         moduleLoader.addModuleSpec(moduleSpecBuilder.create());
         Module module = moduleLoader.loadModule(revisionId);
@@ -135,7 +136,8 @@ public class JBossModuleUtilsTest {
         ModuleIdentifier revisionId = JBossModuleUtils.createRevisionId(TEST_TEXT_PATH.getModuleId(), 1);
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(revisionId);
         JBossModuleLoader moduleLoader = new JBossModuleLoader();
-        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, jarScriptArchive, moduleLoader.getLatestRevisionIds());
+        JBossModuleUtils.populateModuleSpecWithCoreDependencies(moduleSpecBuilder, jarScriptArchive);
+        JBossModuleUtils.populateModuleSpecWithResources(moduleSpecBuilder, jarScriptArchive);
         moduleLoader.addModuleSpec(moduleSpecBuilder.create());
 
         Module module = moduleLoader.loadModule(revisionId);

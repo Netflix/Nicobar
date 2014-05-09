@@ -78,16 +78,14 @@ public class JBossModuleUtils {
     }
 
     /**
-     * Populates a builder with source files, resources, dependencies and properties from the
-     * {@link ScriptArchive}
+     * Populates a module spec builder with source files, resources and properties from the {@link ScriptArchive}
+     *
      * @param moduleSpecBuilder builder to populate
      * @param scriptArchive {@link ScriptArchive} to copy from
-     * @param latestRevisionIds used to lookup the latest dependencies. see {@link JBossModuleLoader#getLatestRevisionIds()}
      */
-    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ScriptArchive scriptArchive, Map<ModuleId, ModuleIdentifier> latestRevisionIds) throws ModuleLoadException {
+    public static void populateModuleSpecWithResources(ModuleSpec.Builder moduleSpecBuilder, ScriptArchive scriptArchive) throws ModuleLoadException {
         Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
         Objects.requireNonNull(scriptArchive, "scriptArchive");
-        Objects.requireNonNull(latestRevisionIds, "latestRevisionIds");
 
         MultiplePathFilterBuilder pathFilterBuilder = PathFilters.multiplePathFilterBuilder(true);
         Set<String> archiveEntryNames = scriptArchive.getArchiveEntryNames();
@@ -115,13 +113,6 @@ public class JBossModuleUtils {
         }
         // add dependencies to the module spec
         ScriptModuleSpec scriptModuleSpec = scriptArchive.getModuleSpec();
-        Set<String> compilerPlugins = scriptModuleSpec.getCompilerPluginIds();
-        for (String compilerPluginId : compilerPlugins) {
-            moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(getPluginModuleId(compilerPluginId), false));
-        }
-        moduleSpecBuilder.addDependency(JRE_DEPENDENCY_SPEC);
-        moduleSpecBuilder.addDependency(NICOBAR_CORE_DEPENDENCY_SPEC);
-        moduleSpecBuilder.addDependency(DependencySpec.createLocalDependencySpec());
 
         // add string based properties from module spec metadata to the module spec being created
         Map<String, Object> archiveMetadata = scriptModuleSpec.getMetadata();
@@ -138,31 +129,54 @@ public class JBossModuleUtils {
     }
 
     /**
-     * Populate a builder with a {@link DependencySpec}
+     * Populates a module spec builder with core dependencies on JRE, Nicobar, itself, and compiler plugins.
+     *
+     * @param moduleSpecBuilder builder to populate
+     * @param scriptArchive {@link ScriptArchive} to copy from
+     */
+    public static void populateModuleSpecWithCoreDependencies(ModuleSpec.Builder moduleSpecBuilder, ScriptArchive scriptArchive) throws ModuleLoadException {
+        Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
+        Objects.requireNonNull(scriptArchive, "scriptArchive");
+
+        Set<String> compilerPlugins = scriptArchive.getModuleSpec().getCompilerPluginIds();
+        for (String compilerPluginId : compilerPlugins) {
+            moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(getPluginModuleId(compilerPluginId), false));
+        }
+        moduleSpecBuilder.addDependency(JRE_DEPENDENCY_SPEC);
+        // TODO: Why does a module need a dependency on Nicobar itself?
+        moduleSpecBuilder.addDependency(NICOBAR_CORE_DEPENDENCY_SPEC);
+        moduleSpecBuilder.addDependency(DependencySpec.createLocalDependencySpec());
+    }
+
+    /**
+     * Populate a module spec builder with a dependencies on other modules.
      * @param moduleSpecBuilder builder to populate
      * @param moduleImportFilterPaths paths valid for importing into the module being built.
      *                                Can be null or empty to indicate that no filters should be applied.
      * @param dependencyExportFilterPaths export paths for the dependency being linked
-     * @param latestIdentifier used to lookup the latest dependencies. see {@link JBossModuleLoader#getLatestRevisionIds()}
+     * @param dependentModuleIdentifier used to lookup the latest dependencies. see {@link JBossModuleLoader#getLatestRevisionIds()}
      */
-    public static void populateModuleBuilderWithDependency(ModuleSpec.Builder moduleSpecBuilder,
+    public static void populateModuleSpecWithModuleDependency(ModuleSpec.Builder moduleSpecBuilder,
             @Nullable Set<String> moduleImportFilterPaths,
             @Nullable Set<String> dependencyExportFilterPaths,
-            ModuleIdentifier latestIdentifier) {
+            ModuleIdentifier dependentModuleIdentifier) {
+        Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
         PathFilter moduleImportFilters = buildFilters(moduleImportFilterPaths, false);
         PathFilter dependencyExportFilters = buildFilters(dependencyExportFilterPaths, false);
         PathFilter importFilters = PathFilters.all(dependencyExportFilters, moduleImportFilters);
-        moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(importFilters, dependencyExportFilters, null, latestIdentifier, false));
+        moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(importFilters, dependencyExportFilters, null, dependentModuleIdentifier, false));
     }
 
     /**
      * Populates a builder with a {@link ResourceLoaderSpec} to a filesystem resource root.
      * {@link ScriptArchive}
      * @param moduleSpecBuilder builder to populate
-     * @param resourceRoot a path to the resource root directory
+     * @param compilationRoot a path to the compilation resource root directory
      */
-    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, Path resourceRoot) {
-        ResourceLoader resourceLoader = ResourceLoaders.createFileResourceLoader(resourceRoot.toString(), resourceRoot.toFile());
+    public static void populateModuleSpecWithCompilationRoot(ModuleSpec.Builder moduleSpecBuilder, Path compilationRoot) {
+        Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
+        Objects.requireNonNull(compilationRoot, "resourceRoot");
+        ResourceLoader resourceLoader = ResourceLoaders.createFileResourceLoader(compilationRoot.toString(), compilationRoot.toFile());
         moduleSpecBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoader));
     }
 
@@ -172,7 +186,7 @@ public class JBossModuleUtils {
      * primary way that a module gains access to packages defined in the application classloader
      *
      * @param moduleSpecBuilder builder to populate
-     * @param classLoader a classloader the application classloader.
+     * @param appClassLoader a classloader the application classloader.
      * @param appPackages the global set of application package paths.
      * @param importFilterPaths a set of imports to restrict this module to,
      *        can be null to indicate that no filters should be applied (accept all),
@@ -182,13 +196,15 @@ public class JBossModuleUtils {
      *        can be empty to indicate that everything should be filtered (reject all).
      */
     public static void populateModuleSpecWithAppImports(ModuleSpec.Builder moduleSpecBuilder,
-            ClassLoader classLoader,
+            ClassLoader appClassLoader,
             Set<String> appPackages,
             @Nullable Set<String> importFilterPaths,
             @Nullable Set<String> exportFilterPaths) {
+        Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
+        Objects.requireNonNull(appClassLoader, "classLoader");
         PathFilter moduleImportFilters = buildFilters(importFilterPaths, false);
         PathFilter moduleExportFilters = buildFilters(exportFilterPaths, false);
-        populateAppPackageDependency(moduleSpecBuilder, classLoader, appPackages, moduleImportFilters, moduleExportFilters);
+        populateAppPackageDependency(moduleSpecBuilder, appClassLoader, appPackages, moduleImportFilters, moduleExportFilters);
     }
 
     /**
@@ -200,7 +216,7 @@ public class JBossModuleUtils {
      * @param pluginSpec {@link ScriptCompilerPluginSpec} to copy from
      * @param latestRevisionIds used to lookup the latest dependencies. see {@link JBossModuleLoader#getLatestRevisionIds()}
      */
-    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ScriptCompilerPluginSpec pluginSpec, Map<ModuleId, ModuleIdentifier> latestRevisionIds) throws ModuleLoadException {
+    public static void populateCompilerModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ScriptCompilerPluginSpec pluginSpec, Map<ModuleId, ModuleIdentifier> latestRevisionIds) throws ModuleLoadException {
         Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
         Objects.requireNonNull(pluginSpec, "pluginSpec");
         Objects.requireNonNull(latestRevisionIds, "latestRevisionIds");
