@@ -239,29 +239,11 @@ public class ScriptModuleLoader {
                     notifyArchiveRejected(scriptArchive, ArchiveRejectedReason.ARCHIVE_IO_EXCEPTION, ioe);
                 }
 
-                ScriptModuleSpec archiveSpec = scriptArchive.getModuleSpec();
                 try {
-                    // create the jboss module pre-cursor artifact
-                    ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(candidateRevisionId);
-                    // Populate the modulespec with the scriptArchive dependencies
-                    for (ModuleId dependencyModuleId : archiveSpec.getModuleDependencies()) {
-                        ScriptModule dependencyModule = getScriptModule(dependencyModuleId);
-                        Set<String> exportPaths = dependencyModule.getSourceArchive().getModuleSpec().getModuleExportFilterPaths();
-                        
-                        JBossModuleUtils.populateModuleBuilderWithDependency(moduleSpecBuilder,
-                            archiveSpec.getModuleImportFilterPaths(), exportPaths, updatedRevisionIdMap.get(dependencyModuleId));
-                    }
-                    
-                    JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, scriptArchive, updatedRevisionIdMap);
-                    // Add to the moduleSpec application classloader dependencies
-                    Set<String> moduleImportFilterPaths = scriptArchive.getModuleSpec().getModuleImportFilterPaths();
-                    JBossModuleUtils.populateModuleSpecWithImportFilters(moduleSpecBuilder, moduleImportFilterPaths, appClassLoader, appPackagePaths);
-                    // Allow compiled class files to fetched as resources later on.
-                    JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, moduleCompilationRoot);
-                    moduleSpec = moduleSpecBuilder.create();
+                   moduleSpec = createModuleSpec(scriptArchive, candidateRevisionId, updatedRevisionIdMap, moduleCompilationRoot);
                 } catch (ModuleLoadException e) {
                     logger.error("Exception loading archive " +
-                        archiveSpec.getModuleId(), e);
+                        scriptArchive.getModuleSpec().getModuleId(), e);
                     notifyArchiveRejected(scriptArchive, ArchiveRejectedReason.ARCHIVE_IO_EXCEPTION, e);
                     continue;
                 }
@@ -336,6 +318,38 @@ public class ScriptModuleLoader {
     }
 
     /**
+     * Create a JBoss module spec for an about to be created script module.
+     * @param archive the script archive being converted to a module.
+     * @param moduleId the JBoss module identifier.
+     * @param moduleIdMap a map of loaded script module IDs to jboss module identifiers
+     * @param moduleCompilationRoot a path to a directory that will hold compiled classes for this module.
+     * @throws ModuleLoadException
+     */
+    protected ModuleSpec createModuleSpec(ScriptArchive archive,
+            ModuleIdentifier moduleId,
+            Map<ModuleId, ModuleIdentifier> moduleIdMap,
+            Path moduleCompilationRoot) throws ModuleLoadException {
+        ScriptModuleSpec archiveSpec = archive.getModuleSpec();
+        // create the jboss module pre-cursor artifact
+        ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(moduleId);
+        // Populate the modulespec with the scriptArchive dependencies
+        for (ModuleId dependencyModuleId : archiveSpec.getModuleDependencies()) {
+            ScriptModule dependencyModule = getScriptModule(dependencyModuleId);
+            Set<String> exportPaths = dependencyModule.getSourceArchive().getModuleSpec().getModuleExportFilterPaths();
+
+            JBossModuleUtils.populateModuleBuilderWithDependency(moduleSpecBuilder,
+                archiveSpec.getModuleImportFilterPaths(), exportPaths, moduleIdMap.get(dependencyModuleId));
+        }
+
+        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, archive, moduleIdMap);
+        // Add to the moduleSpec application classloader dependencies
+        JBossModuleUtils.populateModuleSpecWithAppImports(moduleSpecBuilder, appClassLoader, appPackagePaths, archiveSpec.getAppImportFilterPaths(), archiveSpec.getModuleExportFilterPaths());
+        // Allow compiled class files to fetched as resources later on.
+        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, moduleCompilationRoot);
+        return moduleSpecBuilder.create();
+    }
+
+    /**
      * Compiles and links the scripts within the module by locating the correct compiler
      * and delegating the compilation. the classes will be loaded into the module's classloader
      * upon completion.
@@ -372,9 +386,10 @@ public class ScriptModuleLoader {
         ModuleSpec.Builder moduleSpecBuilder = ModuleSpec.build(pluginModuleId);
         Map<ModuleId, ModuleIdentifier> latestRevisionIds = jbossModuleLoader.getLatestRevisionIds();
         JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, pluginSpec, latestRevisionIds);
+        // Add app package dependencies, while blocking them from leaking (being exported) to downstream modules
         // TODO: We expose the full set of app packages to the compiler too.
         // Maybe more control over what is exposed is needed here.
-        JBossModuleUtils.populateModuleSpec(moduleSpecBuilder, appClassLoader, appPackagePaths);
+        JBossModuleUtils.populateModuleSpecWithAppImports(moduleSpecBuilder, appClassLoader, appPackagePaths, null, Collections.<String>emptySet());
         ModuleSpec moduleSpec = moduleSpecBuilder.create();
 
         // spin up the module, and get the compiled classes from it's classloader

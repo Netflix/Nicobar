@@ -15,6 +15,8 @@
  *     limitations under the License.
  *
  */
+import test.LibraryA
+
 public class DependsOnA {
     public String getMessage() {
         LibraryA libA = new LibraryA()

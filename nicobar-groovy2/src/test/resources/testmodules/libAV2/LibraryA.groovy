@@ -15,6 +15,8 @@
  *     limitations under the License.
  *
  */
+package test;
+
 public class LibraryA {
     public String getMessage() {
        return "I'm LibraryA V2!";

@@ -25,10 +25,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 import org.jboss.modules.filter.PathFilter;
-import org.jboss.modules.filter.PathFilters;
 
 /**
  * Common configuration elements for converting a {@link ScriptArchive} to a module.
@@ -45,9 +46,9 @@ public class ScriptModuleSpec {
         private final Set<String> compilerPluginIds = new LinkedHashSet<String>();
         private final Map<String, Object> archiveMetadata = new LinkedHashMap<String, Object>();
         private final Set<ModuleId> moduleDependencies = new LinkedHashSet<ModuleId>();
-        private final Set<String> moduleImportFilters = new LinkedHashSet<String>();
-        private final Set<String> moduleExportFilters = new LinkedHashSet<String>();
-        public static final PathFilter defaultPathFilter = PathFilters.acceptAll();
+        private Set<String> appImportFilters = null;
+        private Set<String> moduleImportFilters = null;
+        private Set<String> moduleExportFilters = null;
 
         public Builder(String moduleId) {
             this.moduleId = ModuleId.fromString(moduleId);
@@ -107,6 +108,25 @@ public class ScriptModuleSpec {
             }
             return this;
         }
+        /** Add Module app import filter paths. */
+        public Builder addAppImportFilters(Set<String> filterPaths) {
+            if (filterPaths != null) {
+                for (String path: filterPaths) {
+                    addAppImportFilter(path);
+                }
+            }
+            return this;
+        }
+        /** Add a Module app import filter path. */
+        public Builder addAppImportFilter(String filterPath) {
+            if (filterPath != null) {
+                if (appImportFilters == null) {
+                    appImportFilters = new LinkedHashSet<String>();
+                }
+                appImportFilters.add(filterPath);
+            }
+            return this;
+        }
         /** Add Module import filter paths. */
         public Builder addModuleImportFilters(Set<String> filterPaths) {
             if (filterPaths != null) {
@@ -119,6 +139,9 @@ public class ScriptModuleSpec {
         /** Add a Module import filter path. */
         public Builder addModuleImportFilter(String filterPath) {
             if (filterPath != null) {
+                if (moduleImportFilters== null) {
+                    moduleImportFilters = new LinkedHashSet<String>();
+                }
                 moduleImportFilters.add(filterPath);
             }
             return this;
@@ -135,6 +158,9 @@ public class ScriptModuleSpec {
         /** Add a Module export filter path. */
         public Builder addModuleExportFilter(String filterPath) {
             if (filterPath != null) {
+                if (moduleExportFilters== null) {
+                    moduleExportFilters = new LinkedHashSet<String>();
+                }
                 moduleExportFilters.add(filterPath);
             }
             return this;
@@ -145,8 +171,9 @@ public class ScriptModuleSpec {
                Collections.unmodifiableMap(new HashMap<String, Object>(archiveMetadata)),
                Collections.unmodifiableSet(new LinkedHashSet<ModuleId>(moduleDependencies)),
                Collections.unmodifiableSet(new LinkedHashSet<String>(compilerPluginIds)),
-               Collections.unmodifiableSet(new LinkedHashSet<String>(moduleImportFilters)),
-               Collections.unmodifiableSet(new LinkedHashSet<String>(moduleExportFilters)));
+               appImportFilters != null ? Collections.unmodifiableSet(appImportFilters) : null,
+               moduleImportFilters != null ? Collections.unmodifiableSet(moduleImportFilters) : null,
+               moduleExportFilters != null ? Collections.unmodifiableSet(moduleExportFilters) : null);
         }
     }
 
@@ -154,16 +181,24 @@ public class ScriptModuleSpec {
     private final Map<String, Object> archiveMetadata;
     private final Set<ModuleId> moduleDependencies;
     private final Set<String> compilerPluginIds;
+    private final Set<String> appImportFilters;
     private final Set<String> importFilters;
     private final Set<String> exportFilters;
 
-    protected ScriptModuleSpec(ModuleId moduleId, Map<String, Object> archiveMetadata, Set<ModuleId> moduleDependencies, Set<String> pluginIds, Set<String> importFilters, Set<String> exportFilters) {
+    protected ScriptModuleSpec(ModuleId moduleId,
+            Map<String, Object> archiveMetadata,
+            Set<ModuleId> moduleDependencies,
+            Set<String> pluginIds,
+            @Nullable Set<String> appImportFilters,
+            @Nullable Set<String> importFilters,
+            @Nullable Set<String> exportFilters) {
         this.moduleId = Objects.requireNonNull(moduleId, "moduleId");
         this.compilerPluginIds = Objects.requireNonNull(pluginIds, "compilerPluginIds");
         this.archiveMetadata = Objects.requireNonNull(archiveMetadata, "archiveMetadata");
         this.moduleDependencies = Objects.requireNonNull(moduleDependencies, "dependencies");
-        this.importFilters = Objects.requireNonNull(importFilters, "import filters");
-        this.exportFilters = Objects.requireNonNull(exportFilters, "export filters");
+        this.appImportFilters = appImportFilters;
+        this.importFilters = importFilters;
+        this.exportFilters = exportFilters;
     }
 
     /**
@@ -196,17 +231,30 @@ public class ScriptModuleSpec {
     }
 
     /**
-     * @return the {@link PathFilter} to apply to the paths imported into the module from dependencies
+     * @return the paths imported into the module from the app classloader.
+     *         If this is null, it indicates that no filter is to be applied (accepts all).
      */
-    public Set<String> getModuleImportFilterPaths() {
-        return importFilters != null ? importFilters : Collections.<String>emptySet();
+    @Nullable
+    public Set<String> getAppImportFilterPaths() {
+        return appImportFilters;
     }
 
     /**
-     * @return the {@link PathFilter} to apply to the paths exported to all modules depending on this module
+     * @return the paths imported into the module from dependencies
+     *         If this is null, it indicates that no filter is to be applied (accepts all).
      */
+    @Nullable
+    public Set<String> getModuleImportFilterPaths() {
+        return importFilters;
+    }
+
+    /**
+     * @return the paths exported to all modules from dependencies of this module
+     *         If this is null, it indicates that no filter is to be applied (accepts all).
+     */
+    @Nullable
     public Set<String> getModuleExportFilterPaths() {
-        return exportFilters != null ? exportFilters : Collections.<String>emptySet();
+        return exportFilters;
     }
 
     @Override

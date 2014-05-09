@@ -30,6 +30,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.jar.JarFile;
 
+import javax.annotation.Nullable;
+
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
@@ -115,9 +117,7 @@ public class JBossModuleUtils {
         ScriptModuleSpec scriptModuleSpec = scriptArchive.getModuleSpec();
         Set<String> compilerPlugins = scriptModuleSpec.getCompilerPluginIds();
         for (String compilerPluginId : compilerPlugins) {
-            Set<String> moduleImportFilterPaths = scriptArchive.getModuleSpec().getModuleImportFilterPaths();
-            PathFilter moduleImportFilters = buildFilters(moduleImportFilterPaths, false);
-            moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(moduleImportFilters, moduleImportFilters, null, getPluginModuleId(compilerPluginId), false));
+            moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(getPluginModuleId(compilerPluginId), false));
         }
         moduleSpecBuilder.addDependency(JRE_DEPENDENCY_SPEC);
         moduleSpecBuilder.addDependency(NICOBAR_CORE_DEPENDENCY_SPEC);
@@ -137,29 +137,22 @@ public class JBossModuleUtils {
         moduleSpecBuilder.setModuleClassLoaderFactory(JBossModuleClassLoader.createFactory(scriptArchive));
     }
 
-	/**
-	 * Populate a builder with a {@link DependencySpec}
-	 * @param moduleSpecBuilder builder to populate
-	 * @param moduleImportFilterPaths paths valid for importing into the module being built
-	 * @param dependencyExportFilterPaths export paths for the dependency being linked
-	 * @param latestIdentifier used to lookup the latest dependencies. see {@link JBossModuleLoader#getLatestRevisionIds()}
-	 */
-	public static void populateModuleBuilderWithDependency(ModuleSpec.Builder moduleSpecBuilder, Set<String> moduleImportFilterPaths, Set<String> dependencyExportFilterPaths, ModuleIdentifier latestIdentifier) {
-		PathFilter moduleImportFilters = buildFilters(moduleImportFilterPaths, false);
+    /**
+     * Populate a builder with a {@link DependencySpec}
+     * @param moduleSpecBuilder builder to populate
+     * @param moduleImportFilterPaths paths valid for importing into the module being built.
+     *                                Can be null or empty to indicate that no filters should be applied.
+     * @param dependencyExportFilterPaths export paths for the dependency being linked
+     * @param latestIdentifier used to lookup the latest dependencies. see {@link JBossModuleLoader#getLatestRevisionIds()}
+     */
+    public static void populateModuleBuilderWithDependency(ModuleSpec.Builder moduleSpecBuilder,
+            @Nullable Set<String> moduleImportFilterPaths,
+            @Nullable Set<String> dependencyExportFilterPaths,
+            ModuleIdentifier latestIdentifier) {
+        PathFilter moduleImportFilters = buildFilters(moduleImportFilterPaths, false);
         PathFilter dependencyExportFilters = buildFilters(dependencyExportFilterPaths, false);
         PathFilter importFilters = PathFilters.all(dependencyExportFilters, moduleImportFilters);
-		moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(importFilters, dependencyExportFilters, null, latestIdentifier, false));
-	}
-
-    private static PathFilter buildFilters(Set<String> filterPaths, boolean acceptIfMatching) {
-        if (filterPaths == null || filterPaths.isEmpty())
-            return ScriptModuleSpec.Builder.defaultPathFilter;
-        else {
-            MultiplePathFilterBuilder builder = PathFilters.multiplePathFilterBuilder(acceptIfMatching);
-            for (String importPathGlob : filterPaths)
-                builder.addFilter(PathFilters.match(importPathGlob), !acceptIfMatching);
-            return builder.create();
-        }
+        moduleSpecBuilder.addDependency(DependencySpec.createModuleDependencySpec(importFilters, dependencyExportFilters, null, latestIdentifier, false));
     }
 
     /**
@@ -179,35 +172,23 @@ public class JBossModuleUtils {
      * primary way that a module gains access to packages defined in the application classloader
      *
      * @param moduleSpecBuilder builder to populate
-     * @param moduleImportFilterPaths
-     * @param classLoader a classloader
-     * @param appPackages set of / separated package names (n
+     * @param classLoader a classloader the application classloader.
+     * @param appPackages the global set of application package paths.
+     * @param importFilterPaths a set of imports to restrict this module to,
+     *        can be null to indicate that no filters should be applied (accept all),
+     *        can be empty to indicate that everything should be filtered (reject all).
+     * @param exportFilterPaths a set of app exports to restrict this module to,
+     *        can be null to indicate that no filters should be applied (accept all),
+     *        can be empty to indicate that everything should be filtered (reject all).
      */
-    public static void populateModuleSpecWithImportFilters(ModuleSpec.Builder moduleSpecBuilder, Set<String> moduleImportFilterPaths, ClassLoader classLoader, Set<String> appPackages) {
-        Objects.requireNonNull(moduleImportFilterPaths, "moduleImportFilterPaths");
-        PathFilter moduleImportFilters = buildFilters(moduleImportFilterPaths, false);
-        populateAppPackageDependency(moduleSpecBuilder, classLoader, appPackages, moduleImportFilters);
-    }
-
-    private static void populateAppPackageDependency(ModuleSpec.Builder moduleSpecBuilder, ClassLoader classLoader, Set<String> appPackages, PathFilter moduleImportFilters) {
-        Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
-        Objects.requireNonNull(classLoader, "classLoader");
-        Objects.requireNonNull(appPackages, "appPackages");
-        DependencySpec dependencySpec = DependencySpec.createClassLoaderDependencySpec(moduleImportFilters, moduleImportFilters, classLoader, appPackages);
-        moduleSpecBuilder.addDependency(dependencySpec);
-    }
-
-    /**
-     * Populates a {@link ModuleSpec} with a dependency on application runtime packages
-     * specified as a set of package paths, loaded within the given classloader. This is the
-     * primary way that a module gains access to packages defined in the application classloader
-     *
-     * @param moduleSpecBuilder builder to populate
-     * @param classLoader a classloader
-     * @param appPackages set of / separated package names (n
-     */
-    public static void populateModuleSpec(ModuleSpec.Builder moduleSpecBuilder, ClassLoader classLoader, Set<String> appPackages) {
-        populateAppPackageDependency(moduleSpecBuilder, classLoader, appPackages, PathFilters.acceptAll());
+    public static void populateModuleSpecWithAppImports(ModuleSpec.Builder moduleSpecBuilder,
+            ClassLoader classLoader,
+            Set<String> appPackages,
+            @Nullable Set<String> importFilterPaths,
+            @Nullable Set<String> exportFilterPaths) {
+        PathFilter moduleImportFilters = buildFilters(importFilterPaths, false);
+        PathFilter moduleExportFilters = buildFilters(exportFilterPaths, false);
+        populateAppPackageDependency(moduleSpecBuilder, classLoader, appPackages, moduleImportFilters, moduleExportFilters);
     }
 
     /**
@@ -290,5 +271,43 @@ public class JBossModuleUtils {
     public static ModuleIdentifier createRevisionId(ModuleId scriptModuleId, long revisionNumber) {
         Objects.requireNonNull(scriptModuleId, "scriptModuleId");
         return ModuleIdentifier.create(scriptModuleId.toString(), Long.toString(revisionNumber));
+    }
+
+    /**
+     * Build a PathFilter for a set of filter paths
+     *
+     * @param filterPaths the set of paths to filter on.
+     *        Can be null to indicate that no filters should be applied (accept all),
+     *        can be empty to indicate that everything should be filtered (reject all).
+     * @param failedMatchValue the value the PathFilter returns when a path does not match.
+     * @return a PathFilter.
+     */
+    private static PathFilter buildFilters(Set<String> filterPaths, boolean failedMatchValue) {
+        if (filterPaths == null)
+            return PathFilters.acceptAll();
+        else if (filterPaths.isEmpty()) {
+            return PathFilters.rejectAll();
+        } else {
+            MultiplePathFilterBuilder builder = PathFilters.multiplePathFilterBuilder(failedMatchValue);
+            for (String importPathGlob : filterPaths)
+                builder.addFilter(PathFilters.match(importPathGlob), !failedMatchValue);
+            return builder.create();
+        }
+    }
+
+    /**
+     * Populate a module spec with a dependency spec on the app classloader.
+     *
+     * @param moduleSpecBuilder the builder for the module spec being constructed.
+     * @param classLoader the classloader on which this module is dependent.
+     * @param appPackages the global set of app package paths exposed by the classloader.
+     * @param moduleImportFilters the set of package paths to filter this module to.
+     */
+    private static void populateAppPackageDependency(ModuleSpec.Builder moduleSpecBuilder, ClassLoader classLoader, Set<String> appPackages, PathFilter moduleImportFilters, PathFilter moduleExportFilters) {
+        Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
+        Objects.requireNonNull(classLoader, "classLoader");
+        Objects.requireNonNull(appPackages, "appPackages");
+        DependencySpec dependencySpec = DependencySpec.createClassLoaderDependencySpec(moduleImportFilters, moduleExportFilters, classLoader, appPackages);
+        moduleSpecBuilder.addDependency(dependencySpec);
     }
 }

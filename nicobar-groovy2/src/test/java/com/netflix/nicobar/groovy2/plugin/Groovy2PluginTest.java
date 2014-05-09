@@ -282,6 +282,40 @@ public class Groovy2PluginTest {
     }
 
     /**
+     * Test loading/executing a script with app package import filters,
+     * and which is dependent a library.
+     *
+     */
+    @Test
+    public void testLoadScriptWithAppImports() throws Exception {
+        ScriptModuleLoader moduleLoader = createGroovyModuleLoader().build();
+        Path dependsOnARootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.DEPENDS_ON_A);
+
+        ScriptArchive dependsOnAArchive = new PathScriptArchive.Builder(dependsOnARootPath)
+            .setRecurseRoot(false)
+            .addFile(TestScript.DEPENDS_ON_A.getScriptPath())
+            .setModuleSpec(createGroovyModuleSpec(TestScript.DEPENDS_ON_A.getModuleId())
+                .addModuleDependency(TestScript.LIBRARY_A.getModuleId())
+                .addAppImportFilter("test")
+                .build())
+            .build();
+        Path libARootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.LIBRARY_A);
+        ScriptArchive libAArchive = new PathScriptArchive.Builder(libARootPath)
+            .setRecurseRoot(false)
+            .addFile(TestScript.LIBRARY_A.getScriptPath())
+            .setModuleSpec(createGroovyModuleSpec(TestScript.LIBRARY_A.getModuleId())
+                    .addAppImportFilter("test")
+                    .build())
+            .build();
+        // load them in dependency order to make sure that transitive dependency resolution is working
+        moduleLoader.updateScriptArchives(new LinkedHashSet<ScriptArchive>(Arrays.asList(dependsOnAArchive, libAArchive)));
+
+        // locate the class file in the module and execute it
+        ScriptModule scriptModule = moduleLoader.getScriptModule(TestScript.DEPENDS_ON_A.getModuleId());
+        Class<?> clazz = findClassByName(scriptModule, TestScript.DEPENDS_ON_A);
+        assertGetMessage(clazz, "DepondOnA: Called LibraryA and got message:'I'm LibraryA!'");
+    }
+    /**
      * Create a module loader this is wired up with the groovy compiler plugin
      */
     private ScriptModuleLoader.Builder createGroovyModuleLoader() throws Exception {

@@ -160,7 +160,7 @@ public class ScriptModuleLoaderDependenciesTest {
         Path primaryJarPath = CoreTestResourceUtil.getResourceAsPath(TEST_CLASSPATH_DEPENDENT);
         ScriptModuleSpec.Builder primarySpecBuilder = new ScriptModuleSpec.Builder(TEST_CLASSPATH_DEPENDENT.getModuleId())
                 .addCompilerPluginId(BytecodeLoadingPlugin.PLUGIN_ID)
-                .addModuleImportFilter(importFilter);
+                .addAppImportFilter(importFilter);
         final ScriptArchive primaryJarArchive = new JarScriptArchive.Builder(primaryJarPath)
                 .setModuleSpec(primarySpecBuilder.build())
                 .build();
@@ -187,12 +187,16 @@ public class ScriptModuleLoaderDependenciesTest {
     @Test
     public void failsIfImportFilterExcludesNecessaryPathFromAppPackage() throws ModuleLoadException, IOException, Exception {
         ScriptModuleLoader moduleLoader = setupClassPathDependentWithFilter("java");
+        boolean didFail = false;
         Module.forClass(Object.class);
         try {
             exerciseClasspathDependentModule(moduleLoader);
         } catch (java.lang.NoClassDefFoundError e) {
             Assert.assertTrue(e.getMessage().contains("org/jboss/modules/Module"));
+            didFail = true;
         }
+
+        Assert.assertTrue(didFail);
     }
 
     @Test
