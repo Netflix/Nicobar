@@ -16,3 +16,14 @@ project(':nicobar-core') {
     }
 }
 
+task copyTestClassJars(type: Copy, dependsOn: ':nicobar-core:nicobar-test-classes:build') {
+    project(':nicobar-core:nicobar-test-classes').subprojects.each { p ->
+        from (p.libsDir)
+        dependsOn p.build
+    }
+    into (project(':nicobar-core').sourceSets.test.resources.srcDirs.toArray()[0].absolutePath + "/jars")
+}
+
+project(':nicobar-core:nicobar-test-classes').subprojects.each { p ->
+	project(':nicobar-core').test.dependsOn copyTestClassJars
+}
