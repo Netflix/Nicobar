@@ -54,22 +54,20 @@ subprojects {
     }
 }
 
-task copyTestClassJars(type: Copy, dependsOn: ':nicobar-core:nicobar-test-classes:build') {
+task copyTestClassJars(type: Copy, dependsOn: ':nicobar-core:nicobar-test-classes:jar') {
     project(':nicobar-core:nicobar-test-classes').subprojects.each { p ->
         from (p.libsDir)
+        include "${p.name}-${version}.jar"
     }
     into (project(':nicobar-core').sourceSets.test.resources.srcDirs.toArray()[0].absolutePath + "/jars")
     rename { String fileName ->
-        fileName.replace('-' + project(':nicobar-core:nicobar-test-classes').version, '')
+        fileName.replace('-' + version, '')
     }
-    exclude '*-javadoc.jar'
-    exclude '*-sources.jar'
 }
+
+project(':nicobar-core').processTestResources.dependsOn copyTestClassJars
 
 project(':nicobar-core:nicobar-test-classes').subprojects.each { p ->
 	copyTestClassJars.dependsOn p.build
 }
-
-project(':nicobar-core').test.dependsOn copyTestClassJars
-
 
