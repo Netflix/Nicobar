@@ -336,7 +336,7 @@ public class ScriptModuleLoader {
         JBossModuleUtils.populateModuleSpecWithResources(moduleSpecBuilder, archive);
         JBossModuleUtils.populateModuleSpecWithCoreDependencies(moduleSpecBuilder, archive);
         JBossModuleUtils.populateModuleSpecWithAppImports(moduleSpecBuilder,
-                appClassLoader, appPackagePaths, archiveSpec.getAppImportFilterPaths(), archiveSpec.getModuleExportFilterPaths());
+                appClassLoader, archiveSpec.getAppImportFilterPaths() == null ? appPackagePaths : archiveSpec.getAppImportFilterPaths());
         // Allow compiled class files to fetched as resources later on.
         JBossModuleUtils.populateModuleSpecWithCompilationRoot(moduleSpecBuilder, moduleCompilationRoot);
 
@@ -392,7 +392,7 @@ public class ScriptModuleLoader {
         // Add app package dependencies, while blocking them from leaking (being exported) to downstream modules
         // TODO: We expose the full set of app packages to the compiler too.
         // Maybe more control over what is exposed is needed here.
-        JBossModuleUtils.populateModuleSpecWithAppImports(moduleSpecBuilder, appClassLoader, appPackagePaths, null, Collections.<String>emptySet());
+        JBossModuleUtils.populateModuleSpecWithAppImports(moduleSpecBuilder, appClassLoader, appPackagePaths);
         ModuleSpec moduleSpec = moduleSpecBuilder.create();
 
         // spin up the module, and get the compiled classes from it's classloader

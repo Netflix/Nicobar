@@ -183,28 +183,19 @@ public class JBossModuleUtils {
     /**
      * Populates a {@link ModuleSpec} with a dependency on application runtime packages
      * specified as a set of package paths, loaded within the given classloader. This is the
-     * primary way that a module gains access to packages defined in the application classloader
+     * primary way that a module gains access to packages defined in the application classloader.
+     * This dependency is NOT rexported to downstream modules.
      *
      * @param moduleSpecBuilder builder to populate
      * @param appClassLoader a classloader the application classloader.
      * @param appPackages the global set of application package paths.
-     * @param importFilterPaths a set of imports to restrict this module to,
-     *        can be null to indicate that no filters should be applied (accept all),
-     *        can be empty to indicate that everything should be filtered (reject all).
-     * @param exportFilterPaths a set of app exports to restrict this module to,
-     *        can be null to indicate that no filters should be applied (accept all),
-     *        can be empty to indicate that everything should be filtered (reject all).
      */
     public static void populateModuleSpecWithAppImports(ModuleSpec.Builder moduleSpecBuilder,
             ClassLoader appClassLoader,
-            Set<String> appPackages,
-            @Nullable Set<String> importFilterPaths,
-            @Nullable Set<String> exportFilterPaths) {
+            Set<String> appPackages) {
         Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
         Objects.requireNonNull(appClassLoader, "classLoader");
-        PathFilter moduleImportFilters = buildFilters(importFilterPaths, false);
-        PathFilter moduleExportFilters = buildFilters(exportFilterPaths, false);
-        populateAppPackageDependency(moduleSpecBuilder, appClassLoader, appPackages, moduleImportFilters, moduleExportFilters);
+        moduleSpecBuilder.addDependency(DependencySpec.createClassLoaderDependencySpec(appClassLoader, appPackages, false));
     }
 
     /**
@@ -309,21 +300,5 @@ public class JBossModuleUtils {
                 builder.addFilter(PathFilters.match(importPathGlob), !failedMatchValue);
             return builder.create();
         }
-    }
-
-    /**
-     * Populate a module spec with a dependency spec on the app classloader.
-     *
-     * @param moduleSpecBuilder the builder for the module spec being constructed.
-     * @param classLoader the classloader on which this module is dependent.
-     * @param appPackages the global set of app package paths exposed by the classloader.
-     * @param moduleImportFilters the set of package paths to filter this module to.
-     */
-    private static void populateAppPackageDependency(ModuleSpec.Builder moduleSpecBuilder, ClassLoader classLoader, Set<String> appPackages, PathFilter moduleImportFilters, PathFilter moduleExportFilters) {
-        Objects.requireNonNull(moduleSpecBuilder, "moduleSpecBuilder");
-        Objects.requireNonNull(classLoader, "classLoader");
-        Objects.requireNonNull(appPackages, "appPackages");
-        DependencySpec dependencySpec = DependencySpec.createClassLoaderDependencySpec(moduleImportFilters, moduleExportFilters, classLoader, appPackages);
-        moduleSpecBuilder.addDependency(dependencySpec);
     }
 }
