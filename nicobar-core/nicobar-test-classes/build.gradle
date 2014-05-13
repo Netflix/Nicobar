@@ -1,6 +1,6 @@
 subprojects {
     apply plugin: 'java'
-    version='1'
+//    version='1'
 }
 project(':nicobar-core:nicobar-test-classes:impl-module').dependencies {
     compile project(':nicobar-core:nicobar-test-classes:interfaces-module')
