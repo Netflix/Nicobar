@@ -59,6 +59,7 @@ task copyTestClassJars(type: Copy, dependsOn: ':nicobar-core:nicobar-test-classe
         from (p.libsDir)
         include "${p.name}-${version}.jar"
     }
+    println project(':nicobar-core').sourceSets.test.resources.srcDirs.toArray()[0].absolutePath + "/jars"
     into (project(':nicobar-core').sourceSets.test.resources.srcDirs.toArray()[0].absolutePath + "/jars")
     rename { String fileName ->
         fileName.replace('-' + version, '')
