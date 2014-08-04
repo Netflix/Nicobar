@@ -90,7 +90,6 @@ public class ScriptModuleLoader {
 
         public Builder() {
         }
-
         /** Add a language compiler plugin specification to the loader */
         public Builder addPluginSpec(ScriptCompilerPluginSpec pluginSpec) {
             if (pluginSpec != null) {
@@ -98,7 +97,6 @@ public class ScriptModuleLoader {
             }
             return this;
         }
-
         /**
          * Use a specific classloader as the application classloader.
          * @param loader the application classloader
@@ -106,6 +104,14 @@ public class ScriptModuleLoader {
         public Builder withAppClassLoader(ClassLoader loader) {
             Objects.requireNonNull(loader);
             this.appClassLoader = loader;
+            return this;
+        }
+        /**
+         * Use a specific compilation root directory
+         * @param compilationRootDir the compilation directory root.
+         */
+        public Builder withCompilationRootDir(Path compilationRootDir) {
+            this.compilationRootDir = compilationRootDir;
             return this;
         }
         /**
@@ -121,7 +127,6 @@ public class ScriptModuleLoader {
             }
             return this;
         }
-
         /** Add a archive poller which will be polled at the given interval */
         public Builder addListener(ScriptModuleListener listener) {
             if (listener != null) {
@@ -129,7 +134,6 @@ public class ScriptModuleLoader {
             }
             return this;
         }
-
         public ScriptModuleLoader build() throws ModuleLoadException, IOException {
             if (compilationRootDir == null) {
                 compilationRootDir = Files.createTempDirectory("ScriptModuleLoader");
