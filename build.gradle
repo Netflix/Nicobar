@@ -63,6 +63,7 @@ task copyTestClassJars(type: Copy, dependsOn: ':nicobar-core:nicobar-test-classe
     rename { String fileName ->
         fileName.replace('-' + version, '')
     }
+    outputs.upToDateWhen { false }
 }
 
 project(':nicobar-core').processTestResources.dependsOn copyTestClassJars
