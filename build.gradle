@@ -56,7 +56,7 @@ subprojects {
 
 task copyTestClassJars(type: Copy, dependsOn: ':nicobar-core:nicobar-test-classes:jar') {
     project(':nicobar-core:nicobar-test-classes').subprojects.each { p ->
-        from (p.libsDir) {
+        from (new File(p.buildDir, 'libs')) {
             include "${p.name}-${version}.jar"
         }
     }
