@@ -56,15 +56,14 @@ subprojects {
 
 task copyTestClassJars(type: Copy) {
     project(':nicobar-core:nicobar-test-classes').subprojects.each { p ->
-        from (':nicobar-core:nicobar-test-classes:${p.name}:jar')
-        include "${p.name}-${version}.jar"
+        from (p.jar.archivePath)
     }
     println project(':nicobar-core').sourceSets.test.resources.srcDirs.toArray()[0].absolutePath + "/jars"
     into (project(':nicobar-core').sourceSets.test.resources.srcDirs.toArray()[0].absolutePath + "/jars")
     rename { String fileName ->
         fileName.replace('-' + version, '')
     }
-    outputs.upToDateWhen { false }
+    //outputs.upToDateWhen { false }
 }
 
 project(':nicobar-core').processTestResources.dependsOn copyTestClassJars
