@@ -42,6 +42,13 @@ public interface ScriptArchive {
     public ScriptModuleSpec getModuleSpec();
 
     /**
+     * Set the module spec for this archive. 
+     * This will override an already set module spec.
+     * @param spec the module spec to set to.
+     */
+    public void setModuleSpec(ScriptModuleSpec spec);
+
+    /**
      * Deployment specs for an archive, are assumed to be created and managed
      * by the application code using Nicobar. These may determine how an archive
      * is loaded or executed.

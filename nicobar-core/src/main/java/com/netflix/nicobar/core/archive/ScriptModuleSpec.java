@@ -29,7 +29,6 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
-import org.jboss.modules.filter.PathFilter;
 
 /**
  * Common configuration elements for converting a {@link ScriptArchive} to a module.

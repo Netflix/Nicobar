@@ -156,12 +156,12 @@ public class JarScriptArchive implements ScriptArchive {
         }
     }
 
-    private final ScriptModuleSpec moduleSpec;
     private final Map<String, Object> deploySpecs;
     private final Set<String> entryNames;
     private final URL rootUrl;
     private final long createTime;
-
+    private ScriptModuleSpec moduleSpec;
+    
     protected JarScriptArchive(ScriptModuleSpec moduleSpec, Path jarPath, long createTime) throws IOException {
         this(moduleSpec, Collections.<String, Object>emptyMap(), jarPath, null, createTime);
     }
@@ -202,6 +202,11 @@ public class JarScriptArchive implements ScriptArchive {
     @Override
     public ScriptModuleSpec getModuleSpec() {
         return moduleSpec;
+    }
+    
+    @Override
+    public void setModuleSpec(ScriptModuleSpec spec) {
+        this.moduleSpec = spec;
     }
 
     @Override
