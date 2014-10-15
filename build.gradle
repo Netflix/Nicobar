@@ -54,9 +54,9 @@ subprojects {
     }
 }
 
-task copyTestClassJars(type: Copy, dependsOn: ':nicobar-core:nicobar-test-classes:jar') {
+task copyTestClassJars(type: Copy) {
     project(':nicobar-core:nicobar-test-classes').subprojects.each { p ->
-        from (p.libsDir)
+        from (':nicobar-core:nicobar-test-classes:${p.name}:jar')
         include "${p.name}-${version}.jar"
     }
     println project(':nicobar-core').sourceSets.test.resources.srcDirs.toArray()[0].absolutePath + "/jars"
