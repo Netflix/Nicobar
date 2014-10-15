@@ -211,11 +211,6 @@ public class PathArchiveRepository implements ArchiveRepository {
         }
     }
 
-    @Override
-    public void putDeploySpecs(ModuleId moduleId, Map<String, Object> deploySpecs) {
-        throw new UnsupportedOperationException();
-    }
-
     protected class DefaultView implements RepositoryView {
         @Override
         public String getName() {

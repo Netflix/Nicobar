@@ -268,11 +268,6 @@ public class CassandraArchiveRepository implements ArchiveRepository {
         cassandra.deleteRow(moduleId.toString());
     }
 
-    @Override
-    public void putDeploySpecs(ModuleId moduleId, Map<String, Object> deploySpecs) {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * Get all of the rows in in the table. Attempts to reduce the load on cassandra by splitting up the query into smaller sub-queries
      * @param columns which columns to select

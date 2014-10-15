@@ -158,12 +158,12 @@ public class PathScriptArchive implements ScriptArchive {
         }
     }
 
-    private final ScriptModuleSpec moduleSpec;
     private final Set<String> entryNames;
     private final Path rootDirPath;
     private final URL rootUrl;
     private final long createTime;
     private final Map<String, Object> deploySpecs;
+    private ScriptModuleSpec moduleSpec;
 
     protected PathScriptArchive(ScriptModuleSpec moduleSpec, Map<String, Object> deploySpecs, Path rootDirPath, Set<String> entries, long createTime) throws IOException {
         this.moduleSpec = Objects.requireNonNull(moduleSpec, "moduleSpec");
@@ -180,6 +180,11 @@ public class PathScriptArchive implements ScriptArchive {
         return moduleSpec;
     }
 
+    @Override
+    public void setModuleSpec(ScriptModuleSpec spec) {
+        this.moduleSpec = spec;
+    }
+    
     @Override
     public Map<String, Object> getDeploySpecs() {
         return deploySpecs;

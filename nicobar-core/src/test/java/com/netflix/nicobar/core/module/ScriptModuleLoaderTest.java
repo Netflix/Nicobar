@@ -391,8 +391,7 @@ public class ScriptModuleLoaderTest {
 
     private static class TestDependecyScriptArchive implements ScriptArchive {
         private final long createTime;
-        private final ScriptModuleSpec scriptModuleSpec;
-
+        private ScriptModuleSpec scriptModuleSpec;
 
         private TestDependecyScriptArchive(ScriptModuleSpec scriptModuleSpec, long createTime) {
             this.createTime = createTime;
@@ -403,7 +402,12 @@ public class ScriptModuleLoaderTest {
         public ScriptModuleSpec getModuleSpec() {
             return scriptModuleSpec;
         }
-
+        
+        @Override
+        public void setModuleSpec(ScriptModuleSpec spec) {
+            this.scriptModuleSpec = spec;
+        }
+        
         @Override
         public Map<String, Object> getDeploySpecs() {
             return Collections.<String, Object>emptyMap();

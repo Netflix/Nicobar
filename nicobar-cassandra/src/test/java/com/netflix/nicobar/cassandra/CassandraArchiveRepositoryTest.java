@@ -19,7 +19,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -145,11 +144,6 @@ public class CassandraArchiveRepositoryTest {
     public void testArchiveWithDeploySpecs() throws IOException {
         JarScriptArchive jarArchive = new JarScriptArchive.Builder(testArchiveJarFile).build();
         repository.insertArchive(jarArchive, null);
-    }
-
-    @Test(expectedExceptions=UnsupportedOperationException.class)
-    public void testAddDeploySpecs() throws IOException {
-        repository.putDeploySpecs(ModuleId.create("testModuleId"), Collections.<String, Object>emptyMap());
     }
 
     @Test(expectedExceptions=UnsupportedOperationException.class)
