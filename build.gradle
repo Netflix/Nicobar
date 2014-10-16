@@ -66,8 +66,6 @@ task copyTestClassJars(type: Copy) {
     //outputs.upToDateWhen { false }
 }
 
-project(':nicobar-core').processTestResources.dependsOn copyTestClassJars
-
 project(':nicobar-core:nicobar-test-classes').subprojects.each { p ->
 	copyTestClassJars.dependsOn p.jar
 }
