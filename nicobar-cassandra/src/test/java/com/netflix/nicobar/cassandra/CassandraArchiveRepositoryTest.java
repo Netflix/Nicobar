@@ -5,9 +5,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.testng.Assert.fail;
-import static org.testng.AssertJUnit.assertEquals;
-import static org.testng.AssertJUnit.assertTrue;
+import static org.testng.Assert.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +28,7 @@ import java.util.concurrent.FutureTask;
 import org.apache.commons.io.IOUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 

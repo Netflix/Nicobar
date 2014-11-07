@@ -16,23 +16,21 @@ allprojects {
     }
 }
 
-apply from: file('gradle/convention.gradle')
+//apply from: file('gradle/convention.gradle')
 apply from: file('gradle/maven.gradle')
-apply from: file('gradle/check.gradle')
-apply from: file('gradle/license.gradle')
+//apply from: file('gradle/check.gradle')
+//apply from: file('gradle/license.gradle')
 apply from: file('gradle/release.gradle')
 
 subprojects {
     group = "com.netflix.${githubProjectName}" // TEMPLATE: Set to organization of project
     apply plugin: 'java'
-    sourceCompatibility = JavaVersion.VERSION_1_7
-    
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
     test {
         // enable TestNG support (default is JUnit)
         useTestNG()
-        // required for java 7
-        jvmArgs '-XX:-UseSplitVerifier'
-    }
+    }  
     dependencies {
         compile     'org.slf4j:slf4j-api:1.7.0'
         compile     'com.google.code.findbugs:jsr305:2.0.2'
@@ -42,7 +40,7 @@ subprojects {
         compile     'commons-collections:commons-collections:3.2.1'
         compile     'net.sf.jgrapht:jgrapht:0.8.3'
         testCompile 'org.testng:testng:6.1.1'
-        testCompile 'org.mockito:mockito-core:1.8.5'
+        testCompile 'org.mockito:mockito-core:1.10.8'
         testCompile 'org.slf4j:slf4j-simple:1.7.0'
     }
 
@@ -70,3 +68,6 @@ project(':nicobar-core:nicobar-test-classes').subprojects.each { p ->
 	copyTestClassJars.dependsOn p.jar
 }
 
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.12'
+}

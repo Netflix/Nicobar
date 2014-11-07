@@ -367,7 +367,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
         public Map<ModuleId, Long> getArchiveUpdateTimes() throws IOException {
             Iterable<Row<String, String>> rows;
             try {
-                rows = getRows(EnumSet.of(Columns.module_id, Columns.last_update));
+                rows = getRows((EnumSet<?>)EnumSet.of(Columns.module_id, Columns.last_update));
             } catch (Exception e) {
                 throw new IOException(e);
             }
@@ -409,7 +409,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
             List<ArchiveSummary> summaries = new LinkedList<ArchiveSummary>();
             Iterable<Row<String, String>> rows;
             try {
-                    rows = getRows(EnumSet.of(Columns.module_id, Columns.last_update, Columns.module_spec));
+                    rows = getRows((EnumSet<?>)EnumSet.of(Columns.module_id, Columns.last_update, Columns.module_spec));
             } catch (Exception e) {
                 throw new IOException(e);
             }

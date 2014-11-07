@@ -1,12 +1,4 @@
 project(':nicobar-core') {
-    configurations.all { 
-        resolutionStrategy.eachDependency {  DependencyResolveDetails details ->
-            if (details.requested.group == 'com.netflix.rxjava') {
-                details.useVersion '0.16.0'
-            }
-        }
-    }
-
     dependencies {
         compile 'com.google.guava:guava:15.0'
         compile 'com.google.code.gson:gson:2.2.4'
