@@ -8,6 +8,8 @@ buildscript {
     apply from: file('gradle/buildscript.gradle'), to: buildscript 
 }
 
+status = 'release'
+
 allprojects {
     apply plugin: 'eclipse'
     apply plugin: 'idea'
@@ -16,7 +18,7 @@ allprojects {
     }
 }
 
-//apply from: file('gradle/convention.gradle')
+apply from: file('gradle/convention.gradle')
 apply from: file('gradle/maven.gradle')
 //apply from: file('gradle/check.gradle')
 //apply from: file('gradle/license.gradle')
