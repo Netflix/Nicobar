@@ -6,6 +6,7 @@ buildscript {
         mavenCentral() // maven { url 'http://jcenter.bintray.com' }
     }
     apply from: file('gradle/buildscript.gradle'), to: buildscript 
+    status = 'release'
 }
 
 allprojects {
