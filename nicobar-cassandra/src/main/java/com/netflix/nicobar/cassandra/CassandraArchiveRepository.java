@@ -62,7 +62,7 @@ import com.netflix.nicobar.core.persistence.RepositoryView;
  * <p>
  * The query algorithm attempts to divide up read operations such that they won't overwhelm Cassandra
  * if many instances are using this implementation to poll for updates.
- * Upon insertion, all archives are assigned a shard number calculated as (moduleId.hashCode() % <number of shard>).
+ * Upon insertion, all archives are assigned a shard number calculated as {@code (moduleId.hashCode() % shardNum)}.
  * The shard number is subsequently inserted into a column for which a secondary index has been defined.
  * RepositoryView poller methods will first search each shard for any rows with an update timestamp greater than
  * the last poll time, and if any are found, the contents of those archives are loaded in small batches.
@@ -260,7 +260,7 @@ public class CassandraArchiveRepository implements ArchiveRepository {
     /**
      * Delete an archive by ID
      * @param moduleId module id to delete
-     * @throws ConnectionException
+     * @throws IOException
      */
     @Override
     public void deleteArchive(ModuleId moduleId) throws IOException {
@@ -292,7 +292,9 @@ public class CassandraArchiveRepository implements ArchiveRepository {
 
     /**
      * Generate the CQL to select specific columns by shard number.
-     *  SELECT <columns>... FROM script_repo WHERE shard_num = ?
+     * <pre>
+     *      SELECT ${columns}... FROM script_repo WHERE shard_num = ?
+     * </pre>
      */
     protected String generateSelectByShardCql(EnumSet<?> columns, Integer shardNum) {
         StringBuilder sb = new StringBuilder()

@@ -85,7 +85,7 @@ public interface ArchiveRepository {
     /**
      * Delete an archive by ID
      * @param moduleId module id to delete
-     * @throws ConnectionException
+     * @throws IOException
      */
     public void deleteArchive(ModuleId moduleId) throws IOException;
 }

@@ -81,8 +81,8 @@ public final class ModuleId {
 
     /**
      * Get the string representation of this module identifier.
-     * If version != DEFAULT_VERSION, this is constructed as "<name>.<version>"
-     * Else, this is constructed as "<name>".
+     * If version != DEFAULT_VERSION, this is constructed as "{@code name.version}"
+     * Else, this is constructed as "{@code name}".
      *
      * @return the string representation
      */
