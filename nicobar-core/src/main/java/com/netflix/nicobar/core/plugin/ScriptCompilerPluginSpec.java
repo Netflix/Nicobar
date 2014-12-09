@@ -45,6 +45,7 @@ public class ScriptCompilerPluginSpec {
         private Set<Path> runtimeResources = new LinkedHashSet<Path>();
         private String providerClassName;
         private Map<String, String> pluginMetadata = new LinkedHashMap<String, String>();
+        private Map<String, Object> compilerParams = new LinkedHashMap<String, Object>();
         private final Set<ModuleId> moduleDependencies = new LinkedHashSet<ModuleId>();
 
         /**
@@ -85,6 +86,28 @@ public class ScriptCompilerPluginSpec {
             }
             return this;
         }
+        /** 
+         * Adds one compiler parameter. Compiler parameters can be used to pass any random object to a compiler. 
+         * Plugin implementation should be aware of how to process any particular parameter, otherwise it will be ignored. 
+         */
+        public Builder addCompilerParams(String name, Object value) {
+            if (name != null && value != null) {
+                compilerParams.put(name, value);
+            }
+            return this;
+        }
+
+        /** 
+         * Appends all compiler parameters. Compiler parameters can be used to pass any random object to a compiler. 
+         * Plugin implementation should be aware of how to process any particular parameter, otherwise it will be ignored.
+         */
+        public Builder addCompilerParams(Map<String, Object> params) {
+            if (params != null) {
+                compilerParams.putAll(params);
+            }
+            return this;
+        }
+
         /** Add Module dependency. */
         public Builder addModuleDependency(String dependencyName) {
             if (dependencyName != null) {
@@ -107,13 +130,15 @@ public class ScriptCompilerPluginSpec {
                     moduleDependencies,
                     runtimeResources,
                     providerClassName,
-                    pluginMetadata);
+                    pluginMetadata,
+                    compilerParams);
         }
     }
     private final String pluginId;
     private final Set<Path> runtimeResources;
     private final String pluginClassName;
     private final Map<String, String> pluginMetadata;
+    private final Map<String, Object> compilerParameters;
     private final Set<ModuleId> moduleDependencies;
 
     /**
@@ -122,12 +147,13 @@ public class ScriptCompilerPluginSpec {
      *        includes the language runtime as well as the jar/path to the provider class project.
      * @param pluginClassName fully qualified classname of the implementation of the {@link ScriptCompilerPlugin} class
      */
-    protected ScriptCompilerPluginSpec(String pluginId, Set<ModuleId> moduleDependencies, Set<Path> runtimeResources, String pluginClassName, Map<String, String> pluginMetadata) {
+    protected ScriptCompilerPluginSpec(String pluginId, Set<ModuleId> moduleDependencies, Set<Path> runtimeResources, String pluginClassName, Map<String, String> pluginMetadata, Map<String, Object> compilerParams) {
         this.pluginId =  Objects.requireNonNull(pluginId, "pluginName");
         this.moduleDependencies =  Collections.unmodifiableSet(Objects.requireNonNull(moduleDependencies, "moduleDependencies"));
         this.runtimeResources =  Collections.unmodifiableSet(Objects.requireNonNull(runtimeResources, "runtimeResources"));
         this.pluginClassName = pluginClassName;
         this.pluginMetadata = Collections.unmodifiableMap(Objects.requireNonNull(pluginMetadata, "pluginMetadata"));
+        this.compilerParameters = compilerParams;
     }
 
     public String getPluginId() {
@@ -153,6 +179,13 @@ public class ScriptCompilerPluginSpec {
      */
     public Map<String, String> getPluginMetadata() {
         return pluginMetadata;
+    }
+
+    /**
+     * @return application specific compiler params
+     */
+    public Map<String, Object> getCompilerParams() {
+        return compilerParameters;
     }
 
     /**
