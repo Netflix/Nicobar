@@ -19,6 +19,7 @@ package com.netflix.nicobar.groovy2.compile;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.assertNotNull;
 
 import java.lang.reflect.Method;
@@ -29,6 +30,13 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.codehaus.groovy.ast.ClassNode;
+import org.codehaus.groovy.classgen.GeneratorContext;
+import org.codehaus.groovy.control.CompilationFailedException;
+import org.codehaus.groovy.control.CompilePhase;
+import org.codehaus.groovy.control.CompilerConfiguration;
+import org.codehaus.groovy.control.SourceUnit;
+import org.codehaus.groovy.control.customizers.CompilationCustomizer;
 import org.codehaus.groovy.tools.GroovyClass;
 import org.testng.annotations.Test;
 
@@ -61,6 +69,40 @@ public class Groovy2CompilerHelperTest {
             .addScriptArchive(scriptArchive)
             .compile();
 
+        assertFalse(CollectionUtils.isEmpty(compiledClasses));
+
+        TestByteLoadingClassLoader testClassLoader = new TestByteLoadingClassLoader(getClass().getClassLoader(), compiledClasses);
+        Class<?> loadedClass = testClassLoader.loadClass(TestScript.HELLO_WORLD.getClassName());
+        assertNotNull(loadedClass);
+        Object instance = loadedClass.newInstance();
+        Method method = loadedClass.getMethod("getMessage");
+        String message = (String)method.invoke(instance);
+        assertEquals(message, "Hello, World!");
+    }
+
+    /**
+     * Compile with custom config
+     * @throws Exception
+     */
+    @Test
+    public void testCompileWithCompilerCustomizer() throws Exception {
+        Path scriptRootPath = GroovyTestResourceUtil.findRootPathForScript(TestScript.HELLO_WORLD);
+        PathScriptArchive scriptArchive = new PathScriptArchive.Builder(scriptRootPath)
+            .setRecurseRoot(false)
+            .addFile(TestScript.HELLO_WORLD.getScriptPath())
+            .build();
+
+        TestCompilationCustomizer customizer = new TestCompilationCustomizer();
+
+        CompilerConfiguration compilerConfig = new CompilerConfiguration();
+        compilerConfig.addCompilationCustomizers(customizer);
+
+        Set<GroovyClass> compiledClasses = new Groovy2CompilerHelper(Files.createTempDirectory("Groovy2CompilerHelperTest"))
+            .addScriptArchive(scriptArchive)
+            .withConfiguration(compilerConfig)
+            .compile();
+
+        assertTrue(customizer.isExecuted(), "customizer has not been executed");
         assertFalse(CollectionUtils.isEmpty(compiledClasses));
 
         TestByteLoadingClassLoader testClassLoader = new TestByteLoadingClassLoader(getClass().getClassLoader(), compiledClasses);
@@ -120,5 +162,26 @@ public class Groovy2CompilerHelperTest {
             }
             return defineClass(name, bytes, 0, bytes.length);
         }
+    }
+
+    /**
+     * Test compilation customizer
+     */
+    private static class TestCompilationCustomizer extends CompilationCustomizer {
+        private boolean executed = false;
+
+        public TestCompilationCustomizer() {
+            super(CompilePhase.SEMANTIC_ANALYSIS);
+        }
+
+        public boolean isExecuted() {
+            return this.executed;
+        }
+
+        @Override
+        public void call(SourceUnit source, GeneratorContext context,
+                ClassNode classNode) throws CompilationFailedException {
+            this.executed = true;
+        };
     }
 }

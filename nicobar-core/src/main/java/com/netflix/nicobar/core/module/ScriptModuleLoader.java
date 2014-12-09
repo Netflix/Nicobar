@@ -409,7 +409,7 @@ public class ScriptModuleLoader {
             try {
                 compilerProviderClass = pluginClassLoader.loadClass(providerClassName);
                 ScriptCompilerPlugin pluginBootstrap = (ScriptCompilerPlugin) compilerProviderClass.newInstance();
-                Set<? extends ScriptArchiveCompiler> pluginCompilers = pluginBootstrap.getCompilers();
+                Set<? extends ScriptArchiveCompiler> pluginCompilers = pluginBootstrap.getCompilers(pluginSpec.getCompilerParams());
                 compilers.addAll(pluginCompilers);
             } catch (Exception e) {
                 throw new ModuleLoadException(e);
