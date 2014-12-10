@@ -27,8 +27,8 @@ apply from: file('gradle/release.gradle')
 subprojects {
     group = "com.netflix.${githubProjectName}" // TEMPLATE: Set to organization of project
     apply plugin: 'java'
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_1_7
+    targetCompatibility = JavaVersion.VERSION_1_7
     test {
         // enable TestNG support (default is JUnit)
         useTestNG()
