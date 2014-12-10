@@ -457,7 +457,7 @@ public class ScriptModuleLoaderTest {
     /** trivial compiler plugin implementation which returns the static mock */
     public static class MockScriptCompilerPlugin implements ScriptCompilerPlugin {
         @Override
-        public Set<? extends ScriptArchiveCompiler> getCompilers() {
+        public Set<? extends ScriptArchiveCompiler> getCompilers(Map<String, Object> compilerParams) {
             return Collections.singleton(MOCK_COMPILER);
         }
     }

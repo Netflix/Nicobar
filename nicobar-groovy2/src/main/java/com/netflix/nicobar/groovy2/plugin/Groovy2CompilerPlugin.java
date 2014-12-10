@@ -18,6 +18,7 @@
 package com.netflix.nicobar.groovy2.plugin;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
@@ -38,7 +39,7 @@ public class Groovy2CompilerPlugin implements ScriptCompilerPlugin {
     }
 
     @Override
-    public Set<? extends ScriptArchiveCompiler> getCompilers() {
-        return Collections.singleton(new Groovy2Compiler());
+    public Set<? extends ScriptArchiveCompiler> getCompilers(Map<String, Object> compilerParams) {
+        return Collections.singleton(new Groovy2Compiler(compilerParams));
     }
 }

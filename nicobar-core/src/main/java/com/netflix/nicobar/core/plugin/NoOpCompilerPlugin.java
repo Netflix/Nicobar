@@ -1,6 +1,7 @@
 package com.netflix.nicobar.core.plugin;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 import com.netflix.nicobar.core.internal.compile.NoOpCompiler;
@@ -17,7 +18,7 @@ public class NoOpCompilerPlugin implements ScriptCompilerPlugin {
     public static final String PLUGIN_ID = "nolang";
 
     @Override
-    public Set<? extends ScriptArchiveCompiler> getCompilers() {
+    public Set<? extends ScriptArchiveCompiler> getCompilers(Map<String, Object> compilerParams) {
         return Collections.singleton(new NoOpCompiler());
     }
 }
