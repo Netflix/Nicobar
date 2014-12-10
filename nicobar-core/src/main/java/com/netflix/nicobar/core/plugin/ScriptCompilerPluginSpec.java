@@ -45,7 +45,7 @@ public class ScriptCompilerPluginSpec {
         private Set<Path> runtimeResources = new LinkedHashSet<Path>();
         private String providerClassName;
         private Map<String, String> pluginMetadata = new LinkedHashMap<String, String>();
-        private Map<String, Object> compilerParams = new LinkedHashMap<String, Object>();
+        private Map<String, Object> pluginParams = new LinkedHashMap<String, Object>();
         private final Set<ModuleId> moduleDependencies = new LinkedHashSet<ModuleId>();
 
         /**
@@ -86,18 +86,24 @@ public class ScriptCompilerPluginSpec {
             }
             return this;
         }
-        /** add params */
+        /** 
+         * Adds one plugin parameter. Compiler parameters can be used to pass any random object to a plugin/compiler. 
+         * Plugin implementation should be aware of how to process any particular parameter, otherwise it will be ignored. 
+         */
         public Builder addCompilerParams(String name, Object value) {
             if (name != null && value != null) {
-                compilerParams.put(name, value);
+                pluginParams.put(name, value);
             }
             return this;
         }
 
-        /** Append all params */
+        /** 
+         * Appends all plugin parameters. Compiler parameters can be used to pass any random object to a plugin/compiler. 
+         * Plugin implementation should be aware of how to process any particular parameter, otherwise it will be ignored.
+         */
         public Builder addCompilerParams(Map<String, Object> params) {
             if (params != null) {
-                compilerParams.putAll(params);
+                pluginParams.putAll(params);
             }
             return this;
         }
@@ -125,14 +131,14 @@ public class ScriptCompilerPluginSpec {
                     runtimeResources,
                     providerClassName,
                     pluginMetadata,
-                    compilerParams);
+                    pluginParams);
         }
     }
     private final String pluginId;
     private final Set<Path> runtimeResources;
     private final String pluginClassName;
     private final Map<String, String> pluginMetadata;
-    private final Map<String, Object> compilerParams;
+    private final Map<String, Object> pluginParameters;
     private final Set<ModuleId> moduleDependencies;
 
     /**
@@ -141,13 +147,13 @@ public class ScriptCompilerPluginSpec {
      *        includes the language runtime as well as the jar/path to the provider class project.
      * @param pluginClassName fully qualified classname of the implementation of the {@link ScriptCompilerPlugin} class
      */
-    protected ScriptCompilerPluginSpec(String pluginId, Set<ModuleId> moduleDependencies, Set<Path> runtimeResources, String pluginClassName, Map<String, String> pluginMetadata, Map<String, Object> compilerParams) {
+    protected ScriptCompilerPluginSpec(String pluginId, Set<ModuleId> moduleDependencies, Set<Path> runtimeResources, String pluginClassName, Map<String, String> pluginMetadata, Map<String, Object> pluginParams) {
         this.pluginId =  Objects.requireNonNull(pluginId, "pluginName");
         this.moduleDependencies =  Collections.unmodifiableSet(Objects.requireNonNull(moduleDependencies, "moduleDependencies"));
         this.runtimeResources =  Collections.unmodifiableSet(Objects.requireNonNull(runtimeResources, "runtimeResources"));
         this.pluginClassName = pluginClassName;
         this.pluginMetadata = Collections.unmodifiableMap(Objects.requireNonNull(pluginMetadata, "pluginMetadata"));
-        this.compilerParams = compilerParams;
+        this.pluginParameters = pluginParams;
     }
 
     public String getPluginId() {
@@ -178,8 +184,8 @@ public class ScriptCompilerPluginSpec {
     /**
      * @return application specific compiler params
      */
-    public Map<String, Object> getCompilerParams() {
-        return compilerParams;
+    public Map<String, Object> getPluginParams() {
+        return pluginParameters;
     }
 
     /**

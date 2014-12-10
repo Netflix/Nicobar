@@ -18,7 +18,7 @@ public class NoOpCompilerPlugin implements ScriptCompilerPlugin {
     public static final String PLUGIN_ID = "nolang";
 
     @Override
-    public Set<? extends ScriptArchiveCompiler> getCompilers(Map<String, Object> compilerParams) {
+    public Set<? extends ScriptArchiveCompiler> getCompilers(Map<String, Object> pluginParams) {
         return Collections.singleton(new NoOpCompiler());
     }
 }

@@ -17,7 +17,7 @@ public class BytecodeLoadingPlugin implements ScriptCompilerPlugin {
     public static final String PLUGIN_ID = "bytecode";
 
     @Override
-    public Set<? extends ScriptArchiveCompiler> getCompilers(Map<String, Object> compilerParams) {
+    public Set<? extends ScriptArchiveCompiler> getCompilers(Map<String, Object> pluginParams) {
         return Collections.singleton(new BytecodeLoader());
     }
 }

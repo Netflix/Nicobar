@@ -30,5 +30,5 @@ import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
  */
 public interface ScriptCompilerPlugin {
 
-    public Set<? extends ScriptArchiveCompiler> getCompilers(Map<String, Object> compilerParams);
+    public Set<? extends ScriptArchiveCompiler> getCompilers(Map<String, Object> pluginsParams);
 }
