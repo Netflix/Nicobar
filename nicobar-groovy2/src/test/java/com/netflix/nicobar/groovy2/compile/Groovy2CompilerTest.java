@@ -25,7 +25,7 @@ public class Groovy2CompilerTest {
         List<CompilationCustomizer> customizers;
         Map<String, Object> compilerParams;
 
-        Field f = Groovy2Compiler.class.getDeclaredField("compilerCustomizers");
+        Field f = Groovy2Compiler.class.getDeclaredField("customizerClassNames");
         f.setAccessible(true);
         
         // empty parameters map
@@ -43,7 +43,7 @@ public class Groovy2CompilerTest {
         
         // list with valid customizer
         compilerParams = new HashMap<String, Object>();
-        compilerParams.put(Groovy2Compiler.GROOVY2_COMPILER_PARAMS_CUSTOMIZERS, Arrays.asList(new CompilationCustomizer[] {new ImportCustomizer()}));
+        compilerParams.put(Groovy2Compiler.GROOVY2_COMPILER_PARAMS_CUSTOMIZERS, Arrays.asList(new String[] {"org.codehaus.groovy.control.customizers.ImportCustomizer"}));
         
         compiler = new Groovy2Compiler(compilerParams);
         customizers = (List)f.get(compiler);
@@ -51,12 +51,15 @@ public class Groovy2CompilerTest {
 
         // list with invalid objects
         compilerParams = new HashMap<String, Object>();
-        compilerParams.put(Groovy2Compiler.GROOVY2_COMPILER_PARAMS_CUSTOMIZERS, Arrays.asList(new Object[] {new ImportCustomizer(), new ImportCustomizer(), new HashMap<String, String>(), new String(""), null}));
+        compilerParams.put(Groovy2Compiler.GROOVY2_COMPILER_PARAMS_CUSTOMIZERS, Arrays.asList(new Object[] {"org.codehaus.groovy.control.customizers.ImportCustomizer", "org.codehaus.groovy.control.customizers.ImportCustomizer", new HashMap<String, Object>(), null}));
         
         compiler = new Groovy2Compiler(compilerParams);
         customizers = (List)f.get(compiler);
         assertTrue(customizers.size() == 2, "two valid objects expected");
-        
-        
+    }
+    
+    @Test
+    public void testCompile() {
+        // TODO: add compile call tests
     }
 }
