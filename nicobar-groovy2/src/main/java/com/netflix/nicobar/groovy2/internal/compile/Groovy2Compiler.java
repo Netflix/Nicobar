@@ -41,26 +41,41 @@ import com.netflix.nicobar.core.module.jboss.JBossModuleClassLoader;
  */
 public class Groovy2Compiler implements ScriptArchiveCompiler {
     public final static String GROOVY2_COMPILER_ID = "groovy2";
-    public final static String GROOVY2_COMPILER_PARAMS_CUSTOMIZERS = "compilerCustomizers";
-    
-    private List<CompilationCustomizer> compilerCustomizers = new LinkedList<CompilationCustomizer>();
-    
+    public final static String GROOVY2_COMPILER_PARAMS_CUSTOMIZERS = "customizerClassNames";
+
+    private List<String> customizerClassNames = new LinkedList<String>();
+
     public Groovy2Compiler(Map<String, Object> compilerParams) {
         this.processCompilerParams(compilerParams);
     }
 
     private void processCompilerParams(Map<String, Object> compilerParams) {
+        
+        // filtering compilation customizers class names
         if (compilerParams.containsKey(GROOVY2_COMPILER_PARAMS_CUSTOMIZERS)) {
             Object customizers = compilerParams.get(GROOVY2_COMPILER_PARAMS_CUSTOMIZERS);
 
             if (customizers instanceof List) {
-                for (Object customizer: (List<?>) customizers) {
-                    if (customizer instanceof CompilationCustomizer) {
-                        this.compilerCustomizers.add((CompilationCustomizer) customizer);
+                for (Object customizerClassName: (List<?>) customizers) {
+                    if (customizerClassName instanceof String) {
+                        this.customizerClassNames.add((String)customizerClassName);
                     }
                 }
             }
         }
+    }
+
+    private CompilationCustomizer getCustomizerInstanceFromString(String className, JBossModuleClassLoader moduleClassLoader) {
+        CompilationCustomizer instance = null;
+
+        try {
+            Class<?> klass = moduleClassLoader.loadClass(className);
+            instance = (CompilationCustomizer)klass.newInstance();
+        } 
+        catch (InstantiationException | IllegalAccessException | ClassNotFoundException | ClassCastException e) {
+            e.printStackTrace();
+        }
+        return instance;
     }
 
     @Override
@@ -71,9 +86,19 @@ public class Groovy2Compiler implements ScriptArchiveCompiler {
     @Override
     public Set<Class<?>> compile(ScriptArchive archive, JBossModuleClassLoader moduleClassLoader, Path compilationRootDir)
         throws ScriptCompilationException, IOException {
-        CompilerConfiguration config = new CompilerConfiguration();
-        config.addCompilationCustomizers(this.compilerCustomizers.toArray(new CompilationCustomizer[0]));
         
+        List<CompilationCustomizer> customizers = new LinkedList<CompilationCustomizer>();
+
+        for (String klassName: this.customizerClassNames) {
+            CompilationCustomizer instance = this.getCustomizerInstanceFromString(klassName, moduleClassLoader);
+            if (instance != null ) {
+                customizers.add(instance);
+            }
+        }
+
+        CompilerConfiguration config = new CompilerConfiguration(CompilerConfiguration.DEFAULT);
+        config.addCompilationCustomizers(customizers.toArray(new CompilationCustomizer[0]));
+
          new Groovy2CompilerHelper(compilationRootDir)
             .addScriptArchive(archive)
             .withParentClassloader(moduleClassLoader)
