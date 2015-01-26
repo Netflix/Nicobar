@@ -54,6 +54,17 @@ subprojects {
     }
 }
 
+// Aggregate javadocs from subprojects, except nicobar-test-classes
+task javadoc(type: Javadoc) {
+    source subprojects.findAll({ project ->
+        // Filter out nicobar-test-classes and subprojects
+        project.name != 'nicobar-test-classes' && project.parent?.name != 'nicobar-test-classes'
+    }).collect { project -> project.sourceSets.main.allJava }
+    destinationDir = new File(buildDir, 'javadoc')
+    // Might need a classpath
+    classpath = files(subprojects.collect { project -> project.sourceSets.main.compileClasspath })
+}
+
 task copyTestClassJars(type: Copy) {
     project(':nicobar-core:nicobar-test-classes').subprojects.each { p ->
         from (p.jar.archivePath)
