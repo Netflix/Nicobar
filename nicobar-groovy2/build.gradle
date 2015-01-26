@@ -1,6 +1,0 @@
-project(':nicobar-groovy2') {
-    dependencies {
-        compile project(':nicobar-core')
-        compile 'org.codehaus.groovy:groovy-all:2.3.6'
-    }
-}

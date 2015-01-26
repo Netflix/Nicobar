@@ -1,7 +1,0 @@
-project(':nicobar-example') {
-    dependencies {
-        compile project(':nicobar-core')
-        compile project(':nicobar-groovy2')
-        compile 'org.slf4j:slf4j-simple:1.7.0'
-    }
-}
