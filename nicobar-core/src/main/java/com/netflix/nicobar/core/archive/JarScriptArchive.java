@@ -25,9 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.jar.JarEntry;
@@ -67,7 +65,6 @@ public class JarScriptArchive implements ScriptArchive {
         private String specFileName;
         private ScriptModuleSpecSerializer specSerializer;
         private long createTime;
-        private Map<String, Object> deploySpecs = new HashMap<String, Object>();
 
         /**
          * Start a builder with required parameters.
@@ -94,20 +91,6 @@ public class JarScriptArchive implements ScriptArchive {
         /** Set the creation time */
         public Builder setCreateTime(long createTime) {
             this.createTime = createTime;
-            return this;
-        }
-        /** Add to the deploy specs */
-        public Builder addDeploySpecs(Map<String, String> specs) {
-            if (specs != null) {
-                deploySpecs.putAll(specs);
-            }
-            return this;
-        }
-        /** Append the given deploy spec. */
-        public Builder addDeploySpec(String property, String value) {
-            if (property != null && value != null) {
-                deploySpecs.put(property, value);
-            }
             return this;
         }
         /** Build the {@link JarScriptArchive}. */
@@ -152,24 +135,22 @@ public class JarScriptArchive implements ScriptArchive {
             if (buildCreateTime <= 0) {
                 buildCreateTime = Files.getLastModifiedTime(jarPath).toMillis();
             }
-            return new JarScriptArchive(buildModuleSpec, deploySpecs, jarPath, moduleSpecEntry, buildCreateTime);
+            return new JarScriptArchive(buildModuleSpec, jarPath, moduleSpecEntry, buildCreateTime);
         }
     }
 
-    private final Map<String, Object> deploySpecs;
     private final Set<String> entryNames;
     private final URL rootUrl;
     private final long createTime;
     private ScriptModuleSpec moduleSpec;
-    
+
     protected JarScriptArchive(ScriptModuleSpec moduleSpec, Path jarPath, long createTime) throws IOException {
-        this(moduleSpec, Collections.<String, Object>emptyMap(), jarPath, null, createTime);
+        this(moduleSpec, jarPath, null, createTime);
     }
 
-    protected JarScriptArchive(ScriptModuleSpec moduleSpec, Map<String, Object> deploySpecs, Path jarPath, String moduleSpecEntry, long createTime) throws IOException {
+    protected JarScriptArchive(ScriptModuleSpec moduleSpec, Path jarPath, String moduleSpecEntry, long createTime) throws IOException {
         this.createTime = createTime;
         this.moduleSpec = Objects.requireNonNull(moduleSpec, "moduleSpec");
-        this.deploySpecs = Objects.requireNonNull(deploySpecs, "deploySpecs");
         Objects.requireNonNull(jarPath, "jarFile");
         if (!jarPath.isAbsolute()) throw new IllegalArgumentException("jarPath must be absolute.");
 
@@ -203,15 +184,10 @@ public class JarScriptArchive implements ScriptArchive {
     public ScriptModuleSpec getModuleSpec() {
         return moduleSpec;
     }
-    
+
     @Override
     public void setModuleSpec(ScriptModuleSpec spec) {
         this.moduleSpec = spec;
-    }
-
-    @Override
-    public Map<String, Object> getDeploySpecs() {
-        return deploySpecs;
     }
 
     /**

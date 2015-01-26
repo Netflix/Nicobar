@@ -27,9 +27,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -58,7 +56,6 @@ public class PathScriptArchive implements ScriptArchive {
         private final Path rootDirPath;
         private final Set<Path> addedFiles = new LinkedHashSet<Path>();
         private ScriptModuleSpec moduleSpec;
-        private Map<String, Object> deploySpecs = new HashMap<String, Object>();
         boolean recurseRoot = true;
         private ScriptModuleSpecSerializer specSerializer = DEFAULT_SPEC_SERIALIZER;
         private long createTime;
@@ -101,20 +98,6 @@ public class PathScriptArchive implements ScriptArchive {
             this.createTime = createTime;
             return this;
         }
-        /** Add to the deploy specs */
-        public Builder addDeploySpecs(Map<String, String> specs) {
-            if (specs != null) {
-                deploySpecs.putAll(specs);
-            }
-            return this;
-        }
-        /** Append the given deploy spec. */
-        public Builder addDeploySpec(String property, String value) {
-            if (property != null && value != null) {
-                deploySpecs.put(property, value);
-            }
-            return this;
-        }
         /** Build the {@link PathScriptArchive}. */
         public PathScriptArchive build() throws IOException {
             ScriptModuleSpec buildModuleSpec = moduleSpec;
@@ -137,6 +120,7 @@ public class PathScriptArchive implements ScriptArchive {
             final LinkedHashSet<String> buildEntries = new LinkedHashSet<String>();
             if (recurseRoot) {
                 Files.walkFileTree(this.rootDirPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
+                    @Override
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                         Path relativePath = rootDirPath.relativize(file);
                         buildEntries.add(relativePath.toString());
@@ -154,7 +138,7 @@ public class PathScriptArchive implements ScriptArchive {
             if (buildCreateTime <= 0) {
                 buildCreateTime = Files.getLastModifiedTime(rootDirPath).toMillis();
             }
-            return new PathScriptArchive(buildModuleSpec, deploySpecs, rootDirPath, buildEntries, buildCreateTime);
+            return new PathScriptArchive(buildModuleSpec, rootDirPath, buildEntries, buildCreateTime);
         }
     }
 
@@ -162,12 +146,10 @@ public class PathScriptArchive implements ScriptArchive {
     private final Path rootDirPath;
     private final URL rootUrl;
     private final long createTime;
-    private final Map<String, Object> deploySpecs;
     private ScriptModuleSpec moduleSpec;
 
-    protected PathScriptArchive(ScriptModuleSpec moduleSpec, Map<String, Object> deploySpecs, Path rootDirPath, Set<String> entries, long createTime) throws IOException {
+    protected PathScriptArchive(ScriptModuleSpec moduleSpec, Path rootDirPath, Set<String> entries, long createTime) throws IOException {
         this.moduleSpec = Objects.requireNonNull(moduleSpec, "moduleSpec");
-        this.deploySpecs = Objects.requireNonNull(deploySpecs, "deploySpecs");
         this.rootDirPath = Objects.requireNonNull(rootDirPath, "rootDirPath");
         if (!this.rootDirPath.isAbsolute()) throw new IllegalArgumentException("rootPath must be absolute.");
         this.entryNames = Collections.unmodifiableSet(Objects.requireNonNull(entries, "entries"));
@@ -183,11 +165,6 @@ public class PathScriptArchive implements ScriptArchive {
     @Override
     public void setModuleSpec(ScriptModuleSpec spec) {
         this.moduleSpec = spec;
-    }
-    
-    @Override
-    public Map<String, Object> getDeploySpecs() {
-        return deploySpecs;
     }
 
     @Override

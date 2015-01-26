@@ -72,7 +72,7 @@ public class ScriptModuleLoaderTest {
     public void resetMocks() {
         reset(MOCK_COMPILER);
     }
-    
+
 
     @Test
     public void testLoadArchive() throws Exception {
@@ -402,15 +402,10 @@ public class ScriptModuleLoaderTest {
         public ScriptModuleSpec getModuleSpec() {
             return scriptModuleSpec;
         }
-        
+
         @Override
         public void setModuleSpec(ScriptModuleSpec spec) {
             this.scriptModuleSpec = spec;
-        }
-        
-        @Override
-        public Map<String, Object> getDeploySpecs() {
-            return Collections.<String, Object>emptyMap();
         }
 
         @Override

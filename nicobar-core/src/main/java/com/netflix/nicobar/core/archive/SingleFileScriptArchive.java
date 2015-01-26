@@ -22,8 +22,6 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -49,7 +47,6 @@ public class SingleFileScriptArchive implements ScriptArchive {
         private final Path filePath;
         private ScriptModuleSpec moduleSpec;
         private long createTime;
-        private Map<String, Object> deploySpecs = new HashMap<String, Object>();
 
         /**
          * Start a builder with required parameters.
@@ -70,20 +67,6 @@ public class SingleFileScriptArchive implements ScriptArchive {
             this.createTime = createTime;
             return this;
         }
-        /** Add to the deploy specs */
-        public Builder addDeploySpecs(Map<String, String> specs) {
-            if (specs != null) {
-                deploySpecs.putAll(specs);
-            }
-            return this;
-        }
-        /** Append the given deploy spec. */
-        public Builder addDeploySpec(String property, String value) {
-            if (property != null && value != null) {
-                deploySpecs.put(property, value);
-            }
-            return this;
-        }
         /** Build the {@link PathScriptArchive}. */
         public SingleFileScriptArchive build() throws IOException {
             long buildCreateTime = createTime;
@@ -99,7 +82,7 @@ public class SingleFileScriptArchive implements ScriptArchive {
 
             Path rootDir = filePath.normalize().getParent();
             String fileName = rootDir.relativize(filePath).toString();
-            return new SingleFileScriptArchive(buildModuleSpec, deploySpecs, rootDir, fileName, buildCreateTime);
+            return new SingleFileScriptArchive(buildModuleSpec, rootDir, fileName, buildCreateTime);
         }
     }
 
@@ -107,12 +90,10 @@ public class SingleFileScriptArchive implements ScriptArchive {
     private final Path rootDirPath;
     private final URL rootUrl;
     private final long createTime;
-    private final Map<String, Object> deploySpecs;
     private ScriptModuleSpec moduleSpec;
 
-    protected SingleFileScriptArchive(ScriptModuleSpec moduleSpec,  Map<String, Object> deploySpecs, Path rootDirPath, String fileName, long createTime) throws IOException {
+    protected SingleFileScriptArchive(ScriptModuleSpec moduleSpec, Path rootDirPath, String fileName, long createTime) throws IOException {
         this.moduleSpec = Objects.requireNonNull(moduleSpec, "moduleSpec");
-        this.deploySpecs = Objects.requireNonNull(deploySpecs, "deploySpecs");
         this.rootDirPath = Objects.requireNonNull(rootDirPath, "rootDirPath");
         if (!this.rootDirPath.isAbsolute()) throw new IllegalArgumentException("rootPath must be absolute.");
         this.entryNames = Collections.singleton(Objects.requireNonNull(fileName, "fileName"));
@@ -128,11 +109,6 @@ public class SingleFileScriptArchive implements ScriptArchive {
     @Override
     public void setModuleSpec(ScriptModuleSpec spec) {
         this.moduleSpec = spec;
-    }
-    
-    @Override
-    public Map<String, Object> getDeploySpecs() {
-        return deploySpecs;
     }
 
     @Override

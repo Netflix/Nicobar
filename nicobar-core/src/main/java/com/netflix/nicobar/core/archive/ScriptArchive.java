@@ -20,7 +20,6 @@ package com.netflix.nicobar.core.archive;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -42,20 +41,11 @@ public interface ScriptArchive {
     public ScriptModuleSpec getModuleSpec();
 
     /**
-     * Set the module spec for this archive. 
+     * Set the module spec for this archive.
      * This will override an already set module spec.
      * @param spec the module spec to set to.
      */
     public void setModuleSpec(ScriptModuleSpec spec);
-
-    /**
-     * Deployment specs for an archive, are assumed to be created and managed
-     * by the application code using Nicobar. These may determine how an archive
-     * is loaded or executed.
-     *
-     * @return the deployment specs for this archive
-     */
-    public Map<String, Object> getDeploySpecs();
 
     /**
      * @return {@link URL}s representing the contents of this archive. should be
