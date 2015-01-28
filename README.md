@@ -32,8 +32,7 @@ published archives from repository.
 
 ## Hello Nicobar!
 
-Here is how you initialize your the Nicobar script module loader, and tie it to updates from a
-poller which polls a repository of script archives stored as jars.
+Here is how you initialize your the Nicobar script module loader to support Groovy scripts.
 
 ```java
 public void initializeNicobar() throws Exception {
@@ -45,26 +44,31 @@ public void initializeNicobar() throws Exception {
             .withPluginClassName(GROOVY2_COMPILER_PLUGIN_CLASS)
             .build())
         .build();
+}
+```
 
+You will typically have ArchiveRepository containing Nicobar scripts. The example below initializes
+a repository that is laid out as directories at some file system path. Nicobar provides a repository
+poller which can look for updates inside a repository, and load updated modules into the module
+loader. 
+
+```java
     // create an archive repository and wrap a poller around it to feed updates to the module loader
     Path baseArchiveDir = Paths.get("/tmp/archiveRepo");
     JarArchiveRepository repository = new JarArchiveRepository.Builder(baseArchiveDir).build();
     ArchiveRepositoryPoller poller = new ArchiveRepositoryPoller.Builder(moduleLoader).build();
     poller.addRepository(repository, 30, TimeUnit.SECONDS, true);
-}
 ```
-
-The module loader will find ScriptArchives from the repository, and load them up in the module
-graph. Loaded ScriptModules can be retrieved out of the module loader by name (and an optional
-version). Classes can be retrieved from ScriptModules by name, or by type and exercised: 
+ScriptModules can be retrieved out of the module loader by name (and an optional version). Classes
+ can be retrieved from ScriptModules by name, or by type and exercised: 
 
 ```java
-
 ScriptModule module = moduleLoader.getScriptModule("hellomodule");
 Class<?> callableClass = ScriptModuleUtils.findAssignableClass(module, Callable.class);
 Callable<String> instance = (Callable<String>) callableClass.newInstance();
 String result = instance.call();
 ```
+
 More examples and information can be found in the [How To Use](https://github.com/Netflix/Nicobar/wiki/How-To-Use) section.
 
 Example source code can be found in the [nicobar-examples](https://github.com/Netflix/Nicobar/tree/master/nicobar-example) subproject.
