@@ -47,7 +47,6 @@ import com.netflix.nicobar.core.persistence.ArchiveSummary;
 import com.netflix.nicobar.core.persistence.RepositorySummary;
 import com.sun.jersey.api.Responses;
 import com.sun.jersey.api.view.Viewable;
-import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
 
 /**
@@ -106,9 +105,8 @@ public class ArchiveRepositoryResource {
     @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public void insertArchive(
-            @FormDataParam("modulespec") ScriptModuleSpec moduleSpec,
-            @FormDataParam("archivejar") InputStream file,
-            @FormDataParam("archivejar") FormDataContentDisposition fileDisposition) {
+            @FormDataParam("moduleSpec") ScriptModuleSpec moduleSpec,
+            @FormDataParam("archiveJar") InputStream file) {
         validateModuleSpec(moduleSpec);
         String moduleId = moduleSpec.getModuleId().toString();
         try {
