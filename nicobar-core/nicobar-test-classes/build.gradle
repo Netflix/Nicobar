@@ -1,5 +1,9 @@
 subprojects {
     apply plugin: 'java'
+    license {
+        strictCheck false
+        ignoreFailures true
+    }
 }
 project(':nicobar-core:nicobar-test-classes:impl-module').dependencies {
     compile project(':nicobar-core:nicobar-test-classes:interfaces-module')

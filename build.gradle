@@ -1,5 +1,4 @@
-// Establish version and status
-ext.githubProjectName = "Nicobar" // Change if github project name is not the same as the root project's name
+ext.githubProjectName = "Nicobar" 
 
 buildscript {
     repositories {
@@ -20,8 +19,8 @@ allprojects {
 
 apply from: file('gradle/convention.gradle')
 apply from: file('gradle/maven.gradle')
-//apply from: file('gradle/check.gradle')
-//apply from: file('gradle/license.gradle')
+apply from: file('gradle/check.gradle')
+apply from: file('gradle/license.gradle')
 apply from: file('gradle/release.gradle')
 
 subprojects {
@@ -32,6 +31,7 @@ subprojects {
     test {
         // enable TestNG support (default is JUnit)
         useTestNG()
+        jvmArgs '-XX:-UseSplitVerifier'  
     }  
     dependencies {
         compile     'org.slf4j:slf4j-api:1.7.0'
@@ -65,11 +65,13 @@ task javadoc(type: Javadoc) {
     classpath = files(subprojects.collect { project -> project.sourceSets.main.compileClasspath })
 }
 
+// Use this task, if you modify test class sources in the 
+// nicobar-test-classes subproject. Running this task will build the test classes
+// and release artifacts into the test resources directory.
 task copyTestClassJars(type: Copy) {
     project(':nicobar-core:nicobar-test-classes').subprojects.each { p ->
         from (p.jar.archivePath)
     }
-    println project(':nicobar-core').sourceSets.test.resources.srcDirs.toArray()[0].absolutePath + "/jars"
     into (project(':nicobar-core').sourceSets.test.resources.srcDirs.toArray()[0].absolutePath + "/jars")
     rename { String fileName ->
         fileName.replace('-' + version, '')
