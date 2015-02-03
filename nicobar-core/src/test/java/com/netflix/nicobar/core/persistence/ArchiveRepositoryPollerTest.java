@@ -53,7 +53,7 @@ import com.netflix.nicobar.core.archive.ModuleId;
 import com.netflix.nicobar.core.module.ScriptModule;
 import com.netflix.nicobar.core.module.ScriptModuleListener;
 import com.netflix.nicobar.core.module.ScriptModuleLoader;
-import com.netflix.nicobar.core.plugin.NoOpCompilerPlugin;
+import com.netflix.nicobar.core.plugin.TestCompilerPlugin;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
 import com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource;
 
@@ -88,8 +88,8 @@ public abstract class ArchiveRepositoryPollerTest {
 
     @BeforeMethod
     public void testSetup() throws Exception {
-        ScriptCompilerPluginSpec pluginSpec = new ScriptCompilerPluginSpec.Builder(NoOpCompilerPlugin.PLUGIN_ID)
-            .withPluginClassName(NoOpCompilerPlugin.class.getName())
+        ScriptCompilerPluginSpec pluginSpec = new ScriptCompilerPluginSpec.Builder(TestCompilerPlugin.PLUGIN_ID)
+            .withPluginClassName(TestCompilerPlugin.class.getName())
             .build();
         moduleLoader = new ScriptModuleLoader.Builder().addPluginSpec(pluginSpec).build();
     }

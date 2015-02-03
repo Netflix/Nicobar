@@ -4,8 +4,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import com.netflix.nicobar.core.internal.compile.NoOpCompiler;
 import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
+import com.netflix.nicobar.core.internal.compile.NoOpCompiler;
 
 /**
  * A {@link ScriptCompilerPlugin} for script archives with a no-op compiler included.
@@ -13,7 +13,7 @@ import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
  *
  * @author Vasanth Asokan
  */
-public class NoOpCompilerPlugin implements ScriptCompilerPlugin {
+public class TestCompilerPlugin implements ScriptCompilerPlugin {
 
     public static final String PLUGIN_ID = "nolang";
 

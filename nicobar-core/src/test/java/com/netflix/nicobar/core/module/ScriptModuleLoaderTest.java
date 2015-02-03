@@ -53,7 +53,7 @@ import com.netflix.nicobar.core.archive.ScriptModuleSpec;
 import com.netflix.nicobar.core.compile.ScriptArchiveCompiler;
 import com.netflix.nicobar.core.compile.ScriptCompilationException;
 import com.netflix.nicobar.core.module.jboss.JBossModuleClassLoader;
-import com.netflix.nicobar.core.plugin.NoOpCompilerPlugin;
+import com.netflix.nicobar.core.plugin.TestCompilerPlugin;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPlugin;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
 import com.netflix.nicobar.core.testutil.CoreTestResourceUtil;
@@ -82,7 +82,7 @@ public class ScriptModuleLoaderTest {
         when(MOCK_COMPILER.shouldCompile(Mockito.eq(scriptArchive))).thenReturn(true);
         when(MOCK_COMPILER.compile(Mockito.eq(scriptArchive), Mockito.any(JBossModuleClassLoader.class), Mockito.any(Path.class))).thenReturn(Collections.<Class<?>>emptySet());
         ScriptModuleLoader moduleLoader = new ScriptModuleLoader.Builder()
-            .addPluginSpec(new ScriptCompilerPluginSpec.Builder(NoOpCompilerPlugin.PLUGIN_ID)
+            .addPluginSpec(new ScriptCompilerPluginSpec.Builder(TestCompilerPlugin.PLUGIN_ID)
                 .withPluginClassName(MockScriptCompilerPlugin.class.getName()).build())
             .build();
         moduleLoader.updateScriptArchives(Collections.singleton(scriptArchive));
