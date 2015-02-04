@@ -1,29 +1,30 @@
-ext.githubProjectName = "Nicobar" 
-
-buildscript {
-    repositories {
-        mavenCentral() // maven { url 'http://jcenter.bintray.com' }
-    }
-    apply from: file('gradle/buildscript.gradle'), to: buildscript 
+plugins {
+  id 'nebula.netflixoss' version '2.2.5'
 }
 
-status = 'release'
+ext.githubProjectName = "Nicobar" 
 
-allprojects {
+
+subprojects {
+    if (project.name != 'nicobar-test-classes' && project.parent.name == 'nicobar-test-classes') {
+        apply plugin: 'nebula.netflixoss'
+    }
+
     apply plugin: 'eclipse'
     apply plugin: 'idea'
     repositories { 
-        mavenCentral() // maven { url: 'http://jcenter.bintray.com' }
+        jcenter()
     }
-}
 
-apply from: file('gradle/convention.gradle')
-apply from: file('gradle/maven.gradle')
-apply from: file('gradle/check.gradle')
-apply from: file('gradle/license.gradle')
-apply from: file('gradle/release.gradle')
+    licenseTest {
+        enabled = false
+    }
 
-subprojects {
+//     license {
+//         includes(["**/*.java"])
+//         excludes(["**/*.txt", "**/*.jar","**/*.MF","**/*.json", "**/*.properties", "**/*Test*", "**/*nicobar-test-classes*/*", "**/*.groovy"])
+//     }
+
     group = "com.netflix.${githubProjectName}" // TEMPLATE: Set to organization of project
     apply plugin: 'java'
     sourceCompatibility = JavaVersion.VERSION_1_7
@@ -46,12 +47,12 @@ subprojects {
         testCompile 'org.slf4j:slf4j-simple:1.7.0'
     }
 
-    tasks.withType(FindBugs) { 
-        reports { 
-            xml.enabled = false
-            html.enabled = true
-        }
-    }
+//     tasks.withType(FindBugs) { 
+//         reports { 
+//             xml.enabled = false
+//             html.enabled = true
+//         }
+//     }
 }
 
 // Aggregate javadocs from subprojects, except nicobar-test-classes
@@ -83,6 +84,3 @@ project(':nicobar-core:nicobar-test-classes').subprojects.each { p ->
 	copyTestClassJars.dependsOn p.jar
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '1.12'
-}
