@@ -11,7 +11,7 @@ subprojects {
         jcenter()
     }
 
-    if (project.name != 'nicobar-test-classes' && project.parent.name == 'nicobar-test-classes') {
+    if (project.name != 'nicobar-test-classes' && project.parent.name != 'nicobar-test-classes') {
         apply plugin: 'nebula.netflixoss'
     }
 
