@@ -50,7 +50,9 @@ public class CoreTestResourceUtil {
         TEST_CLASSPATHDIR_PATH("test-classpath", "classpathdir"),
         TEST_DEPENDENCIES_PRIMARY("interdependent-primary", "jars/interfaces-module.jar"),
         TEST_DEPENDENCIES_DEPENDENT("interdependent-dependent", "jars/impl-module.jar"),
-        TEST_CLASSPATH_DEPENDENT("classpath-dependent", "jars/classpath-dependent-module.jar");
+        TEST_CLASSPATH_DEPENDENT("classpath-dependent", "jars/classpath-dependent-module.jar"),
+        TEST_DEPENDENT("classpath-dependent", "jars/dependent-module.jar"),
+        TEST_SERVICE("classpath-dependent", "jars/service-module.jar");
 
         private final ModuleId moduleId;
         private final String resourcePath;
