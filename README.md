@@ -104,8 +104,6 @@ $ cd Nicobar/
 $ ./gradlew build
 ```
 
-Futher details on building can be found on the [Getting Started](https://github.com/Netflix/Nicobar/wiki/Getting-Started) page of the wiki.
-
 ## Bugs and Feedback
 
 For bugs, questions and discussions please use the [Github Issues](https://github.com/Netflix/Nicobar/issues).
