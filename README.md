@@ -1,3 +1,5 @@
+<img src="https://netflix.github.com/Nicobar/images/nicobar_logo_210x210.png">
+
 # Nicobar: Dynamic Scripting and Module Loader Framework for Java
 
 Nicobar is a dynamic scripting framework for java, driven by a powerful module loading system based
