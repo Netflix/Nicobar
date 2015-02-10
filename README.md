@@ -1,4 +1,4 @@
-<img src="https://netflix.github.com/Nicobar/images/nicobar_logo_210x210.png">
+<img src="https://github.com/Netflix/Nicobar/blob/master/images/nicobar_logo_210x210.png">
 
 # Nicobar: Dynamic Scripting and Module Loader Framework for Java
 
