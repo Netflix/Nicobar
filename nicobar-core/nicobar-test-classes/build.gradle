@@ -1,20 +1,38 @@
 subprojects {
     apply plugin: 'java'
-    license {
-        strictCheck false
-        ignoreFailures true
+    repositories { 
+        jcenter()
     }
+
+    sourceCompatibility = JavaVersion.VERSION_1_7
+    targetCompatibility = JavaVersion.VERSION_1_7
+
+
 }
 
-project(':nicobar-core:nicobar-test-classes:impl-module').dependencies {
-    compile project(':nicobar-core:nicobar-test-classes:interfaces-module')
+project(':impl-module').dependencies {
+    compile project(':interfaces-module')
 }
 
-project(':nicobar-core:nicobar-test-classes:classpath-dependent-module').dependencies {
+project(':classpath-dependent-module').dependencies {
     compile 'org.jboss.modules:jboss-modules:1.3.0.Final'
 }
 
-project(':nicobar-core:nicobar-test-classes:dependent-module').dependencies {
-    compile project(':nicobar-core:nicobar-test-classes:service-module')
+project(':dependent-module').dependencies {
+    compile project(':service-module')
 }
 
+task copyTestClassJars(type: Copy) {
+    project.subprojects.each { p ->
+        from (p.jar.archivePath)
+    }
+    into ("$buildDir/testJars")
+    rename { String fileName ->
+        fileName.replace('-' + version, '')
+    }
+    //outputs.upToDateWhen { false }
+}
+
+project.subprojects.each { p ->
+	copyTestClassJars.dependsOn p.jar
+}
