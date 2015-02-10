@@ -10,17 +10,16 @@ subprojects {
     repositories { 
         jcenter()
     }
-
-    if (project.name != 'nicobar-test-classes' && project.parent.name != 'nicobar-test-classes') {
-        apply plugin: 'nebula.netflixoss'
-    }
-
+   
+    apply plugin: 'nebula.netflixoss'
     apply plugin: 'eclipse'
     apply plugin: 'idea'
 
     apply plugin: 'java'
     sourceCompatibility = JavaVersion.VERSION_1_7
     targetCompatibility = JavaVersion.VERSION_1_7
+
+    licenseTest.enabled = false
 
     test {
         // enable TestNG support (default is JUnit)
@@ -44,30 +43,8 @@ subprojects {
 
 // Aggregate javadocs from subprojects, except nicobar-test-classes
 task javadoc(type: Javadoc) {
-    source subprojects.findAll({ project ->
-        // Filter out nicobar-test-classes and subprojects
-        project.name != 'nicobar-test-classes' && project.parent?.name != 'nicobar-test-classes'
-    }).collect { project -> project.sourceSets.main.allJava }
+    source subprojects.collect { project -> project.sourceSets.main.allJava }
     destinationDir = new File(buildDir, 'javadoc')
     // Might need a classpath
     classpath = files(subprojects.collect { project -> project.sourceSets.main.compileClasspath })
 }
-
-// Use this task, if you modify test class sources in the 
-// nicobar-test-classes subproject. Running this task will build the test classes
-// and release artifacts into the test resources directory.
-task copyTestClassJars(type: Copy) {
-    project(':nicobar-core:nicobar-test-classes').subprojects.each { p ->
-        from (p.jar.archivePath)
-    }
-    into (project(':nicobar-core').sourceSets.test.resources.srcDirs.toArray()[0].absolutePath + "/jars")
-    rename { String fileName ->
-        fileName.replace('-' + version, '')
-    }
-    //outputs.upToDateWhen { false }
-}
-
-project(':nicobar-core:nicobar-test-classes').subprojects.each { p ->
-	copyTestClassJars.dependsOn p.jar
-}
-
