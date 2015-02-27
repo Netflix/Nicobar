@@ -15,9 +15,11 @@
  */
 package com.netflix.nicobar.core.utils;
 
+import static org.testng.AssertJUnit.assertNotNull;
 import static org.testng.AssertJUnit.assertTrue;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -43,6 +45,13 @@ public class ClassPathUtilsTest {
         String classesDir = rootDir + File.separator + "classes";
         String jarPath = rootDir + File.separator + "libs" + File.separator + "nicobar-test-v1.0.jar";
         classPathStr =  classesDir + File.pathSeparator + jarPath;
+    }
+
+    @Test
+    public void testFindRootPathForResource() {
+        Path path = ClassPathUtils.findRootPathForResource("META-INF/maven/com.google.guava/guava/pom.properties", getClass().getClassLoader());
+        assertNotNull(path);
+        assertTrue(path.toFile().exists());
     }
 
     @Test
