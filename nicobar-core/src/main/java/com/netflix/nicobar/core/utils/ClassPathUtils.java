@@ -33,6 +33,7 @@ import java.util.zip.ZipFile;
 import javax.annotation.Nullable;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.SystemUtils;
 
 /**
  * Utility methods for dealing with classes and resources in a {@link ClassLoader}
@@ -111,7 +112,13 @@ public class ClassPathUtils {
         // for Jar URL, the path is in the form of: file:/path/to/groovy/myJar.jar!/path/to/resource/myResource.txt
         int startIndex = pathString.startsWith("file:") ? 5 : 0;
         int endIndex = pathString.lastIndexOf("!");
-        Path jarPath = Paths.get(pathString.substring(startIndex, endIndex));
+        String filePath=pathString.substring(startIndex, endIndex);
+        if(SystemUtils.IS_OS_WINDOWS) {
+            // On windows, paths that start with / should be valid
+            // but the NIO API does not follow the same rules as the old IO api did and cannot parse the path from file: URLs
+            filePath=filePath.substring(1);
+        }
+        Path jarPath = Paths.get(filePath);
         return jarPath;
     }
 
