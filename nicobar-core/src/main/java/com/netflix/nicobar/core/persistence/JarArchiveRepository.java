@@ -233,16 +233,17 @@ public class JarArchiveRepository implements ArchiveRepository {
         @Override
         public Map<ModuleId, Long> getArchiveUpdateTimes() throws IOException {
             Map<ModuleId, Long> updateTimes = new LinkedHashMap<ModuleId, Long>();
-            DirectoryStream<Path> archiveJars = Files.newDirectoryStream(rootDir, JAR_FILE_FILTER);
-            for (Path archiveJar: archiveJars) {
-                Path absoluteArchiveFile = rootDir.resolve(archiveJar);
-                long lastUpdateTime = Files.getLastModifiedTime(absoluteArchiveFile).toMillis();
-                String moduleName = archiveJar.getFileName().toString();
-                if (moduleName.endsWith(".jar")) {
-                    moduleName = moduleName.substring(0, moduleName.lastIndexOf(".jar"));
+            try (DirectoryStream<Path> archiveJars = Files.newDirectoryStream(rootDir, JAR_FILE_FILTER)) {
+                for (Path archiveJar : archiveJars) {
+                    Path absoluteArchiveFile = rootDir.resolve(archiveJar);
+                    long lastUpdateTime = Files.getLastModifiedTime(absoluteArchiveFile).toMillis();
+                    String moduleName = archiveJar.getFileName().toString();
+                    if (moduleName.endsWith(".jar")) {
+                        moduleName = moduleName.substring(0, moduleName.lastIndexOf(".jar"));
+                    }
+                    ModuleId moduleId = ModuleId.fromString(moduleName);
+                    updateTimes.put(moduleId, lastUpdateTime);
                 }
-                ModuleId moduleId = ModuleId.fromString(moduleName);
-                updateTimes.put(moduleId, lastUpdateTime);
             }
             return updateTimes;
         }
