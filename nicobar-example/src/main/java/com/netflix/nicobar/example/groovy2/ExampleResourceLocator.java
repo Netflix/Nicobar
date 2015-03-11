@@ -49,7 +49,7 @@ public class ExampleResourceLocator {
     public static Path getGroovyRuntime() {
         Path path = ClassPathUtils.findRootPathForResource("META-INF/groovy-release-info.properties", ExampleResourceLocator.class.getClassLoader());
         if (path == null) {
-            throw new IllegalStateException("coudln't find groovy-all.n.n.n.jar in the classpath.");
+            throw new IllegalStateException("couldn't find groovy-all.n.n.n.jar in the classpath.");
         }
         return path;
     }
@@ -68,7 +68,7 @@ public class ExampleResourceLocator {
         String resourceName = ClassPathUtils.classNameToResourceName(GROOVY2_COMPILER_PLUGIN_CLASS);
         Path path = ClassPathUtils.findRootPathForResource(resourceName, ExampleResourceLocator.class.getClassLoader());
         if (path == null) {
-            throw new IllegalStateException("coudln't find groovy2 plugin jar in the classpath.");
+            throw new IllegalStateException("couldn't find groovy2 plugin jar in the classpath.");
         }
         return path;
     }
