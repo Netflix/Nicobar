@@ -64,7 +64,7 @@ final class __JDKPaths {
         do {
             e = classPath.indexOf(File.pathSeparatorChar, s);
             String item = e == -1 ? classPath.substring(s) : classPath.substring(s, e);
-            if (! jarSet.contains(item)) {
+            if (jarSet != null && !jarSet.contains(item)) {
                 final File file = new File(item);
                 if (file.isDirectory()) {
                     processDirectory0(pathSet, file);
