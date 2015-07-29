@@ -59,7 +59,7 @@ public class CoreTestResourceUtil {
         private final String resourcePath;
         private final Set<String> contentPaths;
         private TestResource(String moduleId, String resourcePath, String... contentPaths) {
-            this.moduleId = moduleId.contains(".") ? ModuleId.fromString(moduleId) : ModuleId.create(moduleId);
+            this.moduleId = ModuleId.fromString(moduleId);
             this.resourcePath = resourcePath;
             this.contentPaths = new LinkedHashSet<String>(Arrays.asList(contentPaths));
         }
