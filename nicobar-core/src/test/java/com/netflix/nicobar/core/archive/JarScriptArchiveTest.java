@@ -17,6 +17,7 @@
  */
 package com.netflix.nicobar.core.archive;
 
+import static com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource.TEST_DEFAULT_MODULE_SPEC_JAR2;
 import static com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource.TEST_DEFAULT_MODULE_SPEC_JAR;
 import static com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource.TEST_MODULE_SPEC_JAR;
 import static com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource.TEST_TEXT_JAR;
@@ -72,6 +73,11 @@ public class JarScriptArchiveTest {
         Path rootPath = Paths.get(rootPathUrl.toURI()).toAbsolutePath();
         JarScriptArchive scriptArchive = new JarScriptArchive.Builder(rootPath).build();
         assertEquals(scriptArchive.getModuleSpec().getModuleId(), TEST_DEFAULT_MODULE_SPEC_JAR.getModuleId());
+
+        rootPathUrl = getClass().getClassLoader().getResource(TEST_DEFAULT_MODULE_SPEC_JAR2.getResourcePath());
+        rootPath = Paths.get(rootPathUrl.toURI()).toAbsolutePath();
+        scriptArchive = new JarScriptArchive.Builder(rootPath).build();
+        assertEquals(scriptArchive.getModuleSpec().getModuleId(), TEST_DEFAULT_MODULE_SPEC_JAR2.getModuleId());
     }
 
     @Test
