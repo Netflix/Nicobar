@@ -45,6 +45,7 @@ public class CoreTestResourceUtil {
         TEST_TEXT_JAR("test-text", "jars/test-text.jar", "sub1/sub1.txt", "sub2/sub2.txt", "root.txt", "moduleSpec.json", "META-INF/MANIFEST.MF"),
         TEST_MODULE_SPEC_PATH("test-modulespec-moduleId", "paths/test-modulespec", "root.txt", "META-INF/MANIFEST.MF"),
         TEST_DEFAULT_MODULE_SPEC_JAR("test-default-modulespec", "jars/test-default-modulespec.jar", "root.txt", "META-INF/MANIFEST.MF"),
+        TEST_DEFAULT_MODULE_SPEC_JAR2("moduleName.moduleVersion", "testmodules/moduleName.moduleVersion.jar"),
         TEST_MODULE_SPEC_JAR("test-modulespec-moduleId", "jars/test-modulespec.jar", "root.txt", "META-INF/MANIFEST.MF"),
         TEST_SCRIPTS_PATH("test-scripts-moduleId", "scripts", "script1.txt", "script2.txt", "script3.txt"),
         TEST_CLASSPATHDIR_PATH("test-classpath", "classpathdir"),
@@ -58,7 +59,7 @@ public class CoreTestResourceUtil {
         private final String resourcePath;
         private final Set<String> contentPaths;
         private TestResource(String moduleId, String resourcePath, String... contentPaths) {
-            this.moduleId = ModuleId.create(moduleId);
+            this.moduleId = moduleId.contains(".") ? ModuleId.fromString(moduleId) : ModuleId.create(moduleId);
             this.resourcePath = resourcePath;
             this.contentPaths = new LinkedHashSet<String>(Arrays.asList(contentPaths));
         }
