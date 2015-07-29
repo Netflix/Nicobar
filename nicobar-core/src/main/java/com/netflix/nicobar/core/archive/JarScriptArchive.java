@@ -127,7 +127,7 @@ public class JarScriptArchive implements ScriptArchive {
                       jarFileName = jarFileName.substring(0, jarFileName.lastIndexOf(JAR_FILE_SUFFIX));
                     }
 
-                    ModuleId moduleId = ModuleId.create(jarFileName);
+                    ModuleId moduleId = ModuleId.fromString(jarFileName);
                     buildModuleSpec = new ScriptModuleSpec.Builder(moduleId).build();
                 }
             }
