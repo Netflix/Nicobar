@@ -21,6 +21,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -37,6 +38,7 @@ import com.netflix.nicobar.core.archive.ScriptArchive;
 import com.netflix.nicobar.core.archive.ScriptModuleSpec;
 import com.netflix.nicobar.core.archive.ScriptModuleSpecSerializer;
 import com.netflix.nicobar.core.plugin.BytecodeLoadingPlugin;
+import org.jboss.modules.ModuleIdentifier;
 
 /**
  * Utility classes for ScriptModule processing
@@ -45,6 +47,16 @@ import com.netflix.nicobar.core.plugin.BytecodeLoadingPlugin;
  * @author Vasanth Asokan
  */
 public class ScriptModuleUtils {
+
+
+    /**
+     * Create module path from module moduleIdentifier.
+     * @param moduleIdentifier module identifier to create path for
+     * @return path to module for given moduleIdentifier
+     */
+    public static Path createModulePath(ModuleIdentifier moduleIdentifier){
+        return Paths.get(moduleIdentifier.getName() + "-" + moduleIdentifier.getSlot());
+    }
 
     /**
      * Find all of the classes in the module that are subclasses or equal to the target class

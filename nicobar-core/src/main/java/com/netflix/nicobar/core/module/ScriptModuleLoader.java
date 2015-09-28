@@ -59,6 +59,8 @@ import com.netflix.nicobar.core.module.jboss.JBossScriptModule;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPlugin;
 import com.netflix.nicobar.core.plugin.ScriptCompilerPluginSpec;
 
+import static com.netflix.nicobar.core.module.ScriptModuleUtils.createModulePath;
+
 /**
  * Top level API for loading and accessing scripts.
  * Builds and maintains interdependent script modules.
@@ -234,7 +236,7 @@ public class ScriptModuleLoader {
                 }
                 ModuleSpec moduleSpec;
                 ModuleIdentifier candidateRevisionId = updatedRevisionIdMap.get(scriptModuleId);
-                Path modulePath = Paths.get(candidateRevisionId.toString());
+                Path modulePath = createModulePath(candidateRevisionId);
                 final Path moduleCompilationRoot = compilationRootDir.resolve(modulePath);
                 FileUtils.deleteQuietly(moduleCompilationRoot.toFile());
                 try {

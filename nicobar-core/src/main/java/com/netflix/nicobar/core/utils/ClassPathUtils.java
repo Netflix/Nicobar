@@ -18,6 +18,8 @@
 package com.netflix.nicobar.core.utils;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -62,7 +64,7 @@ public class ClassPathUtils {
      * @return absolute path of the root of the resource.
      */
     @Nullable
-    public static Path findRootPathForResource(String resourceName, ClassLoader classLoader) {
+    public static Path findRootPathForResource(String resourceName, ClassLoader classLoader)  {
         Objects.requireNonNull(resourceName, "resourceName");
         Objects.requireNonNull(classLoader, "classLoader");
 
@@ -72,17 +74,26 @@ public class ClassPathUtils {
             if (protocol.equals("jar")) {
                 return getJarPathFromUrl(resource);
             } else if (protocol.equals("file")) {
-                int relativePathSize = Paths.get(resourceName).getNameCount();
-                Path result = Paths.get(resource.getFile());
-                for (int i = 0; i < relativePathSize; i++) {
-                    result = result.getParent();
-                }
-                return result;
+                return getRootPathFromDirectory(resourceName, resource);
             } else {
                 throw new IllegalStateException("Unsupported URL protocol: " + protocol);
             }
         }
         return null;
+    }
+
+
+    private static Path getRootPathFromDirectory(String resourceName, URL resource) {
+        try {
+            Path result = Paths.get(resource.toURI());
+            int relativePathSize = Paths.get(resourceName).getNameCount();
+            for (int i = 0; i < relativePathSize; i++) {
+                result = result.getParent();
+            }
+            return result;
+        } catch (URISyntaxException e){
+            throw new IllegalStateException("Unsupported URL syntax: " + resource, e);
+        }
     }
 
     /**
@@ -107,12 +118,14 @@ public class ClassPathUtils {
      * @return {@link Path} to the Jar containing the resource.
      */
     public static Path getJarPathFromUrl(URL jarUrl) {
-        String pathString = jarUrl.getPath();
-        // for Jar URL, the path is in the form of: file:/path/to/groovy/myJar.jar!/path/to/resource/myResource.txt
-        int startIndex = pathString.startsWith("file:") ? 5 : 0;
-        int endIndex = pathString.lastIndexOf("!");
-        Path jarPath = Paths.get(pathString.substring(startIndex, endIndex));
-        return jarPath;
+        try {
+            String pathString = jarUrl.getPath();
+            // for Jar URL, the path is in the form of: file:/path/to/groovy/myJar.jar!/path/to/resource/myResource.txt
+            int endIndex = pathString.lastIndexOf("!");
+            return Paths.get(new URI(pathString.substring(0, endIndex)));
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException("Unsupported URL syntax: " + jarUrl.getPath(), e);
+        }
     }
 
     /**

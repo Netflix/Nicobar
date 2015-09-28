@@ -19,6 +19,7 @@ package com.netflix.nicobar.core.module.jboss;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -95,20 +96,24 @@ public class JBossModuleUtils {
         // are added to the module. If it's a jar, then all files in the jar are added.
         URL url = scriptArchive.getRootUrl();
         if (url != null) {
-            File file = Paths.get(url.getPath()).toFile();
-            String filePath = file.getPath();
-            ResourceLoader rootResourceLoader = null;
-            if (file.isDirectory()) {
-                rootResourceLoader = ResourceLoaders.createFileResourceLoader(filePath, file);
-            } else if (file.getPath().endsWith(".jar")) {
-                try {
-                    rootResourceLoader = ResourceLoaders.createJarResourceLoader(filePath, new JarFile(file));
-                } catch (IOException e) {
-                    throw new ModuleLoadException(e);
+            try {
+                File file = Paths.get(url.toURI()).toFile();
+                String filePath = file.getPath();
+                ResourceLoader rootResourceLoader = null;
+                if (file.isDirectory()) {
+                    rootResourceLoader = ResourceLoaders.createFileResourceLoader(filePath, file);
+                } else if (file.getPath().endsWith(".jar")) {
+                    try {
+                        rootResourceLoader = ResourceLoaders.createJarResourceLoader(filePath, new JarFile(file));
+                    } catch (IOException e) {
+                        throw new ModuleLoadException(e);
+                    }
                 }
-            }
-            if (rootResourceLoader != null) {
-                moduleSpecBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(rootResourceLoader, pathFilterBuilder.create()));
+                if (rootResourceLoader != null) {
+                    moduleSpecBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(rootResourceLoader, pathFilterBuilder.create()));
+                }
+            } catch (URISyntaxException e) {
+                throw new ModuleLoadException("Unsupported URL syntax: " + url, e);
             }
         }
         // add dependencies to the module spec
