@@ -66,8 +66,8 @@ public class BytecodeLoader implements ScriptArchiveCompiler {
             } catch (Exception e) {
                 throw new ScriptCompilationException("Unable to load class: " + entryName, e);
             }
-            moduleClassLoader.addClasses(addedClasses);
         }
+        moduleClassLoader.addClasses(addedClasses);
 
         return Collections.unmodifiableSet(addedClasses);
     }
