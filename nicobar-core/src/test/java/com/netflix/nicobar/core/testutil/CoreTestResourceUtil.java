@@ -53,6 +53,7 @@ public class CoreTestResourceUtil {
         TEST_DEPENDENCIES_DEPENDENT("interdependent-dependent", "jars/impl-module.jar"),
         TEST_CLASSPATH_DEPENDENT("classpath-dependent", "jars/classpath-dependent-module.jar"),
         TEST_DEPENDENT("classpath-dependent", "jars/dependent-module.jar"),
+        TEST_DEPENDENT_B("classpath-dependent-b", "jars/dependent-module-b.jar"),
         TEST_SERVICE("classpath-dependent", "jars/service-module.jar");
 
         private final ModuleId moduleId;

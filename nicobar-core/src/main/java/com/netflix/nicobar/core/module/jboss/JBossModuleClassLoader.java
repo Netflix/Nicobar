@@ -55,9 +55,11 @@ public class JBossModuleClassLoader extends ModuleClassLoader {
      */
     protected static ModuleClassLoaderFactory createFactory(final ScriptArchive scriptArchive) {
         return new ModuleClassLoaderFactory() {
+            @Override
             public ModuleClassLoader create(final Configuration configuration) {
                 return AccessController.doPrivileged(
                     new PrivilegedAction<JBossModuleClassLoader>() {
+                        @Override
                         public JBossModuleClassLoader run() {
                             return new JBossModuleClassLoader(configuration, scriptArchive);
                         }

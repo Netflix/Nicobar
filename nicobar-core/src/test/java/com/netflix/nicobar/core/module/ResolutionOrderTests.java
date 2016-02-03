@@ -1,6 +1,7 @@
 package com.netflix.nicobar.core.module;
 
 import static com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource.TEST_DEPENDENT;
+import static com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource.TEST_DEPENDENT_B;
 import static com.netflix.nicobar.core.testutil.CoreTestResourceUtil.TestResource.TEST_SERVICE;
 import static org.testng.AssertJUnit.assertEquals;
 
@@ -48,7 +49,7 @@ public class ResolutionOrderTests {
     @Test
     public void testAppClasspathPrecedence() throws Exception {
         setupModuleLoader(Collections.singleton("com/netflix/nicobar/test"));
-        setupDependentModules();
+        setupDependentModules(CoreTestResourceUtil.getResourceAsPath(TEST_DEPENDENT));
         ScriptModule dependentModule = moduleLoader.getScriptModule("dependent");
         Class<?> dependentClass = ScriptModuleUtils.findClass(dependentModule, "com.netflix.nicobar.test.Dependent");
         Method m = dependentClass.getMethod("execute");
@@ -67,7 +68,7 @@ public class ResolutionOrderTests {
     public void testAppClasspathBlacklist() throws Exception {
         // Blacklist all packages from application classpath
         setupModuleLoader(Collections.<String>emptySet());
-        setupDependentModules();
+        setupDependentModules(CoreTestResourceUtil.getResourceAsPath(TEST_DEPENDENT));
         ScriptModule dependentModule = moduleLoader.getScriptModule("dependent");
         Class<?> dependentClass = ScriptModuleUtils.findClass(dependentModule, "com.netflix.nicobar.test.Dependent");
         Method m = dependentClass.getMethod("execute");
@@ -75,8 +76,26 @@ public class ResolutionOrderTests {
         assertEquals("From Module", result);
     }
 
-    private void setupDependentModules() throws Exception {
-        Path dependentPath = CoreTestResourceUtil.getResourceAsPath(TEST_DEPENDENT);
+    /**
+     * DEPENDENT_B has a local copy of the service classes.
+     * This test shows, that with Nicobar, the resolution order favors
+     * the local implementation of the service class over the implementation
+     * found in the service dependency's classloader.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testLocalLoaderClassesTakePrecedence() throws Exception {
+        setupModuleLoader(Collections.<String>emptySet());
+        setupDependentModules(CoreTestResourceUtil.getResourceAsPath(TEST_DEPENDENT_B));
+        ScriptModule dependentModule = moduleLoader.getScriptModule("dependent");
+        Class<?> dependentClass = ScriptModuleUtils.findClass(dependentModule, "com.netflix.nicobar.test.Dependent");
+        Method m = dependentClass.getMethod("execute");
+        String result = (String)m.invoke(null);
+        assertEquals("From Dependent Local", result);
+    }
+
+    private void setupDependentModules(Path dependentPath) throws Exception {
         Path servicePath = CoreTestResourceUtil.getResourceAsPath(TEST_SERVICE);
 
         ScriptArchive serviceArchive = new JarScriptArchive.Builder(servicePath)
