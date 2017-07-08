@@ -42,6 +42,13 @@ public class JBossModuleClassLoader extends ModuleClassLoader {
     private final ScriptArchive scriptArchive;
     private final Map<String, Class<?>> localClassCache;
 
+    static {
+        try {
+            ClassLoader.registerAsParallelCapable();
+        } catch (Throwable ignored) {
+        }
+    }
+    
     public JBossModuleClassLoader(Configuration moduleClassLoaderContext, ScriptArchive scriptArchive) {
         super(moduleClassLoaderContext);
         this.scriptArchive = scriptArchive;
