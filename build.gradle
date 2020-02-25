@@ -44,7 +44,6 @@ subprojects {
     test {
         // enable TestNG support (default is JUnit)
         useTestNG()
-        jvmArgs '-XX:-UseSplitVerifier'
     }
 
     dependencies {
