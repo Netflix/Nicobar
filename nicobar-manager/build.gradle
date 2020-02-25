@@ -1,5 +1,4 @@
 project(':nicobar-manager') {
-    apply plugin: 'jetty'
     apply plugin: 'war'
 
     dependencies {
@@ -16,11 +15,6 @@ project(':nicobar-manager') {
         testCompile 'org.eclipse.jetty:jetty-servlet:7.6.7.v20120910'
     }
 
-    jettyRun.doFirst {
-        System.setProperty("archaius.deployment.applicationId","scriptmanager-app")
-        System.setProperty("archaius.deployment.environment","dev")
-    }
-
     war {
         from('resources')  {
             include '*.properties'
@@ -29,7 +23,7 @@ project(':nicobar-manager') {
         webXml = file('src/main/webapp/WEB-INF/web.xml')
     }
 
-    jettyRun {
-        httpPort = 8989
+    gretty {
+        httpPort = 8081
     }
 }
