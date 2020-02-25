@@ -2,11 +2,17 @@
 
 # Nicobar: Dynamic Scripting and Module Loader Framework for Java
 
+
+
 Nicobar is a dynamic scripting framework for java, driven by a powerful module loading system based
 on [JBoss Modules](https://github.com/jboss-modules/jboss-modules). Scripts can be source, written in JVM
 compatible languages (like Groovy), or can be compiled bytecode, in the form of .class
 files. Scripts can be fetched from persistence dynamically, (compiled and) converted into modules,
 and inserted in the correct place in a runtime module graph based upon module metadata.
+
+## Status
+
+This project is not being actively maintained. 
 
 ## Full Documentation
 
