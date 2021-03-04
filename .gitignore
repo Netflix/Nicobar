@@ -72,3 +72,6 @@ eclipse
 
 # Generic explicit ignore directory
 ignoreme/
+
+# publishing secrets
+secrets/signing-key

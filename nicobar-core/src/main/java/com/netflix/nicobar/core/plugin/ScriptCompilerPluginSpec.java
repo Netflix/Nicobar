@@ -28,10 +28,10 @@ import java.util.*;
 import static java.nio.file.FileVisitOption.FOLLOW_LINKS;
 
 /**
- * This library supports pluggable language compilers. Compiler plugins will be loaded
+ * <p>This library supports pluggable language compilers. Compiler plugins will be loaded
  * into a separate class loader to provider extra isolation in case there are multiple
  * versions of them in the JVM.
- * <p/>
+ * </p>
  * This class provides the metadata required to locate a compiler plugin and load it.
  *
  * @author James Kojo
