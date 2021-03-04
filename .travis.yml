@@ -3,19 +3,17 @@ matrix:
   include:
   - jdk: openjdk8
     env: GRADLE_PUBLISH=true
-  - jdk: openjdk11
-    env: GRADLE_PUBLISH=false
-  - jdk: openjdk13
-    env: GRADLE_PUBLISH=false
 dist: xenial
 install: "./installViaTravis.sh"
 script: "./buildViaTravis.sh"
 env:
   global:
-  - secure: KJrNSzmjXRcJCuTacqMle+6rxjTSlLJQuwU1xwWXg6weQYi0Nc8Vb11JGW3jVEXfHjlR1e4WEwb6e4NaWGsEh9deSRYYD5xmzWAksRSMUySnwGXtWJAAveMsNH0hPsaS87uc2bRUhlQtNPljreajES0apxIvd0Ng4KGFM+18KFU=
-  - secure: N+h31xFpA2eEfDC0y1ZYS76BS8nKJVufOL+217oOVdGpSwkfsRt3+Ds9FflktQdcXn+llA4G972L2iC06CBsPsszg0zuwbdtzlcLZ5g660s9vHTJGp9xUjFx6qZ4JquOlF0tz9GqIoyBw1ckU819dinCRstxbLMblHsgGNQmLPk=
-  - secure: c1wIOMqzmlbFUYKsgq9Pz2grGxIM0k++GNZQOHFnh5G7UKPL/qtrb05Rax6O+sufATJ5nzmS9KIvEv2KFy2fcR0Ir8KPFzyYXFiQAMhbW/C13fIc/jFiPU+bJs1p1tNQFZ2rxzmeE46HjDaLN/2Bq6FQXz9v+pDiG9YJ3GKWnUU=
-  - secure: jdLG4/zUrrdRTiF4nbCxoC75uuvbgBwIT/ra8uk+i71h2kefPpu54Qq/ppBIM8Pwa/IxP8a3BGOsaQ1oVjCLJ+dnos0fDeUmqWpy+xqm72kQXiuVxEMD3Ehd4x7i0HEe5jQf3sGj41IB0/DPcjajSKCCt5CUrdWHQeJxetmPQbk=
+  - secure: c6IiZChoms9po26/L6rXEI11uSgB8yEZ56V3kHjrTT8m/0yLNbYHhr5wuUySvdtUr6HLgQJ6BDaOG9YZulmxXIMDhsE7oAR2G08SFpxq7zeDpkdfQbD6iqjy9IZIu3HwKOXrKGUmOPmHanbFHZk80Eo2aP0usBMU1AzR59vPmgQ=
+  - secure: O5RrbFAuDcHapxXXkIxRHjHXL8Bs9vo6a81E2AJwmU3TgWlM4ZN9j/EE7Y5ZuhbCS73e8W7YZwgr8FwKIfnnRVu9yrQxX8eoIZ0wyp4WF4ADCycgJwEicPCWCSeakpId3jzP7xhIEVvHEJ1UlLUfNadSY7YwGJOjjEyAYppFJOs=
+  - secure: dS060Zh2NPrgQyhnnwkKNcd0EjQ+jjb0jX1WDGV9OcSXsLy8faQtsExsQAA2UqyZFn1W+6HIie3iH35CVNCspoNDMb5QcuoVHq6g/rvLLDnQWcX8h7H6ttNns+SzCgBYHp4r+lG976qdN22f86NViSYdP6TgXO4Zm1pEMBhtngo=
+  - secure: GPQy2pKq405XeDI/U0Y7KiAv1uAbR+Xz8a/Gw6owDMAz6XFwo4nTFSi1PZXKcNJsVwjTXSM+BYJzzGYxF1vwHIx9676NUtWo1FM+0azOu6347oaFh7P+SpgYyuOdXMvfln3VLJhxjUl5rwHF1wSXDXF3XE705To0f6S3dBT8ULA=
+  - secure: CC13efBvrDv/hA89FISQHHT7p9Xk1nY9Xr6jIz32sITaldL7tDHYMQlWfZqWf1LXGLpi38pJXercLhH5irs+HMn6bYuL768+MBqf11MRdS5k7RnEc3l7ZtBIOLH2QuJzvJ0yRBvdmmCTTOKEXDQVrfHHOJGiyFlekqkdS2ZGwnM=
+  - secure: bEVFBpzO9eNGgJgRtVGSw2kjjrvtD/qGnpiWYzsuLRGB0RuvGIUplWzkz8HBnwksGRcQIpV5rLCjbSCvc6yWLgw3KBlBMcnbfI/YwdMtD/SLQ8TOWMxo5K7HEyZ/o3gbMIfUGlckDX/CS7RxN3a1djEuAydBgLaXaAxJoTLwQmg=
 cache:
   directories:
   - "$HOME/.gradle"

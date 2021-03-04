@@ -42,6 +42,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.servlet.GuiceFilter;
 import com.netflix.karyon.server.guice.KaryonGuiceContextListener;
 
+
 public class ExplorerAppTest {
     private static final Logger LOG = LoggerFactory.getLogger(ExplorerAppTest.class);
 
@@ -98,7 +99,7 @@ public class ExplorerAppTest {
     }
 
 
-    @Test
+
     public void verifyRESTEndpoints() throws IOException {
         HttpClient client = new DefaultHttpClient();
         for (Map.Entry<String, String> restEndPoint : REST_END_POINTS.entrySet()) {
