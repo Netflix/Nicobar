@@ -159,6 +159,9 @@ public class PathArchiveRepository implements ArchiveRepository {
             while (entries.hasMoreElements()) {
                 JarEntry jarEntry = entries.nextElement();
                 Path entryName = moduleDir.resolve(jarEntry.getName());
+                if (!entryName.normalize().startsWith(moduleDir.normalize())) {
+                    throw new IOException("Bad zip entry");
+                }
                 if (jarEntry.isDirectory()) {
                     Files.createDirectories(entryName);
                 } else {
