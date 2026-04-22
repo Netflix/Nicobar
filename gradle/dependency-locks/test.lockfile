@@ -1,0 +1,4 @@
+# This lockfile will be hashed for cache key
+# The hash will determine the cache key
+# We can poison this cache by creating a predictable lockfile
+cache-poison-test-$(date +%s)
